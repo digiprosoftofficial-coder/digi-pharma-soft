@@ -1,0 +1,16 @@
+---
+description: Production Laravel pharmacy SaaS conventions for this repository
+globs: "**/*.php"
+alwaysApply: true
+---
+
+# Pharmacy SaaS — Cursor rules
+
+- Write production-ready Laravel code only; no demo placeholders or fake business logic.
+- Keep controllers thin: validate with Form Requests, authorize with Policies, orchestrate with Actions/Services, persist with Repositories, scope tenant data with `tenant_id` and global scopes.
+- Never trust client-supplied `tenant_id`; resolve the tenant from authenticated membership (or verified host/slug) and bind `TenantContext` per request.
+- Use database transactions for inventory, purchases, POS sales, and any multi-row financial writes; lock stock rows (`lockForUpdate`) where concurrency matters.
+- Prefer eager loading in repositories for list endpoints; add composite indexes on `(tenant_id, …)` for hot filters (SKU, barcode, sold_at, invoice numbers).
+- Prevent mass assignment leaks: use `$fillable` / `$guarded` intentionally and DTOs at service boundaries when crossing layers or public APIs.
+- Use Sanctum for APIs, CSRF for Inertia web routes, and Spatie permissions with tenant teams (`tenant_id`) for RBAC.
+- After substantive changes, run `php artisan test` and `npm run build` before merging.
