@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Central;
 
 use App\Domain\Billing\Models\SubscriptionPlan;
 use App\Domain\Billing\Models\TenantSubscription;
+use App\Domain\Platform\Models\CatalogTemplate;
+use App\Domain\Platform\Models\Reseller;
 use App\Domain\Tenant\Actions\AttachTenantOwnerAction;
 use App\Domain\Tenant\Actions\ProvisionTenantAction;
 use App\Domain\Tenant\Actions\SuspendTenantAction;
@@ -35,7 +37,7 @@ final class PlatformTenantController extends Controller
 
         $query = Tenant::query()
             ->withCount('users')
-            ->with(['activeSubscription.plan']);
+            ->with(['activeSubscription.plan', 'reseller']);
 
         if ($search = $request->string('q')->trim()->toString()) {
             $query->where(function ($q) use ($search) {
@@ -64,6 +66,7 @@ final class PlatformTenantController extends Controller
 
         return Inertia::render('Platform/Tenants/Create', [
             'plans' => SubscriptionPlan::query()->orderBy('name')->get(['id', 'name', 'slug', 'trial_days', 'price_cents']),
+            'resellers' => Reseller::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'default_trial_days' => PlatformSettings::defaultTrialDays(),
         ]);
     }
@@ -81,14 +84,16 @@ final class PlatformTenantController extends Controller
             ->with('success', __('platform.tenant_created'));
     }
 
-    public function show(Tenant $tenant): Response
+    public function show(Request $request, Tenant $tenant): Response
     {
         $this->authorize('view', $tenant);
 
         $tenant->load([
             'users',
+            'reseller',
             'activeSubscription.plan',
             'subscriptions' => fn ($q) => $q->with('plan')->orderByDesc('starts_at'),
+            'platformInvoices' => fn ($q) => $q->orderByDesc('id')->limit(5),
         ]);
 
         $activities = Activity::query()
@@ -110,6 +115,24 @@ final class PlatformTenantController extends Controller
             'canImpersonate' => $tenant->users->isNotEmpty(),
             'canResendOwnerInvite' => $this->canResendOwnerInvite($tenant),
             'ownerInvitePending' => $this->ownerInvitePending($tenant),
+            'canExportData' => $request->user()?->can('exportData', $tenant) ?? false,
+            'canPurgeData' => $request->user()?->can('purgeData', $tenant) ?? false,
+            'tenantInvoices' => $tenant->platformInvoices->map(fn ($inv) => [
+                'id' => $inv->id,
+                'invoice_no' => $inv->invoice_no,
+                'amount_cents' => $inv->amount_cents,
+                'currency' => $inv->currency,
+                'status' => $inv->status,
+                'due_at' => $inv->due_at?->toIso8601String(),
+                'paid_at' => $inv->paid_at?->toIso8601String(),
+            ]),
+            'billingStatus' => $tenant->billing_status,
+            'gracePeriodEndsAt' => $tenant->grace_period_ends_at?->toIso8601String(),
+            'catalogTemplates' => CatalogTemplate::query()
+                ->where('is_published', true)
+                ->withCount('items')
+                ->orderBy('name')
+                ->get(['id', 'name', 'slug']),
         ]);
     }
 
@@ -163,6 +186,7 @@ final class PlatformTenantController extends Controller
         return Inertia::render('Platform/Tenants/Edit', [
             'tenant' => TenantPresenter::detail($tenant),
             'plans' => SubscriptionPlan::query()->orderBy('name')->get(['id', 'name', 'trial_days']),
+            'resellers' => Reseller::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -177,9 +201,11 @@ final class PlatformTenantController extends Controller
             'subscription_ends_at' => ['nullable', 'date'],
             'subscription_plan_id' => ['nullable', 'integer', 'exists:subscription_plans,id'],
             'internal_notes' => ['nullable', 'string', 'max:5000'],
+            'reseller_id' => ['nullable', 'integer', 'exists:resellers,id'],
         ]);
 
         $tenant->name = $validated['name'];
+        $tenant->reseller_id = $validated['reseller_id'] ?? null;
         $tenant->internal_notes = $validated['internal_notes'] ?? null;
         $tenant->is_active = $request->boolean('is_active', true);
         $tenant->trial_ends_at = $validated['trial_ends_at'] ?? $tenant->trial_ends_at;
@@ -249,6 +275,7 @@ final class PlatformTenantController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:64', 'alpha_dash', Rule::unique('tenants', 'slug')],
             'subscription_plan_id' => ['required', 'integer', 'exists:subscription_plans,id'],
+            'reseller_id' => ['nullable', 'integer', 'exists:resellers,id'],
             'trial_ends_at' => ['nullable', 'date'],
             'subscription_ends_at' => ['nullable', 'date'],
             'add_owner_later' => ['boolean'],

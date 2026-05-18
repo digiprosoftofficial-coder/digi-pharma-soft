@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Central;
 
 use App\Domain\Billing\Models\SubscriptionPlan;
 use App\Http\Controllers\Controller;
+use App\Support\Platform\PlatformSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -18,6 +19,7 @@ final class PlatformPlanController extends Controller
 
         return Inertia::render('Platform/Plans/Index', [
             'plans' => SubscriptionPlan::query()->orderBy('name')->get(),
+            'currency' => PlatformSettings::defaultCurrency(),
         ]);
     }
 
@@ -27,6 +29,7 @@ final class PlatformPlanController extends Controller
 
         return Inertia::render('Platform/Plans/Form', [
             'plan' => null,
+            'currency' => PlatformSettings::defaultCurrency(),
         ]);
     }
 
@@ -47,6 +50,7 @@ final class PlatformPlanController extends Controller
 
         return Inertia::render('Platform/Plans/Form', [
             'plan' => $plan,
+            'currency' => PlatformSettings::defaultCurrency(),
         ]);
     }
 

@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Central;
 
 use App\Domain\Tenant\Models\Tenant;
 use App\Http\Controllers\Controller;
+use App\Support\Platform\PlatformBillingMetrics;
+use App\Support\Platform\PlatformNetworkAnalytics;
+use App\Support\Platform\PlatformSystemHealth;
 use App\Support\Tenant\TenantPresenter;
 use App\Support\Tenant\TenantStatus;
 use Inertia\Inertia;
@@ -72,6 +75,9 @@ final class PlatformDashboardController extends Controller
             ->get(['id', 'description', 'event', 'created_at', 'causer_type', 'causer_id']);
 
         return Inertia::render('Platform/Dashboard', [
+            'analytics' => PlatformNetworkAnalytics::snapshot(),
+            'billing' => PlatformBillingMetrics::snapshot(),
+            'health' => PlatformSystemHealth::snapshot(),
             'tenantCount' => $total,
             'activeTenantCount' => $active,
             'suspendedTenantCount' => $suspended,

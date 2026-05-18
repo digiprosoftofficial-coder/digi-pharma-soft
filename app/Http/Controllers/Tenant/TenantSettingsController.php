@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Support\Money\SupportedCurrencies;
+use App\Support\Platform\PlatformSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -22,7 +24,10 @@ final class TenantSettingsController extends Controller
                 'name' => $tenant->name,
                 'slug' => $tenant->slug,
                 'settings' => $tenant->settings ?? [],
+                'currency' => $tenant->currency(),
             ],
+            'currencies' => SupportedCurrencies::codes(),
+            'platformDefaultCurrency' => PlatformSettings::defaultCurrency(),
         ]);
     }
 
@@ -37,12 +42,20 @@ final class TenantSettingsController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'settings.phone' => ['nullable', 'string', 'max:64'],
             'settings.address' => ['nullable', 'string', 'max:500'],
+            'settings.currency' => ['nullable', SupportedCurrencies::validationRule()],
         ]);
 
         $tenant->name = $validated['name'];
         $settings = $tenant->settings ?? [];
         if (isset($validated['settings'])) {
-            $settings = array_merge($settings, array_filter($validated['settings']));
+            $incoming = $validated['settings'];
+            foreach ($incoming as $key => $value) {
+                if ($value === null || $value === '') {
+                    continue;
+                }
+
+                $settings[$key] = $key === 'currency' ? strtoupper((string) $value) : $value;
+            }
         }
         $tenant->settings = $settings;
         $tenant->save();

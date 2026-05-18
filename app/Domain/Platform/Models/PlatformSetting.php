@@ -13,6 +13,14 @@ class PlatformSetting extends Model
         'sms_provider',
         'sms_api_key',
         'feature_flags',
+        'audit_log_retention_days',
+        'compliance_export_retention_days',
+        'billing_grace_days',
+        'auto_suspend_on_payment_failure',
+        'default_currency',
+        'default_locale',
+        'default_timezone',
+        'default_country_code',
     ];
 
     protected function casts(): array
@@ -20,6 +28,10 @@ class PlatformSetting extends Model
         return [
             'default_trial_days' => 'integer',
             'feature_flags' => 'array',
+            'audit_log_retention_days' => 'integer',
+            'compliance_export_retention_days' => 'integer',
+            'billing_grace_days' => 'integer',
+            'auto_suspend_on_payment_failure' => 'boolean',
         ];
     }
 }

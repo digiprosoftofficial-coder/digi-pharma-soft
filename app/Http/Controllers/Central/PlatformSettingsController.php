@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Central;
 
 use App\Domain\Platform\Models\PlatformSetting;
 use App\Http\Controllers\Controller;
+use App\Support\Money\SupportedCurrencies;
 use App\Support\Platform\PlatformSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,6 +20,7 @@ final class PlatformSettingsController extends Controller
 
         return Inertia::render('Platform/Settings/Edit', [
             'settings' => PlatformSettings::get(),
+            'currencies' => SupportedCurrencies::codes(),
         ]);
     }
 
@@ -35,6 +38,14 @@ final class PlatformSettingsController extends Controller
             'feature_flags.pos' => ['boolean'],
             'feature_flags.reports' => ['boolean'],
             'feature_flags.stock_transfers' => ['boolean'],
+            'audit_log_retention_days' => ['required', 'integer', 'min:30', 'max:3650'],
+            'compliance_export_retention_days' => ['required', 'integer', 'min:1', 'max:90'],
+            'billing_grace_days' => ['required', 'integer', 'min:0', 'max:90'],
+            'auto_suspend_on_payment_failure' => ['boolean'],
+            'default_currency' => ['required', 'string', SupportedCurrencies::validationRule()],
+            'default_locale' => ['required', Rule::in(['en', 'bn'])],
+            'default_timezone' => ['required', 'string', 'max:64'],
+            'default_country_code' => ['required', 'string', 'size:2'],
         ]);
 
         PlatformSettings::update([
@@ -49,6 +60,14 @@ final class PlatformSettingsController extends Controller
                 'reports' => $request->boolean('feature_flags.reports'),
                 'stock_transfers' => $request->boolean('feature_flags.stock_transfers'),
             ],
+            'audit_log_retention_days' => $validated['audit_log_retention_days'],
+            'compliance_export_retention_days' => $validated['compliance_export_retention_days'],
+            'billing_grace_days' => $validated['billing_grace_days'],
+            'auto_suspend_on_payment_failure' => $request->boolean('auto_suspend_on_payment_failure'),
+            'default_currency' => strtoupper($validated['default_currency']),
+            'default_locale' => $validated['default_locale'],
+            'default_timezone' => $validated['default_timezone'],
+            'default_country_code' => strtoupper($validated['default_country_code']),
         ]);
 
         activity()

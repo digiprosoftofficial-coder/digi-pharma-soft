@@ -45,9 +45,12 @@ final class ProvisionTenantAction
             $tenant = Tenant::query()->create([
                 'name' => $data['name'],
                 'slug' => Str::lower($data['slug']),
+                'reseller_id' => $data['reseller_id'] ?? null,
                 'is_active' => true,
+                'billing_status' => 'trialing',
                 'trial_ends_at' => $trialEnds,
                 'subscription_ends_at' => $subscriptionEnds,
+                'settings' => PlatformSettings::defaultTenantSettings(),
             ]);
 
             TenantSubscription::query()->create([
