@@ -41,4 +41,14 @@ final class TenantPolicy extends PlatformPolicy
     {
         return $this->isPlatformSuperAdmin($user);
     }
+
+    public function exportData(User $user, Tenant $tenant): bool
+    {
+        return $this->isPlatformSuperAdmin($user);
+    }
+
+    public function purgeData(User $user, Tenant $tenant): bool
+    {
+        return $this->isPlatformSuperAdmin($user);
+    }
 }

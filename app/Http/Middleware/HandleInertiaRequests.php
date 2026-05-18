@@ -4,6 +4,9 @@ namespace App\Http\Middleware;
 
 use App\Models\User;
 use App\Support\Locale\TranslationLoader;
+use App\Support\Money\MoneyFormatter;
+use App\Support\Platform\PlatformAnnouncementService;
+use App\Support\Platform\PlatformSettings;
 use App\Support\Tenant\TenantContext;
 use App\Support\Tenant\TenantImpersonation;
 use Illuminate\Http\Request;
@@ -42,12 +45,16 @@ class HandleInertiaRequests extends Middleware
                 'name' => $tenant->name,
                 'slug' => $tenant->slug,
             ] : null,
+            'money' => $this->moneyShare($tenant, $locale),
             'impersonation' => $impersonation->isActive() && $tenant ? [
                 'active' => true,
                 'tenant_name' => $tenant->name,
                 'acting_as' => $impersonation->actingUser()?->name,
                 'stop_url' => route('platform.impersonation.destroy'),
             ] : null,
+            'networkAnnouncement' => $tenant && ! $request->routeIs('platform.*')
+                ? PlatformAnnouncementService::activeBanner()
+                : null,
             'auth' => [
                 'user' => $authUser instanceof User ? [
                     'id' => $authUser->getKey(),
@@ -64,6 +71,24 @@ class HandleInertiaRequests extends Middleware
                         : [],
                 ] : null,
             ],
+        ];
+    }
+
+    /**
+     * @return array{currency: string, locale: string, symbol: string}
+     */
+    private function moneyShare(?\App\Domain\Tenant\Models\Tenant $tenant, string $appLocale): array
+    {
+        $currency = $tenant && method_exists($tenant, 'currency')
+            ? $tenant->currency()
+            : PlatformSettings::defaultCurrency();
+
+        $locale = MoneyFormatter::localeFor($currency, $appLocale);
+
+        return [
+            'currency' => $currency,
+            'locale' => $locale,
+            'symbol' => MoneyFormatter::symbol($currency, $locale),
         ];
     }
 }

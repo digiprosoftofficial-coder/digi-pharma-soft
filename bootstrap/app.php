@@ -12,6 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->validateCsrfTokens(except: [
+            'api/webhooks/stripe/billing',
+        ]);
+
         $middleware->web(append: [
             \App\Support\Middleware\SetLocale::class,
             \App\Support\Middleware\EnsureTenantContext::class,

@@ -53,11 +53,11 @@ Last updated: 2026-05-16
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Billing (Stripe/bKash, invoices, MRR) | ⬜ | |
-| Payment fail → auto suspend rules | ⬜ | |
-| Cross-tenant analytics (aggregated) | ⬜ | |
-| Compliance (export/delete, retention) | ⬜ | |
-| System health (queues, failed jobs) | ⬜ | |
+| Billing (Stripe/bKash, invoices, MRR) | ✅ | `/platform/billing`, MRR, manual invoices, Stripe webhook stub |
+| Payment fail → auto suspend rules | ✅ | Grace period in settings + `platform:suspend-payment-delinquent` |
+| Cross-tenant analytics (aggregated) | ✅ | Dashboard: revenue, adoption, top tenants (30d) |
+| Compliance (export/delete, retention) | ✅ | Tenant export ZIP, purge (suspended), retention settings + daily command |
+| System health (queues, failed jobs) | ✅ | `/platform/health` + dashboard widget |
 
 ---
 
@@ -65,10 +65,10 @@ Last updated: 2026-05-16
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Multi-region / localization defaults | ⬜ | |
-| Reseller / distributor hierarchy | ⬜ | |
-| Central drug catalog template | ⬜ | |
-| Network-wide announcement banner | ⬜ | |
+| Multi-region / localization defaults | ✅ | Platform settings: locale, timezone, country; new tenants inherit |
+| Reseller / distributor hierarchy | ✅ | `/platform/resellers`, tenant assign on create/edit |
+| Central drug catalog template | ✅ | `/platform/catalog-templates`, apply to pharmacy |
+| Network-wide announcement banner | ✅ | `/platform/announcements`, tenant shell banner |
 
 ---
 
@@ -91,6 +91,14 @@ Last updated: 2026-05-16
 | `/platform/admins` | Platform administrators |
 | `/platform/audit` | Audit log |
 | `/platform/settings` | Global settings (P1) |
+| `/platform/health` | Queue & failed jobs (P2) |
+| `/platform/tenants/{id}/export` | Compliance data export (ZIP) |
+| `/platform/tenants/{id}/purge` | Permanent tenant deletion |
+| `/platform/billing` | MRR, invoices, payment actions |
+| `/platform/resellers` | Reseller / distributor partners (P3) |
+| `/platform/catalog-templates` | Central drug catalog templates (P3) |
+| `/platform/announcements` | Network-wide tenant banners (P3) |
+| `POST /api/webhooks/stripe/billing` | Stripe invoice events (optional) |
 
 ---
 

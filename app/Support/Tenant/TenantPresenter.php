@@ -23,6 +23,8 @@ final class TenantPresenter
             'users_count' => $tenant->users_count ?? $tenant->users()->count(),
             'status' => TenantStatus::resolve($tenant),
             'plan_name' => $tenant->activeSubscription?->plan?->name,
+            'reseller_id' => $tenant->reseller_id,
+            'reseller_name' => $tenant->reseller?->name,
             'created_at' => $tenant->created_at?->toIso8601String(),
         ];
     }

@@ -3,8 +3,12 @@
 namespace App\Providers;
 
 use App\Domain\Accounting\Models\LedgerAccount;
+use App\Domain\Billing\Models\PlatformInvoice;
 use App\Domain\Billing\Models\SubscriptionPlan;
+use App\Domain\Platform\Models\CatalogTemplate;
+use App\Domain\Platform\Models\PlatformAnnouncement;
 use App\Domain\Platform\Models\PlatformSetting;
+use App\Domain\Platform\Models\Reseller;
 use App\Domain\Tenant\Models\Tenant;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Hr\Models\Employee;
@@ -26,7 +30,11 @@ use App\Policies\SalePolicy;
 use App\Policies\SaleReturnPolicy;
 use App\Policies\StockTransferPolicy;
 use App\Policies\SupplierPolicy;
+use App\Policies\Platform\CatalogTemplatePolicy;
+use App\Policies\Platform\PlatformAnnouncementPolicy;
+use App\Policies\Platform\PlatformInvoicePolicy;
 use App\Policies\Platform\PlatformSettingPolicy;
+use App\Policies\Platform\ResellerPolicy;
 use App\Policies\Platform\SubscriptionPlanPolicy;
 use App\Policies\Platform\TenantPolicy;
 use App\Policies\TenantUserPolicy;
@@ -82,6 +90,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Tenant::class, TenantPolicy::class);
         Gate::policy(SubscriptionPlan::class, SubscriptionPlanPolicy::class);
         Gate::policy(PlatformSetting::class, PlatformSettingPolicy::class);
+        Gate::policy(PlatformInvoice::class, PlatformInvoicePolicy::class);
+        Gate::policy(Reseller::class, ResellerPolicy::class);
+        Gate::policy(CatalogTemplate::class, CatalogTemplatePolicy::class);
+        Gate::policy(PlatformAnnouncement::class, PlatformAnnouncementPolicy::class);
 
         Event::listen(Login::class, function (Login $event): void {
             $user = $event->user;
