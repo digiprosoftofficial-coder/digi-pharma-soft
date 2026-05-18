@@ -58,6 +58,14 @@
                     <input v-model="line.expiry_date" type="date" class="form-control form-control-sm" />
                 </div>
                 <div class="col-md-2">
+                    <label class="form-label small">Unit</label>
+                    <select v-model="line.sell_unit" class="form-select form-select-sm">
+                        <option value="piece">Piece</option>
+                        <option value="strip">Strip</option>
+                        <option value="box">Box</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label class="form-label small">Qty</label>
                     <input v-model.number="line.quantity" type="number" min="0.0001" step="0.0001" class="form-control form-control-sm" required />
                 </div>
@@ -100,11 +108,11 @@ const form = useForm({
     tax: 0,
     discount: 0,
     paid: 0,
-    lines: [{ product_id: null, batch_no: '', expiry_date: '', quantity: 1, unit_cost: 0 }],
+    lines: [{ product_id: null, batch_no: '', expiry_date: '', sell_unit: 'strip', quantity: 1, unit_cost: 0 }],
 });
 
 function addLine() {
-    form.lines.push({ product_id: null, batch_no: '', expiry_date: '', quantity: 1, unit_cost: 0 });
+    form.lines.push({ product_id: null, batch_no: '', expiry_date: '', sell_unit: 'strip', quantity: 1, unit_cost: 0 });
 }
 
 function submit() {

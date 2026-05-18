@@ -10,7 +10,7 @@ class Product extends TenantModel
 {
     protected $fillable = [
         'tenant_id', 'category_id', 'manufacturer_id', 'name', 'sku', 'barcode',
-        'unit', 'purchase_price', 'sale_price', 'min_stock', 'is_active',
+        'product_type', 'base_unit', 'unit', 'purchase_price', 'sale_price', 'min_stock', 'is_active',
     ];
 
     protected function casts(): array
@@ -35,5 +35,16 @@ class Product extends TenantModel
     public function batches(): HasMany
     {
         return $this->hasMany(ProductBatch::class);
+    }
+
+    public function units(): HasMany
+    {
+        return $this->hasMany(ProductUnit::class)->orderBy('sort_order')->orderBy('sell_unit');
+    }
+
+    public function defaultUnit(): ?ProductUnit
+    {
+        return $this->units->firstWhere('is_default', true)
+            ?? $this->units->first();
     }
 }

@@ -10,8 +10,9 @@
                 <thead>
                     <tr>
                         <th>Name</th>
+                        <th>Type</th>
                         <th>SKU</th>
-                        <th>Barcode</th>
+                        <th>Default unit</th>
                         <th class="text-end">Sale ({{ currencyCode() }})</th>
                         <th>Stock</th>
                         <th></th>
@@ -20,8 +21,9 @@
                 <tbody>
                     <tr v-for="p in products.data" :key="p.id">
                         <td>{{ p.name }}</td>
+                        <td class="text-capitalize">{{ p.product_type || '—' }}</td>
                         <td>{{ p.sku }}</td>
-                        <td>{{ p.barcode || '—' }}</td>
+                        <td class="text-capitalize">{{ p.unit || p.base_unit }}</td>
                         <td class="text-end">{{ formatMoney(p.sale_price) }}</td>
                         <td>
                             <span v-if="p.batches?.length">

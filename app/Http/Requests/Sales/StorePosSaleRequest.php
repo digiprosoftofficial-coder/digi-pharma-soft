@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Sales;
 
+use App\Support\Catalog\ProductCatalogOptions;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -26,6 +27,7 @@ class StorePosSaleRequest extends FormRequest
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.product_batch_id' => ['required', 'integer', Rule::exists('product_batches', 'id')->where('tenant_id', $tenantId)],
             'lines.*.quantity' => ['required', 'numeric', 'min:0.0001'],
+            'lines.*.sell_unit' => ['required', ProductCatalogOptions::sellUnitRule()],
             'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
             'payments' => ['required', 'array', 'min:1'],
             'payments.*.method' => ['required', 'string', 'max:32'],

@@ -10,7 +10,8 @@ class PurchaseLine extends TenantModel
 {
     protected $fillable = [
         'tenant_id', 'purchase_id', 'product_id', 'batch_no', 'expiry_date',
-        'quantity', 'unit_cost', 'line_total',
+        'quantity', 'sell_unit', 'conversion_factor', 'quantity_base',
+        'unit_cost', 'line_total',
     ];
 
     protected function casts(): array
@@ -18,6 +19,8 @@ class PurchaseLine extends TenantModel
         return [
             'expiry_date' => 'date',
             'quantity' => 'decimal:4',
+            'conversion_factor' => 'decimal:4',
+            'quantity_base' => 'decimal:4',
             'unit_cost' => 'decimal:4',
             'line_total' => 'decimal:4',
         ];

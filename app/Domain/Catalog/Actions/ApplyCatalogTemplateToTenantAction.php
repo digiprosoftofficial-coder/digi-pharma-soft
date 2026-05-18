@@ -8,6 +8,7 @@ use App\Domain\Catalog\Models\Product;
 use App\Domain\Platform\Models\CatalogTemplate;
 use App\Domain\Tenant\Models\Tenant;
 use App\Models\User;
+use App\Support\Catalog\ProductUnitResolver;
 use App\Support\Tenant\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -24,7 +25,7 @@ final class ApplyCatalogTemplateToTenantAction
             throw new \InvalidArgumentException('Only published catalog templates can be applied.');
         }
 
-        $template->load('items');
+        $template->load(['items.units']);
 
         if ($template->items->isEmpty()) {
             throw new \InvalidArgumentException('This catalog template has no products.');
@@ -60,19 +61,44 @@ final class ApplyCatalogTemplateToTenantAction
                     continue;
                 }
 
-                Product::query()->withoutGlobalScopes()->create([
+                $baseUnit = $item->base_unit ?? 'strip';
+                $templateUnits = $item->units;
+                $defaultUnit = $templateUnits->firstWhere('is_default', true) ?? $templateUnits->first();
+
+                $product = Product::query()->withoutGlobalScopes()->create([
                     'tenant_id' => $tenant->getKey(),
                     'category_id' => $category->getKey(),
                     'manufacturer_id' => $manufacturerId,
                     'name' => $item->name,
                     'sku' => $sku,
                     'barcode' => $item->barcode,
-                    'unit' => $item->unit,
-                    'purchase_price' => $item->purchase_price,
-                    'sale_price' => $item->sale_price,
+                    'product_type' => $item->product_type ?? 'other',
+                    'base_unit' => $baseUnit,
+                    'unit' => $defaultUnit?->sell_unit ?? $item->unit ?? $baseUnit,
+                    'purchase_price' => $defaultUnit?->purchase_price ?? $item->purchase_price,
+                    'sale_price' => $defaultUnit?->sale_price ?? $item->sale_price,
                     'min_stock' => 0,
                     'is_active' => true,
                 ]);
+
+                if ($templateUnits->isNotEmpty()) {
+                    $unitsPayload = $templateUnits->map(fn ($u) => [
+                        'sell_unit' => $u->sell_unit,
+                        'conversion_factor' => $u->conversion_factor,
+                        'purchase_price' => $u->purchase_price,
+                        'sale_price' => $u->sale_price,
+                        'is_default' => $u->is_default,
+                    ])->all();
+                    ProductUnitResolver::syncProductUnits($product, $unitsPayload);
+                } else {
+                    ProductUnitResolver::syncProductUnits($product, [[
+                        'sell_unit' => $baseUnit,
+                        'conversion_factor' => 1,
+                        'purchase_price' => $item->purchase_price,
+                        'sale_price' => $item->sale_price,
+                        'is_default' => true,
+                    ]]);
+                }
 
                 $created++;
             }

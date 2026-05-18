@@ -8,6 +8,7 @@ use App\Domain\Catalog\Models\Category;
 use App\Domain\Catalog\Models\Manufacturer;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductBatch;
+use App\Support\Catalog\ProductUnitResolver;
 use App\Domain\Accounting\Models\LedgerAccount;
 use App\Domain\Purchasing\Models\Supplier;
 use App\Domain\Sales\Models\DiscountCoupon;
@@ -98,11 +99,18 @@ class DatabaseSeeder extends Seeder
             'name' => 'Paracetamol 500mg',
             'sku' => 'PAR-500',
             'barcode' => '8801234567890',
+            'product_type' => 'tablet',
+            'base_unit' => 'strip',
             'unit' => 'strip',
             'purchase_price' => 20,
             'sale_price' => 35,
             'min_stock' => 10,
             'is_active' => true,
+        ]);
+
+        ProductUnitResolver::syncProductUnits($product, [
+            ['sell_unit' => 'strip', 'conversion_factor' => 1, 'purchase_price' => 20, 'sale_price' => 35, 'is_default' => true],
+            ['sell_unit' => 'box', 'conversion_factor' => 10, 'purchase_price' => 180, 'sale_price' => 320, 'is_default' => false],
         ]);
 
         ProductBatch::query()->withoutGlobalScopes()->create([

@@ -23,7 +23,10 @@ final class ProductRepository
 
     public function searchByTerm(string $term, int $limit = 25): Collection
     {
-        $q = Product::query()->with(['batches' => fn ($b) => $b->orderBy('expiry_date')]);
+        $q = Product::query()->with([
+            'units',
+            'batches' => fn ($b) => $b->orderBy('expiry_date'),
+        ]);
 
         $q->where(function ($w) use ($term) {
             $w->where('name', 'like', '%'.$term.'%')

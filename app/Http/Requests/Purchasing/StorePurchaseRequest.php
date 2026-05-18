@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Purchasing;
 
+use App\Support\Catalog\ProductCatalogOptions;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -31,6 +32,7 @@ class StorePurchaseRequest extends FormRequest
             'lines.*.batch_no' => ['required', 'string', 'max:64'],
             'lines.*.expiry_date' => ['nullable', 'date'],
             'lines.*.quantity' => ['required', 'numeric', 'min:0.0001'],
+            'lines.*.sell_unit' => ['required', ProductCatalogOptions::sellUnitRule()],
             'lines.*.unit_cost' => ['required', 'numeric', 'min:0'],
         ];
     }

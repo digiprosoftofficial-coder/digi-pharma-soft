@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Catalog\StoreProductRequest;
 use App\Http\Requests\Catalog\UpdateProductRequest;
 use App\Http\Resources\Catalog\ProductResource;
+use App\Support\Catalog\ProductCatalogOptions;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,7 +24,7 @@ final class ProductController extends Controller
     public function index(): Response
     {
         $products = Product::query()
-            ->with(['category', 'manufacturer', 'batches'])
+            ->with(['category', 'manufacturer', 'batches', 'units'])
             ->orderByDesc('id')
             ->paginate(15);
 
@@ -40,6 +41,7 @@ final class ProductController extends Controller
 
         return Inertia::render('Catalog/Products/Form', [
             'product' => null,
+            'catalogOptions' => $this->catalogOptions(),
         ]);
     }
 
@@ -47,7 +49,7 @@ final class ProductController extends Controller
     {
         $this->productService->createProduct($request->validated());
 
-        return redirect()->route('products.index')->with('success', __('Product created.'));
+        return redirect()->route('tenant.products.index')->with('success', __('Product created.'));
     }
 
     public function edit(Product $product): Response
@@ -55,7 +57,8 @@ final class ProductController extends Controller
         $this->authorize('update', $product);
 
         return Inertia::render('Catalog/Products/Form', [
-            'product' => new ProductResource($product->load(['category', 'manufacturer', 'batches'])),
+            'product' => new ProductResource($product->load(['category', 'manufacturer', 'batches', 'units'])),
+            'catalogOptions' => $this->catalogOptions(),
         ]);
     }
 
@@ -63,7 +66,7 @@ final class ProductController extends Controller
     {
         $this->productService->updateProduct($product, $request->validated());
 
-        return redirect()->route('products.index')->with('success', __('Product updated.'));
+        return redirect()->route('tenant.products.index')->with('success', __('Product updated.'));
     }
 
     public function destroy(Product $product): RedirectResponse
@@ -71,6 +74,17 @@ final class ProductController extends Controller
         $this->authorize('delete', $product);
         $product->delete();
 
-        return redirect()->route('products.index')->with('success', __('Product removed.'));
+        return redirect()->route('tenant.products.index')->with('success', __('Product removed.'));
+    }
+
+    /**
+     * @return array{productTypes: list<string>, sellUnits: list<string>}
+     */
+    private function catalogOptions(): array
+    {
+        return [
+            'productTypes' => ProductCatalogOptions::productTypes(),
+            'sellUnits' => ProductCatalogOptions::sellUnits(),
+        ];
     }
 }

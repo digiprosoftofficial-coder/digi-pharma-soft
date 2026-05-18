@@ -24,7 +24,7 @@ final class PosController extends Controller
     {
         $this->sales->checkout(
             $request->validated('customer_id'),
-            $request->validated('lines'),
+            $this->sales->resolveCheckoutLines($request->validated('lines')),
             $request->validated('payments'),
             (float) $request->validated('discount', 0),
             (float) $request->validated('tax', 0),

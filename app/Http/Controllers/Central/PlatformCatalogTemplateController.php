@@ -7,6 +7,7 @@ use App\Domain\Platform\Models\CatalogTemplate;
 use App\Domain\Platform\Models\CatalogTemplateItem;
 use App\Domain\Tenant\Models\Tenant;
 use App\Http\Controllers\Controller;
+use App\Support\Catalog\ProductCatalogOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -56,7 +57,7 @@ final class PlatformCatalogTemplateController extends Controller
     {
         $this->authorize('view', $catalogTemplate);
 
-        $catalogTemplate->load('items');
+        $catalogTemplate->load(['items.units']);
 
         return Inertia::render('Platform/Catalog/Show', [
             'template' => $catalogTemplate,
@@ -102,18 +103,64 @@ final class PlatformCatalogTemplateController extends Controller
                 Rule::unique('catalog_template_items', 'sku')->where('catalog_template_id', $catalogTemplate->getKey()),
             ],
             'barcode' => ['nullable', 'string', 'max:64'],
+            'product_type' => ['nullable', ProductCatalogOptions::productTypeRule()],
+            'base_unit' => ['nullable', ProductCatalogOptions::sellUnitRule()],
             'unit' => ['nullable', 'string', 'max:32'],
             'generic_name' => ['nullable', 'string', 'max:255'],
             'manufacturer_name' => ['nullable', 'string', 'max:255'],
             'purchase_price' => ['required', 'numeric', 'min:0'],
             'sale_price' => ['required', 'numeric', 'min:0'],
+            'units' => ['nullable', 'array', 'min:1'],
+            'units.*.sell_unit' => ['required_with:units', ProductCatalogOptions::sellUnitRule()],
+            'units.*.conversion_factor' => ['nullable', 'numeric', 'min:0.0001'],
+            'units.*.purchase_price' => ['required_with:units', 'numeric', 'min:0'],
+            'units.*.sale_price' => ['required_with:units', 'numeric', 'min:0'],
+            'units.*.is_default' => ['sometimes', 'boolean'],
         ]);
 
-        $catalogTemplate->items()->create([
-            ...$validated,
-            'unit' => $validated['unit'] ?? 'pcs',
+        $baseUnit = $validated['base_unit'] ?? 'strip';
+        $item = $catalogTemplate->items()->create([
+            'name' => $validated['name'],
+            'sku' => $validated['sku'],
+            'barcode' => $validated['barcode'] ?? null,
+            'product_type' => $validated['product_type'] ?? 'other',
+            'base_unit' => $baseUnit,
+            'unit' => $baseUnit,
+            'generic_name' => $validated['generic_name'] ?? null,
+            'manufacturer_name' => $validated['manufacturer_name'] ?? null,
+            'purchase_price' => $validated['purchase_price'],
+            'sale_price' => $validated['sale_price'],
             'sort_order' => (int) $catalogTemplate->items()->max('sort_order') + 1,
         ]);
+
+        $units = $validated['units'] ?? [[
+            'sell_unit' => $baseUnit,
+            'conversion_factor' => 1,
+            'purchase_price' => $validated['purchase_price'],
+            'sale_price' => $validated['sale_price'],
+            'is_default' => true,
+        ]];
+
+        foreach ($units as $index => $row) {
+            $sellUnit = (string) $row['sell_unit'];
+            $item->units()->create([
+                'sell_unit' => $sellUnit,
+                'conversion_factor' => $sellUnit === $baseUnit ? 1 : max(0.0001, (float) ($row['conversion_factor'] ?? 1)),
+                'purchase_price' => $row['purchase_price'],
+                'sale_price' => $row['sale_price'],
+                'is_default' => ! empty($row['is_default']),
+                'sort_order' => $index,
+            ]);
+        }
+
+        $default = $item->units()->where('is_default', true)->first() ?? $item->units()->first();
+        if ($default) {
+            $item->update([
+                'unit' => $default->sell_unit,
+                'purchase_price' => $default->purchase_price,
+                'sale_price' => $default->sale_price,
+            ]);
+        }
 
         return back()->with('success', __('platform.catalog_item_added'));
     }

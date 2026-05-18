@@ -4,6 +4,7 @@ namespace App\Domain\Platform\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CatalogTemplateItem extends Model
 {
@@ -13,6 +14,8 @@ class CatalogTemplateItem extends Model
         'sku',
         'barcode',
         'unit',
+        'product_type',
+        'base_unit',
         'generic_name',
         'manufacturer_name',
         'purchase_price',
@@ -32,5 +35,10 @@ class CatalogTemplateItem extends Model
     public function template(): BelongsTo
     {
         return $this->belongsTo(CatalogTemplate::class, 'catalog_template_id');
+    }
+
+    public function units(): HasMany
+    {
+        return $this->hasMany(CatalogTemplateItemUnit::class)->orderBy('sort_order')->orderBy('sell_unit');
     }
 }

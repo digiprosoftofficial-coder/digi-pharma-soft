@@ -1,0 +1,33 @@
+<?php
+
+return [
+    'units_required' => 'কমপক্ষে একটি বিক্রয় ইউনিট ও মূল্য প্রয়োজন।',
+    'product_type' => 'পণ্যের ধরন',
+    'base_unit' => 'মূল স্টক ইউনিট',
+    'sell_units' => 'বিক্রয় ইউনিট ও মূল্য',
+    'sell_unit' => 'ইউনিট',
+    'conversion_factor' => 'প্রতি :unit সংখ্যা',
+    'purchase_price' => 'ক্রয় মূল্য',
+    'sale_price' => 'বিক্রয় মূল্য',
+    'default_unit' => 'ডিফল্ট',
+    'add_unit' => 'ইউনিট যোগ',
+    'types' => [
+        'tablet' => 'ট্যাবলেট',
+        'capsule' => 'ক্যাপসুল',
+        'syrup' => 'সিরাপ',
+        'injection' => 'ইনজেকশন',
+        'cream' => 'ক্রিম',
+        'drops' => 'ড্রপ',
+        'bottle' => 'বোতল',
+        'tube' => 'টিউব',
+        'vial' => 'ভায়াল',
+        'pack' => 'প্যাক',
+        'sachet' => 'স্যাচেট',
+        'other' => 'অন্যান্য',
+    ],
+    'units' => [
+        'piece' => 'পিস',
+        'strip' => 'স্ট্রিপ',
+        'box' => 'বক্স',
+    ],
+];
