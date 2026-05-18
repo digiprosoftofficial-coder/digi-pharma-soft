@@ -33,4 +33,9 @@ return [
     'global_settings' => 'Global settings',
     'new_sale' => 'New sale',
     'pharmacy_mgmt' => 'Pharmacy management',
+    'inventory_group' => 'Inventory & stock',
+    'people' => 'People',
+    'finance' => 'Finance',
+    'marketing' => 'Marketing',
+    'administration' => 'Administration',
 ];

@@ -21,150 +21,49 @@
             <span class="ms-1">{{ networkAnnouncement.body }}</span>
         </div>
         <div class="d-flex flex-grow-1 min-h-0">
-        <aside class="tenant-sidebar border-end bg-white d-flex flex-column flex-shrink-0" style="width: 260px">
-            <div class="p-3 border-bottom">
-                <Link href="/dashboard" class="text-decoration-none text-dark">
-                    <div class="fw-bold">{{ tenantName }}</div>
-                    <div class="small text-muted">Pharmacy management</div>
-                </Link>
+            <aside class="tenant-sidebar border-end bg-white d-flex flex-column flex-shrink-0">
+                <div class="tenant-sidebar-brand p-3 border-bottom">
+                    <Link href="/dashboard" class="text-decoration-none text-dark d-flex align-items-center gap-2">
+                        <span class="tenant-sidebar-brand__icon text-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                <path d="M12 3 4 7v6c0 4.4 3.6 8 8 8s8-3.6 8-8V7z" />
+                                <path d="M12 11v4M12 8h.01" />
+                            </svg>
+                        </span>
+                        <span>
+                            <div class="fw-bold lh-sm">{{ tenantName }}</div>
+                            <div class="small text-muted">{{ t('tenant_nav.pharmacy_mgmt') }}</div>
+                        </span>
+                    </Link>
+                </div>
+                <TenantSidebarNav />
+            </aside>
+            <div class="flex-grow-1 d-flex flex-column min-vh-100 min-w-0">
+                <header class="tenant-topbar border-bottom bg-white px-3 py-2 d-flex flex-wrap align-items-center gap-2">
+                    <h1 class="h5 mb-0 text-primary me-auto">{{ pageTitle }}</h1>
+                    <form class="flex-grow-1" style="max-width: 320px" @submit.prevent="runSearch">
+                        <input v-model="searchQ" type="search" class="form-control form-control-sm" placeholder="Search products…" />
+                    </form>
+                    <Link v-if="can('pos.access')" href="/pos" class="btn btn-sm btn-primary">{{ t('tenant_nav.new_sale') }}</Link>
+                    <LocaleSwitcher />
+                    <span class="small text-muted d-none d-md-inline">{{ userName }}</span>
+                    <Link href="/logout" method="post" as="button" class="btn btn-sm btn-outline-secondary">{{ t('common.logout') }}</Link>
+                </header>
+                <main class="flex-grow-1 p-3 p-md-4 overflow-auto">
+                    <slot />
+                </main>
             </div>
-            <nav class="flex-grow-1 overflow-auto small p-2">
-                <ul class="nav flex-column gap-1">
-                    <li class="nav-item">
-                        <Link href="/dashboard" class="nav-link rounded py-2" :class="navActive('/dashboard')">Dashboard</Link>
-                    </li>
-                    <li class="nav-item">
-                        <button
-                            type="button"
-                            class="nav-link rounded py-2 w-100 text-start btn btn-link text-decoration-none text-body border-0"
-                            @click="toggle('sales')"
-                        >
-                            Sales
-                            <span class="float-end text-muted">{{ open.sales ? '−' : '+' }}</span>
-                        </button>
-                        <div v-show="open.sales" class="ps-3 pb-2">
-                            <Link v-if="can('sales.view')" href="/sales" class="d-block py-1 text-decoration-none" :class="exactPath('/sales')">Sales list</Link>
-                            <Link v-if="can('pos.access')" href="/pos" class="d-block py-1 text-decoration-none" :class="exactPath('/pos')">New POS sale</Link>
-                            <Link v-if="can('pos.access')" href="/sales/package" class="d-block py-1 text-decoration-none" :class="pathStarts('/sales/package')">Package sell</Link>
-                            <Link v-if="can('returns.manage')" href="/sales/returns" class="d-block py-1 text-decoration-none" :class="pathStarts('/sales/returns')">Returns</Link>
-                        </div>
-                    </li>
-                    <li class="nav-item">
-                        <button
-                            type="button"
-                            class="nav-link rounded py-2 w-100 text-start btn btn-link text-decoration-none text-body border-0"
-                            @click="toggle('purchases')"
-                        >
-                            Purchases
-                            <span class="float-end text-muted">{{ open.purchases ? '−' : '+' }}</span>
-                        </button>
-                        <div v-show="open.purchases" class="ps-3 pb-2">
-                            <Link v-if="can('purchases.view')" href="/purchases" class="d-block py-1 text-decoration-none" :class="exactPath('/purchases')">Purchase list</Link>
-                            <Link v-if="can('purchases.manage')" href="/purchases/create" class="d-block py-1 text-decoration-none" :class="exactPath('/purchases/create')">New purchase</Link>
-                            <Link v-if="can('purchases.view')" href="/purchases/supplier-bills" class="d-block py-1 text-decoration-none" :class="pathStarts('/purchases/supplier-bills')">Supplier bills</Link>
-                        </div>
-                    </li>
-                    <li class="nav-item">
-                        <Link v-if="can('accounting.view')" href="/accounts" class="nav-link rounded py-2" :class="navActive('/accounts')">General accounts</Link>
-                    </li>
-                    <li v-if="can('products.view') || can('categories.view') || can('manufacturers.view')" class="nav-item">
-                        <button
-                            type="button"
-                            class="nav-link rounded py-2 w-100 text-start btn btn-link text-decoration-none text-body border-0"
-                            :class="catalogNavActive ? 'active bg-primary text-white' : ''"
-                            @click="toggle('catalog')"
-                        >
-                            {{ t('tenant_nav.catalog') }}
-                            <span class="float-end text-muted">{{ open.catalog ? '−' : '+' }}</span>
-                        </button>
-                        <div v-show="open.catalog" class="ps-3 pb-2">
-                            <Link v-if="can('products.view')" href="/products" class="d-block py-1 text-decoration-none" :class="catalogLinkClass('/products')">
-                                {{ t('tenant_nav.product_list') }}
-                            </Link>
-                            <Link v-if="can('products.manage')" href="/products/create" class="d-block py-1 text-decoration-none" :class="exactPath('/products/create')">
-                                {{ t('tenant_nav.new_product') }}
-                            </Link>
-                            <Link v-if="can('categories.view')" href="/categories" class="d-block py-1 text-decoration-none" :class="catalogLinkClass('/categories')">
-                                {{ t('tenant_nav.categories') }}
-                            </Link>
-                            <Link v-if="can('manufacturers.view')" href="/manufacturers" class="d-block py-1 text-decoration-none" :class="catalogLinkClass('/manufacturers')">
-                                {{ t('tenant_nav.manufacturers') }}
-                            </Link>
-                            <Link v-if="can('products.manage')" href="/catalog/import" class="d-block py-1 text-decoration-none" :class="exactPath('/catalog/import')">
-                                {{ t('tenant_nav.bulk_import') }}
-                            </Link>
-                        </div>
-                    </li>
-                    <li class="nav-item">
-                        <Link v-if="can('inventory.view')" href="/inventory" class="nav-link rounded py-2" :class="pathStarts('/inventory')">Inventory</Link>
-                    </li>
-                    <li class="nav-item">
-                        <Link v-if="can('employees.view')" href="/employees" class="nav-link rounded py-2" :class="pathStarts('/employees')">Employees</Link>
-                    </li>
-                    <li class="nav-item">
-                        <Link v-if="can('promotions.view')" href="/promotions" class="nav-link rounded py-2" :class="pathStarts('/promotions')">Promotions</Link>
-                    </li>
-                    <li class="nav-item">
-                        <Link v-if="can('stock_transfers.view')" href="/stock-transfers" class="nav-link rounded py-2" :class="pathStarts('/stock-transfers')">Stock transfer</Link>
-                    </li>
-                    <li class="nav-item">
-                        <Link v-if="can('suppliers.view')" href="/suppliers" class="nav-link rounded py-2" :class="pathStarts('/suppliers')">Suppliers</Link>
-                    </li>
-                    <li class="nav-item">
-                        <Link v-if="can('customers.view')" href="/customers" class="nav-link rounded py-2" :class="pathStarts('/customers')">Customers</Link>
-                    </li>
-                    <li class="nav-item">
-                        <Link v-if="can('reports.view')" href="/reports" class="nav-link rounded py-2" :class="pathStarts('/reports')">Reports</Link>
-                    </li>
-                    <li class="nav-item">
-                        <Link v-if="can('settings.view')" href="/settings" class="nav-link rounded py-2" :class="pathStarts('/settings')">Settings</Link>
-                    </li>
-                    <li class="nav-item">
-                        <Link v-if="can('sms.send')" href="/sms" class="nav-link rounded py-2" :class="pathStarts('/sms')">Send SMS</Link>
-                    </li>
-                    <li class="nav-item">
-                        <Link v-if="can('team.users.view')" href="/team/users" class="nav-link rounded py-2" :class="pathStarts('/team/users')">Users</Link>
-                    </li>
-                </ul>
-            </nav>
-            <div class="p-3 border-top mt-auto small">
-                <Link href="/support" class="d-block py-1 text-decoration-none" :class="navActive('/support')">Support</Link>
-                <Link
-                    v-if="usesPlatform"
-                    href="/platform/dashboard"
-                    class="d-block py-1 text-decoration-none"
-                    :class="navActive('/platform')"
-                >
-                    Global settings
-                </Link>
-                <Link v-else href="/global-settings" class="d-block py-1 text-decoration-none text-muted">Global settings</Link>
-            </div>
-        </aside>
-        <div class="flex-grow-1 d-flex flex-column min-vh-100 min-w-0">
-            <header class="tenant-topbar border-bottom bg-white px-3 py-2 d-flex flex-wrap align-items-center gap-2">
-                <h1 class="h5 mb-0 text-primary me-auto">{{ pageTitle }}</h1>
-                <form class="flex-grow-1" style="max-width: 320px" @submit.prevent="runSearch">
-                    <input v-model="searchQ" type="search" class="form-control form-control-sm" placeholder="Search products…" />
-                </form>
-                <Link v-if="can('pos.access')" href="/pos" class="btn btn-sm btn-primary">{{ t('tenant_nav.new_sale') }}</Link>
-                <LocaleSwitcher />
-                <span class="small text-muted d-none d-md-inline">{{ userName }}</span>
-                <Link href="/logout" method="post" as="button" class="btn btn-sm btn-outline-secondary">{{ t('common.logout') }}</Link>
-            </header>
-            <main class="flex-grow-1 p-3 p-md-4 overflow-auto">
-                <slot />
-            </main>
-        </div>
         </div>
     </div>
 </template>
 
 <script setup>
+import TenantSidebarNav from '@/Components/Tenant/TenantSidebarNav.vue';
 import LocaleSwitcher from '@/Components/LocaleSwitcher.vue';
 import { useLocale } from '@/composables/useLocale';
 import { usePermissions } from '@/composables/usePermissions';
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { computed, reactive, ref } from 'vue';
+import { computed, ref } from 'vue';
 
 const { t } = useLocale();
 
@@ -177,7 +76,6 @@ const { can } = usePermissions();
 
 const tenantName = computed(() => page.props.tenant?.name ?? 'Pharmacy');
 const userName = computed(() => page.props.auth?.user?.name ?? 'User');
-const usesPlatform = computed(() => page.props.auth?.user?.uses_platform_dashboard === true);
 const impersonation = computed(() => page.props.impersonation);
 const networkAnnouncement = computed(() => page.props.networkAnnouncement);
 
@@ -191,53 +89,6 @@ const announcementAlertClass = computed(() => {
     }[severity] ?? 'alert alert-info';
 });
 
-const catalogPaths = ['/products', '/categories', '/manufacturers', '/catalog/import'];
-
-const open = reactive({
-    sales: true,
-    purchases: true,
-    catalog: catalogPaths.some((p) => (page.url || '').split('?')[0] === p || (page.url || '').split('?')[0].startsWith(p + '/')),
-});
-
-function toggle(key) {
-    open[key] = !open[key];
-}
-
-const catalogNavActive = computed(() => {
-    const u = pathNow();
-    return catalogPaths.some((p) => u === p || u.startsWith(p + '/'));
-});
-
-function catalogLinkClass(path) {
-    const u = pathNow();
-    if (path === '/products') {
-        return u === '/products' || (u.startsWith('/products/') && u !== '/products/create') ? 'text-primary fw-semibold' : '';
-    }
-    return u === path || u.startsWith(path + '/') ? 'text-primary fw-semibold' : '';
-}
-
-const url = computed(() => page.url || '');
-function pathNow() {
-    return (url.value || '').split('?')[0];
-}
-
-function navActive(prefix) {
-    const u = pathNow();
-    if (prefix === '/dashboard') {
-        return u === '/dashboard' ? 'active bg-primary text-white' : '';
-    }
-    return u === prefix || u.startsWith(prefix + '/') ? 'active bg-primary text-white' : '';
-}
-
-function exactPath(path) {
-    return pathNow() === path ? 'text-primary fw-semibold' : '';
-}
-
-function pathStarts(path) {
-    const u = pathNow();
-    return u === path || u.startsWith(path + '/') ? 'text-primary fw-semibold' : '';
-}
-
 const searchQ = ref('');
 function runSearch() {
     const q = searchQ.value?.trim();
@@ -250,10 +101,17 @@ function runSearch() {
 </script>
 
 <style scoped>
-.tenant-sidebar .nav-link.active {
-    color: #fff !important;
+.tenant-sidebar {
+    width: 272px;
 }
-.tenant-sidebar .btn-link.nav-link {
-    color: inherit;
+
+.tenant-sidebar-brand__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.5rem;
+    background: rgba(var(--bs-primary-rgb), 0.1);
 }
 </style>

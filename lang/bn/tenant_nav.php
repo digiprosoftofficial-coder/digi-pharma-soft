@@ -33,4 +33,9 @@ return [
     'global_settings' => 'গ্লোবাল সেটিংস',
     'new_sale' => 'নতুন বিক্রয়',
     'pharmacy_mgmt' => 'ফার্মেসি ব্যবস্থাপনা',
+    'inventory_group' => 'ইনভেন্টরি ও স্টক',
+    'people' => 'লোকজন',
+    'finance' => 'অর্থ',
+    'marketing' => 'মার্কেটিং',
+    'administration' => 'প্রশাসন',
 ];

@@ -1,0 +1,373 @@
+<template>
+    <nav class="tenant-sidebar-nav flex-grow-1 overflow-auto p-2">
+        <ul class="list-unstyled mb-0 d-flex flex-column gap-1">
+            <!-- Dashboard -->
+            <li>
+                <Link
+                    href="/dashboard"
+                    class="tenant-nav-item"
+                    :class="{ 'tenant-nav-item--active': isExact('/dashboard') }"
+                >
+                    <TenantNavIcon name="dashboard" />
+                    <span class="tenant-nav-label">{{ t('tenant_nav.dashboard') }}</span>
+                </Link>
+            </li>
+
+            <li v-for="section in visibleSections" :key="section.id" class="tenant-nav-group">
+                <button
+                    type="button"
+                    class="tenant-nav-item tenant-nav-item--toggle"
+                    :class="{
+                        'tenant-nav-item--active': isSectionActive(section),
+                        'tenant-nav-item--inactive': !isSectionActive(section),
+                    }"
+                    :aria-expanded="open[section.id]"
+                    @click="toggle(section.id)"
+                >
+                    <TenantNavIcon :name="section.icon" />
+                    <span class="tenant-nav-label">{{ section.label }}</span>
+                    <svg
+                        class="tenant-nav-chevron"
+                        :class="{ 'tenant-nav-chevron--open': open[section.id] }"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                    >
+                        <path d="M6 9l6 6 6-6" />
+                    </svg>
+                </button>
+                <ul v-show="open[section.id]" class="tenant-nav-children list-unstyled mb-0">
+                    <li v-for="child in section.children" :key="child.href">
+                        <Link
+                            :href="child.href"
+                            class="tenant-nav-child"
+                            :class="{
+                                'tenant-nav-child--active': isChildActive(child),
+                                'tenant-nav-child--inactive': !isChildActive(child),
+                            }"
+                        >
+                            <TenantNavIcon :name="child.icon" />
+                            <span>{{ child.label }}</span>
+                        </Link>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+
+        <div class="tenant-nav-footer border-top pt-2 mt-2">
+            <Link
+                href="/support"
+                class="tenant-nav-child"
+                :class="{
+                    'tenant-nav-child--active': isExact('/support') || pathStarts('/support'),
+                    'tenant-nav-child--inactive': !(isExact('/support') || pathStarts('/support')),
+                }"
+            >
+                <TenantNavIcon name="support" />
+                <span>{{ t('tenant_nav.support') }}</span>
+            </Link>
+            <Link
+                v-if="usesPlatform"
+                href="/platform/dashboard"
+                class="tenant-nav-child"
+                :class="{
+                    'tenant-nav-child--active': pathStarts('/platform'),
+                    'tenant-nav-child--inactive': !pathStarts('/platform'),
+                }"
+            >
+                <TenantNavIcon name="globe" />
+                <span>{{ t('tenant_nav.global_settings') }}</span>
+            </Link>
+            <Link
+                v-else
+                href="/global-settings"
+                class="tenant-nav-child tenant-nav-child--inactive"
+            >
+                <TenantNavIcon name="globe" />
+                <span>{{ t('tenant_nav.global_settings') }}</span>
+            </Link>
+        </div>
+    </nav>
+</template>
+
+<script setup>
+import TenantNavIcon from '@/Components/Tenant/TenantNavIcon.vue';
+import { useLocale } from '@/composables/useLocale';
+import { usePermissions } from '@/composables/usePermissions';
+import { Link, usePage } from '@inertiajs/vue3';
+import { computed, reactive, watch } from 'vue';
+
+const { t } = useLocale();
+const { can } = usePermissions();
+const page = usePage();
+
+const usesPlatform = computed(() => page.props.auth?.user?.uses_platform_dashboard === true);
+
+const url = computed(() => page.url || '');
+function pathNow() {
+    return (url.value || '').split('?')[0];
+}
+
+function isExact(path) {
+    return pathNow() === path;
+}
+
+function pathStarts(path) {
+    const u = pathNow();
+    return u === path || u.startsWith(path + '/');
+}
+
+function isChildActive(child) {
+    if (child.match === 'exact') {
+        return isExact(child.href);
+    }
+    if (child.match === 'products-list') {
+        const u = pathNow();
+        return u === '/products' || (u.startsWith('/products/') && u !== '/products/create');
+    }
+    return pathStarts(child.href);
+}
+
+const sectionsConfig = computed(() => [
+    {
+        id: 'sales',
+        icon: 'sales',
+        label: t('tenant_nav.sales'),
+        show: can('sales.view') || can('pos.access') || can('returns.manage'),
+        paths: ['/sales', '/pos', '/sales/package', '/sales/returns'],
+        children: [
+            { href: '/sales', icon: 'list', label: t('tenant_nav.sales_list'), show: can('sales.view'), match: 'exact' },
+            { href: '/pos', icon: 'plus', label: t('tenant_nav.pos'), show: can('pos.access'), match: 'exact' },
+            { href: '/sales/package', icon: 'package', label: t('tenant_nav.package_sell'), show: can('pos.access'), match: 'prefix' },
+            { href: '/sales/returns', icon: 'return', label: t('tenant_nav.returns'), show: can('returns.manage'), match: 'prefix' },
+        ],
+    },
+    {
+        id: 'purchases',
+        icon: 'purchases',
+        label: t('tenant_nav.purchases'),
+        show: can('purchases.view') || can('purchases.manage'),
+        paths: ['/purchases'],
+        children: [
+            { href: '/purchases', icon: 'list', label: t('tenant_nav.purchase_list'), show: can('purchases.view'), match: 'exact' },
+            { href: '/purchases/create', icon: 'plus', label: t('tenant_nav.new_purchase'), show: can('purchases.manage'), match: 'exact' },
+            { href: '/purchases/supplier-bills', icon: 'bill', label: t('tenant_nav.supplier_bills'), show: can('purchases.view'), match: 'prefix' },
+        ],
+    },
+    {
+        id: 'catalog',
+        icon: 'catalog',
+        label: t('tenant_nav.catalog'),
+        show: can('products.view') || can('categories.view') || can('manufacturers.view'),
+        paths: ['/products', '/categories', '/manufacturers', '/catalog/import'],
+        children: [
+            { href: '/products', icon: 'list', label: t('tenant_nav.product_list'), show: can('products.view'), match: 'products-list' },
+            { href: '/products/create', icon: 'plus', label: t('tenant_nav.new_product'), show: can('products.manage'), match: 'exact' },
+            { href: '/categories', icon: 'category', label: t('tenant_nav.categories'), show: can('categories.view'), match: 'prefix' },
+            { href: '/manufacturers', icon: 'factory', label: t('tenant_nav.manufacturers'), show: can('manufacturers.view'), match: 'prefix' },
+            { href: '/catalog/import', icon: 'upload', label: t('tenant_nav.bulk_import'), show: can('products.manage'), match: 'prefix' },
+        ],
+    },
+    {
+        id: 'inventory',
+        icon: 'inventory',
+        label: t('tenant_nav.inventory_group'),
+        show: can('inventory.view') || can('stock_transfers.view'),
+        paths: ['/inventory', '/stock-transfers'],
+        children: [
+            { href: '/inventory', icon: 'inventory', label: t('tenant_nav.inventory'), show: can('inventory.view'), match: 'prefix' },
+            { href: '/stock-transfers', icon: 'transfer', label: t('tenant_nav.stock_transfer'), show: can('stock_transfers.view'), match: 'prefix' },
+        ],
+    },
+    {
+        id: 'people',
+        icon: 'people',
+        label: t('tenant_nav.people'),
+        show: can('suppliers.view') || can('customers.view') || can('employees.view'),
+        paths: ['/suppliers', '/customers', '/employees'],
+        children: [
+            { href: '/suppliers', icon: 'supplier', label: t('tenant_nav.suppliers'), show: can('suppliers.view'), match: 'prefix' },
+            { href: '/customers', icon: 'customer', label: t('tenant_nav.customers'), show: can('customers.view'), match: 'prefix' },
+            { href: '/employees', icon: 'employee', label: t('tenant_nav.employees'), show: can('employees.view'), match: 'prefix' },
+        ],
+    },
+    {
+        id: 'finance',
+        icon: 'accounts',
+        label: t('tenant_nav.finance'),
+        show: can('accounting.view'),
+        paths: ['/accounts'],
+        children: [
+            { href: '/accounts', icon: 'accounts', label: t('tenant_nav.accounts'), show: can('accounting.view'), match: 'prefix' },
+        ],
+    },
+    {
+        id: 'marketing',
+        icon: 'marketing',
+        label: t('tenant_nav.marketing'),
+        show: can('promotions.view') || can('sms.send'),
+        paths: ['/promotions', '/sms'],
+        children: [
+            { href: '/promotions', icon: 'promo', label: t('tenant_nav.promotions'), show: can('promotions.view'), match: 'prefix' },
+            { href: '/sms', icon: 'sms', label: t('tenant_nav.sms'), show: can('sms.send'), match: 'prefix' },
+        ],
+    },
+    {
+        id: 'admin',
+        icon: 'settings',
+        label: t('tenant_nav.administration'),
+        show: can('reports.view') || can('settings.view') || can('team.users.view'),
+        paths: ['/reports', '/settings', '/team/users'],
+        children: [
+            { href: '/reports', icon: 'report', label: t('tenant_nav.reports'), show: can('reports.view'), match: 'prefix' },
+            { href: '/settings', icon: 'settings', label: t('tenant_nav.settings'), show: can('settings.view'), match: 'prefix' },
+            { href: '/team/users', icon: 'users', label: t('tenant_nav.users'), show: can('team.users.view'), match: 'prefix' },
+        ],
+    },
+]);
+
+const visibleSections = computed(() =>
+    sectionsConfig.value
+        .filter((s) => s.show)
+        .map((s) => ({
+            ...s,
+            children: s.children.filter((c) => c.show),
+        }))
+        .filter((s) => s.children.length > 0),
+);
+
+function isSectionActive(section) {
+    return section.paths.some((p) => pathStarts(p));
+}
+
+const open = reactive({});
+
+function initOpenState() {
+    for (const section of visibleSections.value) {
+        if (open[section.id] === undefined) {
+            open[section.id] = isSectionActive(section);
+        }
+    }
+}
+
+initOpenState();
+
+watch(url, () => {
+    for (const section of visibleSections.value) {
+        if (isSectionActive(section)) {
+            open[section.id] = true;
+        }
+    }
+});
+
+function toggle(id) {
+    open[id] = !open[id];
+}
+</script>
+
+<style scoped>
+.tenant-sidebar-nav {
+    --nav-active-bg: var(--bs-primary);
+    --nav-active-fg: #fff;
+    --nav-hover-bg: rgba(var(--bs-primary-rgb), 0.08);
+    --nav-child-active-bg: rgba(var(--bs-primary-rgb), 0.12);
+}
+
+.tenant-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: 0;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    color: #374151;
+    background: transparent;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.tenant-nav-item--toggle {
+    cursor: pointer;
+    text-align: left;
+}
+
+.tenant-nav-item--inactive:hover,
+.tenant-nav-child--inactive:hover {
+    background: var(--nav-hover-bg);
+    color: var(--bs-primary);
+}
+
+.tenant-nav-item--active {
+    background: var(--nav-active-bg);
+    color: var(--nav-active-fg) !important;
+}
+
+.tenant-nav-item--active :deep(.tenant-nav-icon) {
+    color: inherit;
+}
+
+.tenant-nav-label {
+    flex: 1;
+    min-width: 0;
+}
+
+.tenant-nav-chevron {
+    flex-shrink: 0;
+    opacity: 0.65;
+    transition: transform 0.2s ease;
+}
+
+.tenant-nav-item--active .tenant-nav-chevron {
+    opacity: 0.9;
+}
+
+.tenant-nav-chevron--open {
+    transform: rotate(180deg);
+}
+
+.tenant-nav-children {
+    padding: 0.15rem 0 0.35rem 0.35rem;
+}
+
+.tenant-nav-child {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.65rem 0.4rem 2rem;
+    margin: 0.1rem 0;
+    border-radius: 0.4rem;
+    font-size: 0.8125rem;
+    text-decoration: none;
+    color: #6b7280;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.tenant-nav-child :deep(.tenant-nav-icon) {
+    width: 16px;
+    height: 16px;
+    opacity: 0.85;
+}
+
+.tenant-nav-child--active {
+    background: var(--nav-child-active-bg);
+    color: var(--bs-primary);
+    font-weight: 600;
+}
+
+.tenant-nav-child--active :deep(.tenant-nav-icon) {
+    color: var(--bs-primary);
+    opacity: 1;
+}
+
+.tenant-nav-footer .tenant-nav-child {
+    padding-left: 0.75rem;
+}
+</style>
