@@ -13,7 +13,7 @@ return [
     'supplier_bills' => 'Supplier bills',
     'accounts' => 'General accounts',
     'products' => 'Products',
-    'catalog' => 'Catalog',
+    'catalog' => 'Product catalog',
     'product_list' => 'Product list',
     'new_product' => 'New product',
     'categories' => 'Categories',

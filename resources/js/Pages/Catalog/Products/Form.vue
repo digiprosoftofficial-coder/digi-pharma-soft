@@ -1,7 +1,7 @@
 <template>
-    <TenantShellLayout :page-title="product ? 'Edit product' : 'New product'">
-        <Head :title="product ? 'Edit product' : 'New product'" />
-        <h1 class="h4 mb-4 d-lg-none">{{ product ? 'Edit product' : 'New product' }}</h1>
+    <TenantShellLayout :page-title="existing ? 'Edit product' : 'New product'">
+        <Head :title="existing ? 'Edit product' : 'New product'" />
+        <h1 class="h4 mb-4 d-lg-none">{{ existing ? 'Edit product' : 'New product' }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="row g-3">
                 <div class="col-md-6">
@@ -17,9 +17,9 @@
                 <div class="col-md-3">
                     <label class="form-label">Barcode</label>
                     <input v-model="form.barcode" type="text" class="form-control" />
-                    <div v-if="product" class="mt-2">
+                    <div v-if="existing" class="mt-2">
                         <span class="small text-muted d-block mb-1">Label preview</span>
-                        <img :src="`/barcodes/${product.id}`" alt="Barcode" class="border rounded bg-white p-1" style="max-height: 64px" />
+                        <img :src="`/barcodes/${existing.id}`" alt="Barcode" class="border rounded bg-white p-1" style="max-height: 64px" />
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -123,7 +123,7 @@
                 </div>
             </div>
 
-            <div v-if="!product" class="mt-4 border rounded p-3 bg-light">
+            <div v-if="!existing" class="mt-4 border rounded p-3 bg-light">
                 <h2 class="h6">Opening stock (optional)</h2>
                 <p class="small text-muted mb-2">Create an initial batch in base unit when adding a new product.</p>
                 <div class="row g-2">
@@ -171,6 +171,14 @@ const props = defineProps({
     manufacturers: { type: Array, default: () => [] },
 });
 
+/** Unwrap JsonResource { data: ... } if present */
+function productData() {
+    if (!props.product) {
+        return null;
+    }
+    return props.product.data ?? props.product;
+}
+
 function typeLabel(t) {
     return t.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
@@ -187,8 +195,9 @@ function buildDefaultUnits() {
 }
 
 function initialUnits() {
-    if (props.product?.units?.length) {
-        return props.product.units.map((u) => ({
+    const product = productData();
+    if (product?.units?.length) {
+        return product.units.map((u) => ({
             sell_unit: u.sell_unit,
             conversion_factor: Number(u.conversion_factor),
             purchase_price: String(u.purchase_price),
@@ -199,17 +208,19 @@ function initialUnits() {
     return buildDefaultUnits();
 }
 
+const existing = productData();
+
 const form = useForm({
-    name: props.product?.name ?? '',
-    sku: props.product?.sku ?? '',
-    barcode: props.product?.barcode ?? '',
-    category_id: props.product?.category?.id ?? null,
-    manufacturer_id: props.product?.manufacturer?.id ?? null,
-    product_type: props.product?.product_type ?? 'tablet',
-    base_unit: props.product?.base_unit ?? 'strip',
+    name: existing?.name ?? '',
+    sku: existing?.sku ?? '',
+    barcode: existing?.barcode ?? '',
+    category_id: existing?.category?.id ?? null,
+    manufacturer_id: existing?.manufacturer?.id ?? null,
+    product_type: existing?.product_type ?? 'tablet',
+    base_unit: existing?.base_unit ?? 'strip',
     units: initialUnits(),
-    min_stock: props.product?.min_stock ?? 0,
-    is_active: props.product?.is_active ?? true,
+    min_stock: existing?.min_stock ?? 0,
+    is_active: existing?.is_active ?? true,
     opening_batch_no: '',
     opening_expiry_date: '',
     opening_quantity: null,
@@ -261,8 +272,8 @@ function submit() {
         })),
     };
 
-    if (props.product) {
-        form.transform(() => payload).put(`/products/${props.product.id}`);
+    if (existing) {
+        form.transform(() => payload).put(`/products/${existing.id}`);
     } else {
         form.transform(() => payload).post('/products');
     }

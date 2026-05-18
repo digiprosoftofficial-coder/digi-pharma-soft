@@ -63,7 +63,7 @@ final class ProductController extends Controller
         $this->authorize('update', $product);
 
         return Inertia::render('Catalog/Products/Form', [
-            'product' => new ProductResource($product->load(['category', 'manufacturer', 'batches', 'units'])),
+            'product' => (new ProductResource($product->load(['category', 'manufacturer', 'batches', 'units'])))->resolve(request()),
             'catalogOptions' => $this->catalogOptions(),
             'categories' => $this->categoryOptions(),
             'manufacturers' => $this->manufacturerOptions(),

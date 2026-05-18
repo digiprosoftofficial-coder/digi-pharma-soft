@@ -38,6 +38,22 @@ class ProductUnitsTest extends TestCase
         $this->assertCount(2, $product->units);
     }
 
+    public function test_product_edit_page_includes_resolved_product_data(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+        $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
+
+        $this->actingAs($user)
+            ->get("/products/{$product->getKey()}/edit")
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Catalog/Products/Form')
+                ->where('product.name', 'Paracetamol 500mg')
+                ->where('product.sku', 'PAR-500')
+                ->has('product.units', 2));
+    }
+
     public function test_pos_sale_deducts_stock_in_base_units_when_selling_boxes(): void
     {
         $this->seed();

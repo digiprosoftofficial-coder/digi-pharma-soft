@@ -13,7 +13,7 @@ return [
     'supplier_bills' => 'সাপ্লায়ার বিল',
     'accounts' => 'সাধারণ হিসাব',
     'products' => 'পণ্য',
-    'catalog' => 'ক্যাটালগ',
+    'catalog' => 'পণ্য ক্যাটালগ',
     'product_list' => 'পণ্য তালিকা',
     'new_product' => 'নতুন পণ্য',
     'categories' => 'ক্যাটাগরি',
