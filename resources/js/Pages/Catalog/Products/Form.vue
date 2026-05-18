@@ -41,6 +41,20 @@
                     <label class="form-label">Min stock alert</label>
                     <input v-model="form.min_stock" type="number" min="0" class="form-control" />
                 </div>
+                <div class="col-md-6">
+                    <label class="form-label">Category</label>
+                    <select v-model="form.category_id" class="form-select">
+                        <option :value="null">— None —</option>
+                        <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Manufacturer</label>
+                    <select v-model="form.manufacturer_id" class="form-select">
+                        <option :value="null">— None —</option>
+                        <option v-for="m in manufacturers" :key="m.id" :value="m.id">{{ m.name }}</option>
+                    </select>
+                </div>
             </div>
 
             <div class="mt-4">
@@ -109,6 +123,25 @@
                 </div>
             </div>
 
+            <div v-if="!product" class="mt-4 border rounded p-3 bg-light">
+                <h2 class="h6">Opening stock (optional)</h2>
+                <p class="small text-muted mb-2">Create an initial batch in base unit when adding a new product.</p>
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <label class="form-label small">Batch no</label>
+                        <input v-model="form.opening_batch_no" type="text" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">Expiry date</label>
+                        <input v-model="form.opening_expiry_date" type="date" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">Quantity (base unit)</label>
+                        <input v-model.number="form.opening_quantity" type="number" min="0" step="0.0001" class="form-control form-control-sm" />
+                    </div>
+                </div>
+            </div>
+
             <div class="mt-3">
                 <div class="form-check">
                     <input id="active" v-model="form.is_active" type="checkbox" class="form-check-input" />
@@ -134,6 +167,8 @@ const props = defineProps({
         type: Object,
         default: () => ({ productTypes: ['other'], sellUnits: ['piece', 'strip', 'box'] }),
     },
+    categories: { type: Array, default: () => [] },
+    manufacturers: { type: Array, default: () => [] },
 });
 
 function typeLabel(t) {
@@ -168,11 +203,16 @@ const form = useForm({
     name: props.product?.name ?? '',
     sku: props.product?.sku ?? '',
     barcode: props.product?.barcode ?? '',
+    category_id: props.product?.category?.id ?? null,
+    manufacturer_id: props.product?.manufacturer?.id ?? null,
     product_type: props.product?.product_type ?? 'tablet',
     base_unit: props.product?.base_unit ?? 'strip',
     units: initialUnits(),
     min_stock: props.product?.min_stock ?? 0,
     is_active: props.product?.is_active ?? true,
+    opening_batch_no: '',
+    opening_expiry_date: '',
+    opening_quantity: null,
 });
 
 function onBaseUnitChange() {

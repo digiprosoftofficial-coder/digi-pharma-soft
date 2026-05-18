@@ -8,17 +8,38 @@ use Illuminate\Database\Eloquent\Collection;
 
 final class ProductRepository
 {
-    public function paginateForTenant(int $perPage = 15): LengthAwarePaginator
+    /**
+     * @param  array{q?:string,product_type?:string,is_active?:string}  $filters
+     */
+    public function paginateForTenant(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        return Product::query()
-            ->with(['category', 'manufacturer', 'batches'])
-            ->orderByDesc('id')
-            ->paginate($perPage);
+        $query = Product::query()
+            ->with(['category', 'manufacturer', 'batches', 'units'])
+            ->orderByDesc('id');
+
+        if (! empty($filters['q'])) {
+            $term = $filters['q'];
+            $query->where(function ($w) use ($term) {
+                $w->where('name', 'like', '%'.$term.'%')
+                    ->orWhere('sku', 'like', '%'.$term.'%')
+                    ->orWhere('barcode', 'like', '%'.$term.'%');
+            });
+        }
+
+        if (! empty($filters['product_type'])) {
+            $query->where('product_type', $filters['product_type']);
+        }
+
+        if (isset($filters['is_active']) && $filters['is_active'] !== '') {
+            $query->where('is_active', filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN));
+        }
+
+        return $query->paginate($perPage)->withQueryString();
     }
 
     public function find(int $id): ?Product
     {
-        return Product::query()->with(['category', 'manufacturer', 'batches'])->find($id);
+        return Product::query()->with(['category', 'manufacturer', 'batches', 'units'])->find($id);
     }
 
     public function searchByTerm(string $term, int $limit = 25): Collection

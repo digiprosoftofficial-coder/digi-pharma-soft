@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Domain\Catalog\Models\Category;
+use App\Domain\Catalog\Models\Manufacturer;
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Repositories\ProductRepository;
 use App\Domain\Catalog\Services\ProductService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Catalog\StoreProductRequest;
@@ -10,6 +13,7 @@ use App\Http\Requests\Catalog\UpdateProductRequest;
 use App\Http\Resources\Catalog\ProductResource;
 use App\Support\Catalog\ProductCatalogOptions;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,21 +21,21 @@ final class ProductController extends Controller
 {
     public function __construct(
         private readonly ProductService $productService,
+        private readonly ProductRepository $products,
     ) {
         $this->authorizeResource(Product::class, 'product');
     }
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $products = Product::query()
-            ->with(['category', 'manufacturer', 'batches', 'units'])
-            ->orderByDesc('id')
-            ->paginate(15);
+        $filters = $request->only(['q', 'product_type', 'is_active']);
 
         return Inertia::render('Catalog/Products/Index', [
-            'products' => $products->through(
-                fn (Product $p) => (new ProductResource($p))->resolve(request()),
+            'products' => $this->products->paginateForTenant($filters)->through(
+                fn (Product $p) => (new ProductResource($p))->resolve($request),
             ),
+            'filters' => $filters,
+            'productTypes' => ProductCatalogOptions::productTypes(),
         ]);
     }
 
@@ -42,6 +46,8 @@ final class ProductController extends Controller
         return Inertia::render('Catalog/Products/Form', [
             'product' => null,
             'catalogOptions' => $this->catalogOptions(),
+            'categories' => $this->categoryOptions(),
+            'manufacturers' => $this->manufacturerOptions(),
         ]);
     }
 
@@ -59,6 +65,8 @@ final class ProductController extends Controller
         return Inertia::render('Catalog/Products/Form', [
             'product' => new ProductResource($product->load(['category', 'manufacturer', 'batches', 'units'])),
             'catalogOptions' => $this->catalogOptions(),
+            'categories' => $this->categoryOptions(),
+            'manufacturers' => $this->manufacturerOptions(),
         ]);
     }
 
@@ -86,5 +94,29 @@ final class ProductController extends Controller
             'productTypes' => ProductCatalogOptions::productTypes(),
             'sellUnits' => ProductCatalogOptions::sellUnits(),
         ];
+    }
+
+    /**
+     * @return list<array{id:int,name:string}>
+     */
+    private function categoryOptions(): array
+    {
+        return Category::query()
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->name])
+            ->all();
+    }
+
+    /**
+     * @return list<array{id:int,name:string}>
+     */
+    private function manufacturerOptions(): array
+    {
+        return Manufacturer::query()
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (Manufacturer $m) => ['id' => $m->id, 'name' => $m->name])
+            ->all();
     }
 }

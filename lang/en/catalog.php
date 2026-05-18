@@ -30,4 +30,7 @@ return [
         'strip' => 'Strip',
         'box' => 'Box',
     ],
+    'category_has_products' => 'Cannot delete a category that still has products.',
+    'manufacturer_has_products' => 'Cannot delete a manufacturer that still has products.',
+    'import_complete' => ':created product(s) imported, :skipped skipped, :errors error row(s).',
 ];

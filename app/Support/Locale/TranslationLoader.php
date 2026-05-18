@@ -5,7 +5,7 @@ namespace App\Support\Locale;
 final class TranslationLoader
 {
     /** @var list<string> */
-    private const FILES = ['common', 'platform', 'tenant_nav'];
+    private const FILES = ['common', 'platform', 'tenant_nav', 'catalog'];
 
     /**
      * @return array<string, string>

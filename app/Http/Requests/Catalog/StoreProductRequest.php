@@ -36,6 +36,9 @@ class StoreProductRequest extends FormRequest
             'units.*.is_default' => ['sometimes', 'boolean'],
             'min_stock' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['sometimes', 'boolean'],
+            'opening_batch_no' => ['nullable', 'string', 'max:64', 'required_with:opening_quantity'],
+            'opening_expiry_date' => ['nullable', 'date'],
+            'opening_quantity' => ['nullable', 'numeric', 'min:0.0001'],
         ];
     }
 }

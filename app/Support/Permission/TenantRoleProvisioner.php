@@ -22,7 +22,10 @@ final class TenantRoleProvisioner
         ])->get();
 
         $pharmacist = Permission::query()->whereIn('name', [
-            'products.view', 'products.manage', 'inventory.view', 'inventory.manage',
+            'products.view', 'products.manage',
+            'categories.view', 'categories.manage',
+            'manufacturers.view', 'manufacturers.manage',
+            'inventory.view', 'inventory.manage',
             'customers.view', 'reports.view', 'sales.view', 'returns.manage',
             'stock_transfers.view', 'suppliers.view', 'purchases.view',
         ])->get();

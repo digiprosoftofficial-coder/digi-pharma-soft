@@ -19,6 +19,8 @@ class RolePermissionSeeder extends Seeder
 
         $permissionNames = [
             'products.view', 'products.manage',
+            'categories.view', 'categories.manage',
+            'manufacturers.view', 'manufacturers.manage',
             'purchases.view', 'purchases.manage',
             'sales.view',
             'returns.manage',

@@ -67,8 +67,33 @@
                     <li class="nav-item">
                         <Link v-if="can('accounting.view')" href="/accounts" class="nav-link rounded py-2" :class="navActive('/accounts')">General accounts</Link>
                     </li>
-                    <li class="nav-item">
-                        <Link v-if="can('products.view')" href="/products" class="nav-link rounded py-2" :class="pathStarts('/products')">Products</Link>
+                    <li v-if="can('products.view') || can('categories.view') || can('manufacturers.view')" class="nav-item">
+                        <button
+                            type="button"
+                            class="nav-link rounded py-2 w-100 text-start btn btn-link text-decoration-none text-body border-0"
+                            :class="catalogNavActive ? 'active bg-primary text-white' : ''"
+                            @click="toggle('catalog')"
+                        >
+                            {{ t('tenant_nav.catalog') }}
+                            <span class="float-end text-muted">{{ open.catalog ? '−' : '+' }}</span>
+                        </button>
+                        <div v-show="open.catalog" class="ps-3 pb-2">
+                            <Link v-if="can('products.view')" href="/products" class="d-block py-1 text-decoration-none" :class="catalogLinkClass('/products')">
+                                {{ t('tenant_nav.product_list') }}
+                            </Link>
+                            <Link v-if="can('products.manage')" href="/products/create" class="d-block py-1 text-decoration-none" :class="exactPath('/products/create')">
+                                {{ t('tenant_nav.new_product') }}
+                            </Link>
+                            <Link v-if="can('categories.view')" href="/categories" class="d-block py-1 text-decoration-none" :class="catalogLinkClass('/categories')">
+                                {{ t('tenant_nav.categories') }}
+                            </Link>
+                            <Link v-if="can('manufacturers.view')" href="/manufacturers" class="d-block py-1 text-decoration-none" :class="catalogLinkClass('/manufacturers')">
+                                {{ t('tenant_nav.manufacturers') }}
+                            </Link>
+                            <Link v-if="can('products.manage')" href="/catalog/import" class="d-block py-1 text-decoration-none" :class="exactPath('/catalog/import')">
+                                {{ t('tenant_nav.bulk_import') }}
+                            </Link>
+                        </div>
                     </li>
                     <li class="nav-item">
                         <Link v-if="can('inventory.view')" href="/inventory" class="nav-link rounded py-2" :class="pathStarts('/inventory')">Inventory</Link>
@@ -166,9 +191,29 @@ const announcementAlertClass = computed(() => {
     }[severity] ?? 'alert alert-info';
 });
 
-const open = reactive({ sales: true, purchases: true });
+const catalogPaths = ['/products', '/categories', '/manufacturers', '/catalog/import'];
+
+const open = reactive({
+    sales: true,
+    purchases: true,
+    catalog: catalogPaths.some((p) => (page.url || '').split('?')[0] === p || (page.url || '').split('?')[0].startsWith(p + '/')),
+});
+
 function toggle(key) {
     open[key] = !open[key];
+}
+
+const catalogNavActive = computed(() => {
+    const u = pathNow();
+    return catalogPaths.some((p) => u === p || u.startsWith(p + '/'));
+});
+
+function catalogLinkClass(path) {
+    const u = pathNow();
+    if (path === '/products') {
+        return u === '/products' || (u.startsWith('/products/') && u !== '/products/create') ? 'text-primary fw-semibold' : '';
+    }
+    return u === path || u.startsWith(path + '/') ? 'text-primary fw-semibold' : '';
 }
 
 const url = computed(() => page.url || '');
@@ -195,7 +240,12 @@ function pathStarts(path) {
 
 const searchQ = ref('');
 function runSearch() {
-    router.visit('/products');
+    const q = searchQ.value?.trim();
+    if (!q) {
+        router.visit('/products');
+        return;
+    }
+    router.visit('/products', { data: { q }, preserveState: true });
 }
 </script>
 

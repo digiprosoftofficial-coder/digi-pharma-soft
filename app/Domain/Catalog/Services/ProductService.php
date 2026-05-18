@@ -3,6 +3,7 @@
 namespace App\Domain\Catalog\Services;
 
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductBatch;
 use App\Domain\Catalog\Repositories\ProductRepository;
 use App\Support\Catalog\ProductCatalogOptions;
 use App\Support\Catalog\ProductUnitResolver;
@@ -45,8 +46,34 @@ final class ProductService
 
             ProductUnitResolver::syncProductUnits($product, $units);
 
-            return $product->fresh(['units']);
+            $this->createOpeningBatchIfProvided($product, $data, $default);
+
+            return $product->fresh(['units', 'batches']);
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $defaultUnit
+     */
+    private function createOpeningBatchIfProvided(Product $product, array $data, array $defaultUnit): void
+    {
+        $quantity = $data['opening_quantity'] ?? null;
+        if ($quantity === null || $quantity === '' || (float) $quantity <= 0) {
+            return;
+        }
+
+        $batchNo = filled($data['opening_batch_no'] ?? null)
+            ? (string) $data['opening_batch_no']
+            : 'OPEN-'.strtoupper($product->sku);
+
+        ProductBatch::query()->create([
+            'product_id' => $product->getKey(),
+            'batch_no' => $batchNo,
+            'expiry_date' => $data['opening_expiry_date'] ?? null,
+            'quantity_on_hand' => $quantity,
+            'purchase_unit_cost' => $defaultUnit['purchase_price'] ?? 0,
+        ]);
     }
 
     public function updateProduct(Product $product, array $data): Product

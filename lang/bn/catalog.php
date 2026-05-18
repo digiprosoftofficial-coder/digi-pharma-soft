@@ -30,4 +30,7 @@ return [
         'strip' => 'স্ট্রিপ',
         'box' => 'বক্স',
     ],
+    'category_has_products' => 'এই ক্যাটাগরিতে পণ্য থাকায় মুছা যাবে না।',
+    'manufacturer_has_products' => 'এই প্রস্তুতকারকের পণ্য থাকায় মুছা যাবে না।',
+    'import_complete' => ':created পণ্য ইমপোর্ট, :skipped এড়ানো, :errors ত্রুটি সারি।',
 ];
