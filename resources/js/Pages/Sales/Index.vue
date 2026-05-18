@@ -8,16 +8,16 @@
                     <tr>
                         <th>Invoice</th>
                         <th>Date</th>
-                        <th class="text-end">Total</th>
-                        <th class="text-end">Due</th>
+                        <th class="text-end">Total ({{ currencyCode() }})</th>
+                        <th class="text-end">Due ({{ currencyCode() }})</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="s in sales.data" :key="s.id">
                         <td>{{ s.invoice_no }}</td>
                         <td>{{ s.sold_at }}</td>
-                        <td class="text-end">{{ s.total }}</td>
-                        <td class="text-end">{{ s.due }}</td>
+                        <td class="text-end">{{ formatMoney(s.total) }}</td>
+                        <td class="text-end">{{ formatMoney(s.due) }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -27,7 +27,10 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useMoney } from '@/composables/useMoney';
 import { Head } from '@inertiajs/vue3';
 
 defineProps({ sales: { type: Object, required: true } });
+
+const { formatMoney, currencyCode } = useMoney();
 </script>

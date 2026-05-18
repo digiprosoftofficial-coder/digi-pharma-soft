@@ -65,6 +65,13 @@
                 </template>
             </div>
             <div v-show="step === 3">
+                <div v-if="resellers.length" class="mb-2">
+                    <label class="form-label">{{ t('platform.reseller_label') }}</label>
+                    <select v-model="form.reseller_id" class="form-select">
+                        <option :value="null">—</option>
+                        <option v-for="r in resellers" :key="r.id" :value="r.id">{{ r.name }}</option>
+                    </select>
+                </div>
                 <div class="mb-2">
                     <label class="form-label">Plan</label>
                     <select v-model="form.subscription_plan_id" class="form-select" :class="{ 'is-invalid': form.errors.subscription_plan_id }" required @change="onPlanChange">
@@ -117,6 +124,7 @@ import { computed, ref } from 'vue';
 
 const props = defineProps({
     plans: { type: Array, required: true },
+    resellers: { type: Array, default: () => [] },
     default_trial_days: { type: Number, default: 14 },
 });
 
@@ -139,6 +147,7 @@ const form = useForm({
     owner_password: '',
     owner_password_confirmation: '',
     subscription_plan_id: props.plans[0]?.id ?? null,
+    reseller_id: null,
     trial_ends_at: '',
     subscription_ends_at: oneYearFromToday(),
 });

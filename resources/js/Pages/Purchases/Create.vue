@@ -22,16 +22,25 @@
             </div>
             <div class="row g-2 mb-2">
                 <div class="col-md-4">
-                    <label class="form-label">Tax</label>
-                    <input v-model.number="form.tax" type="number" min="0" step="0.01" class="form-control" />
+                    <label class="form-label">Tax ({{ currencyCode() }})</label>
+                    <div class="input-group">
+                        <span class="input-group-text">{{ currencySymbol() }}</span>
+                        <input v-model.number="form.tax" type="number" min="0" step="0.01" class="form-control" />
+                    </div>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Discount</label>
-                    <input v-model.number="form.discount" type="number" min="0" step="0.01" class="form-control" />
+                    <label class="form-label">Discount ({{ currencyCode() }})</label>
+                    <div class="input-group">
+                        <span class="input-group-text">{{ currencySymbol() }}</span>
+                        <input v-model.number="form.discount" type="number" min="0" step="0.01" class="form-control" />
+                    </div>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Paid</label>
-                    <input v-model.number="form.paid" type="number" min="0" step="0.01" class="form-control" />
+                    <label class="form-label">Paid ({{ currencyCode() }})</label>
+                    <div class="input-group">
+                        <span class="input-group-text">{{ currencySymbol() }}</span>
+                        <input v-model.number="form.paid" type="number" min="0" step="0.01" class="form-control" />
+                    </div>
                 </div>
             </div>
             <h2 class="h6">Lines</h2>
@@ -53,8 +62,14 @@
                     <input v-model.number="line.quantity" type="number" min="0.0001" step="0.0001" class="form-control form-control-sm" required />
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small">Unit cost</label>
-                    <input v-model.number="line.unit_cost" type="number" min="0" step="0.01" class="form-control form-control-sm" required />
+                    <label class="form-label small">Unit cost ({{ currencyCode() }})</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">{{ currencySymbol() }}</span>
+                        <input v-model.number="line.unit_cost" type="number" min="0" step="0.01" class="form-control form-control-sm" required />
+                    </div>
+                    <div v-if="Number(line.quantity) > 0 && Number(line.unit_cost) > 0" class="form-text">
+                        = {{ formatMoney(Number(line.quantity) * Number(line.unit_cost)) }}
+                    </div>
                 </div>
                 <div class="col-md-1">
                     <button type="button" class="btn btn-sm btn-outline-danger" @click="form.lines.splice(i, 1)">×</button>
@@ -71,9 +86,12 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useMoney } from '@/composables/useMoney';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
 defineProps({ suppliers: { type: Array, required: true } });
+
+const { formatMoney, currencyCode, currencySymbol } = useMoney();
 
 const form = useForm({
     supplier_id: '',

@@ -11,6 +11,15 @@
                 {{ t('platform.impersonation_stop') }}
             </Link>
         </div>
+        <div
+            v-if="networkAnnouncement"
+            class="border-0 rounded-0 mb-0 small py-2 px-3"
+            :class="announcementAlertClass"
+            role="alert"
+        >
+            <strong>{{ networkAnnouncement.title }}</strong>
+            <span class="ms-1">{{ networkAnnouncement.body }}</span>
+        </div>
         <div class="d-flex flex-grow-1 min-h-0">
         <aside class="tenant-sidebar border-end bg-white d-flex flex-column flex-shrink-0" style="width: 260px">
             <div class="p-3 border-bottom">
@@ -145,6 +154,17 @@ const tenantName = computed(() => page.props.tenant?.name ?? 'Pharmacy');
 const userName = computed(() => page.props.auth?.user?.name ?? 'User');
 const usesPlatform = computed(() => page.props.auth?.user?.uses_platform_dashboard === true);
 const impersonation = computed(() => page.props.impersonation);
+const networkAnnouncement = computed(() => page.props.networkAnnouncement);
+
+const announcementAlertClass = computed(() => {
+    const severity = networkAnnouncement.value?.severity ?? 'info';
+
+    return {
+        info: 'alert alert-info',
+        warning: 'alert alert-warning',
+        danger: 'alert alert-danger',
+    }[severity] ?? 'alert alert-info';
+});
 
 const open = reactive({ sales: true, purchases: true });
 function toggle(key) {

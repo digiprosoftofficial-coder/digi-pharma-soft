@@ -4,9 +4,15 @@ use App\Http\Controllers\Api\Catalog\ProductSearchController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Central\PlatformAdminController;
 use App\Http\Controllers\Central\PlatformAuditController;
+use App\Http\Controllers\Central\PlatformAnnouncementController;
+use App\Http\Controllers\Central\PlatformBillingController;
+use App\Http\Controllers\Central\PlatformCatalogTemplateController;
+use App\Http\Controllers\Central\PlatformResellerController;
 use App\Http\Controllers\Central\PlatformDashboardController;
+use App\Http\Controllers\Central\PlatformHealthController;
 use App\Http\Controllers\Central\PlatformPlanController;
 use App\Http\Controllers\Central\PlatformSettingsController;
+use App\Http\Controllers\Central\PlatformTenantComplianceController;
 use App\Http\Controllers\Central\PlatformTenantController;
 use App\Http\Controllers\Central\PlatformTenantImpersonationController;
 use App\Http\Controllers\Tenant\BarcodePrintController;
@@ -117,6 +123,7 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
 
     Route::middleware(['role:super admin'])->prefix('platform')->name('platform.')->group(function () {
         Route::get('/dashboard', [PlatformDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/health', [PlatformHealthController::class, 'index'])->name('health.index');
         Route::get('/tenants', [PlatformTenantController::class, 'index'])->name('tenants.index');
         Route::get('/tenants/create', [PlatformTenantController::class, 'create'])->name('tenants.create');
         Route::post('/tenants', [PlatformTenantController::class, 'store'])->name('tenants.store');
@@ -128,6 +135,10 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
             ->name('tenants.owner.resend-invite');
         Route::post('/tenants/{tenant}/suspend', [PlatformTenantController::class, 'suspend'])->name('tenants.suspend');
         Route::post('/tenants/{tenant}/unsuspend', [PlatformTenantController::class, 'unsuspend'])->name('tenants.unsuspend');
+        Route::get('/tenants/{tenant}/export', [PlatformTenantComplianceController::class, 'export'])
+            ->name('tenants.export');
+        Route::post('/tenants/{tenant}/purge', [PlatformTenantComplianceController::class, 'purge'])
+            ->name('tenants.purge');
         Route::post('/tenants/{tenant}/impersonate', [PlatformTenantImpersonationController::class, 'store'])
             ->name('tenants.impersonate');
         Route::post('/impersonation/stop', [PlatformTenantImpersonationController::class, 'destroy'])
@@ -135,7 +146,24 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
         Route::resource('plans', PlatformPlanController::class)->except(['show']);
         Route::get('/admins', [PlatformAdminController::class, 'index'])->name('admins.index');
         Route::get('/audit', [PlatformAuditController::class, 'index'])->name('audit.index');
+        Route::get('/billing', [PlatformBillingController::class, 'index'])->name('billing.index');
+        Route::post('/billing/invoices', [PlatformBillingController::class, 'store'])->name('billing.invoices.store');
+        Route::put('/billing/invoices/{invoice}', [PlatformBillingController::class, 'update'])->name('billing.invoices.update');
+        Route::delete('/billing/invoices/{invoice}', [PlatformBillingController::class, 'destroy'])->name('billing.invoices.destroy');
+        Route::get('/billing/invoices/{invoice}/preview', [PlatformBillingController::class, 'printPreview'])->name('billing.invoices.preview');
+        Route::get('/billing/invoices/{invoice}/pdf', [PlatformBillingController::class, 'download'])->name('billing.invoices.pdf');
+        Route::post('/billing/invoices/{invoice}/paid', [PlatformBillingController::class, 'markPaid'])->name('billing.invoices.paid');
+        Route::post('/billing/invoices/{invoice}/failed', [PlatformBillingController::class, 'markFailed'])->name('billing.invoices.failed');
         Route::get('/settings', [PlatformSettingsController::class, 'edit'])->name('settings.edit');
         Route::put('/settings', [PlatformSettingsController::class, 'update'])->name('settings.update');
+        Route::resource('resellers', PlatformResellerController::class)->except(['show']);
+        Route::resource('catalog-templates', PlatformCatalogTemplateController::class);
+        Route::post('catalog-templates/{catalog_template}/items', [PlatformCatalogTemplateController::class, 'storeItem'])
+            ->name('catalog-templates.items.store');
+        Route::delete('catalog-templates/{catalog_template}/items/{item}', [PlatformCatalogTemplateController::class, 'destroyItem'])
+            ->name('catalog-templates.items.destroy');
+        Route::post('catalog-templates/{catalog_template}/apply', [PlatformCatalogTemplateController::class, 'apply'])
+            ->name('catalog-templates.apply');
+        Route::resource('announcements', PlatformAnnouncementController::class)->except(['show']);
     });
 });

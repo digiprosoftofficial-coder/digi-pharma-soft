@@ -24,15 +24,32 @@
                 <div class="card card-body">
                     <h2 class="h6">Cart</h2>
                     <p v-if="!cart.length" class="text-muted small">Add products from search.</p>
-                    <table v-else class="table table-sm">
+                    <table v-else class="table table-sm align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Item</th>
+                                <th style="width: 7rem">Qty</th>
+                                <th style="width: 9rem">Unit ({{ currencyCode() }})</th>
+                                <th class="text-end">Line</th>
+                                <th></th>
+                            </tr>
+                        </thead>
                         <tbody>
                             <tr v-for="(line, idx) in cart" :key="idx">
                                 <td>{{ line.name }}</td>
                                 <td><input v-model.number="line.quantity" type="number" min="0.0001" step="0.0001" class="form-control form-control-sm" /></td>
                                 <td><input v-model.number="line.unit_price" type="number" min="0" step="0.0001" class="form-control form-control-sm" /></td>
+                                <td class="text-end">{{ formatMoney(Number(line.quantity || 0) * Number(line.unit_price || 0)) }}</td>
                                 <td><button type="button" class="btn btn-sm btn-outline-danger" @click="cart.splice(idx, 1)">×</button></td>
                             </tr>
                         </tbody>
+                        <tfoot v-if="cart.length" class="fw-semibold">
+                            <tr>
+                                <td colspan="3" class="text-end">Total</td>
+                                <td class="text-end">{{ formatMoney(cartTotal) }}</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
                     </table>
                     <form class="mt-3" @submit.prevent="submitSale">
                         <div class="mb-2">
@@ -57,8 +74,11 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useMoney } from '@/composables/useMoney';
 import { Head, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+
+const { formatMoney, currencyCode } = useMoney();
 
 const q = ref('');
 const results = ref([]);
@@ -67,6 +87,10 @@ const paymentMethod = ref('cash');
 const couponCode = ref('');
 const submitting = ref(false);
 let timer;
+
+const cartTotal = computed(() =>
+    cart.value.reduce((s, l) => s + Number(l.quantity || 0) * Number(l.unit_price || 0), 0),
+);
 
 function debouncedSearch() {
     clearTimeout(timer);
@@ -98,7 +122,6 @@ function addLine(item) {
 
 function submitSale() {
     submitting.value = true;
-    const total = cart.value.reduce((s, l) => s + l.quantity * l.unit_price, 0);
     router.post(
         '/pos/sales',
         {
@@ -107,7 +130,7 @@ function submitSale() {
                 quantity: l.quantity,
                 unit_price: l.unit_price,
             })),
-            payments: [{ method: paymentMethod.value, amount: total }],
+            payments: [{ method: paymentMethod.value, amount: cartTotal.value }],
             discount: 0,
             tax: 0,
             coupon_code: couponCode.value?.trim() || null,

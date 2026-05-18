@@ -12,7 +12,9 @@
                         <h2 class="h6 mb-1">{{ p.name }}</h2>
                         <p class="small text-muted mb-2"><code>{{ p.slug }}</code></p>
                         <p class="mb-1 small">Trial: {{ p.trial_days }} days</p>
-                        <p class="mb-3 small">Price: {{ (p.price_cents / 100).toFixed(2) }}</p>
+                        <p class="mb-3 small fw-semibold">
+                            {{ t('platform.plan_price') }}: {{ formatCents(p.price_cents, currency) }}
+                        </p>
                         <Link :href="`/platform/plans/${p.id}/edit`" class="btn btn-sm btn-outline-primary">{{ t('common.edit') }}</Link>
                     </div>
                 </div>
@@ -24,9 +26,14 @@
 <script setup>
 import PlatformShellLayout from '@/Layouts/PlatformShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
+import { useMoney } from '@/composables/useMoney';
 import { Head, Link } from '@inertiajs/vue3';
 
-defineProps({ plans: { type: Array, required: true } });
+const props = defineProps({
+    plans: { type: Array, required: true },
+    currency: { type: String, default: 'BDT' },
+});
 
 const { t } = useLocale();
+const { formatCents } = useMoney({ currency: props.currency });
 </script>

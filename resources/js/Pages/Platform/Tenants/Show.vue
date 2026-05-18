@@ -10,6 +10,9 @@
                     <TenantStatusBadge :status="tenant.status" />
                 </div>
                 <code class="small">{{ tenant.slug }}</code>
+                <p v-if="tenant.reseller_name" class="small text-muted mb-0 mt-1">
+                    {{ t('platform.reseller_label') }}: {{ tenant.reseller_name }}
+                </p>
             </div>
             <div class="d-flex gap-2">
                 <button
@@ -179,6 +182,75 @@
             </div>
         </div>
         <div class="card border-0 shadow-sm mt-3">
+            <div class="card-header bg-white fw-semibold d-flex justify-content-between">
+                <span>{{ t('platform.billing_title') }}</span>
+                <Link href="/platform/billing" class="small">{{ t('platform.billing_view') }}</Link>
+            </div>
+            <div class="card-body small">
+                <p class="mb-2">
+                    {{ t('platform.billing_status_label') }}:
+                    <span class="badge text-bg-secondary">{{ billingStatus }}</span>
+                    <span v-if="gracePeriodEndsAt" class="text-muted ms-2">
+                        ({{ t('platform.billing_grace_until') }} {{ formatDate(gracePeriodEndsAt) }})
+                    </span>
+                </p>
+                <ul v-if="tenantInvoices?.length" class="list-unstyled mb-0">
+                    <li v-for="inv in tenantInvoices" :key="inv.id" class="d-flex justify-content-between border-top pt-2 mt-2">
+                        <span>{{ inv.invoice_no }} — {{ inv.status }}</span>
+                        <span>{{ formatInvoiceMoney(inv) }}</span>
+                    </li>
+                </ul>
+                <p v-else class="text-muted mb-0">{{ t('platform.billing_no_invoices') }}</p>
+            </div>
+        </div>
+        <div v-if="catalogTemplates?.length" class="card border-0 shadow-sm mt-3">
+            <div class="card-header bg-white fw-semibold">{{ t('platform.catalog_apply_title') }}</div>
+            <div class="card-body small">
+                <p class="text-muted mb-2">{{ t('platform.catalog_apply_help') }}</p>
+                <form class="d-flex flex-wrap gap-2 align-items-end" @submit.prevent="applyCatalog">
+                    <div class="flex-grow-1" style="min-width: 12rem">
+                        <label class="form-label small mb-1">{{ t('platform.catalog_name') }}</label>
+                        <select v-model="catalogForm.catalog_template_id" class="form-select form-select-sm" required>
+                            <option :value="null" disabled>{{ t('platform.catalog_select_template') }}</option>
+                            <option v-for="tpl in catalogTemplates" :key="tpl.id" :value="tpl.id">
+                                {{ tpl.name }} ({{ tpl.items_count }})
+                            </option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary" :disabled="catalogForm.processing">
+                        {{ t('platform.catalog_apply') }}
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div v-if="canExportData || canPurgeData" class="card border-0 shadow-sm mt-3 border-warning-subtle">
+            <div class="card-header bg-white fw-semibold">{{ t('platform.compliance_title') }}</div>
+            <div class="card-body small">
+                <p class="text-muted mb-3">{{ t('platform.compliance_help') }}</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a
+                        v-if="canExportData"
+                        :href="`/platform/tenants/${tenant.id}/export`"
+                        class="btn btn-sm btn-outline-primary"
+                    >
+                        {{ t('platform.compliance_export') }}
+                    </a>
+                    <button
+                        v-if="canPurgeData"
+                        type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        :disabled="!tenant.suspended_at"
+                        @click="openPurgeModal"
+                    >
+                        {{ t('platform.compliance_purge') }}
+                    </button>
+                </div>
+                <p v-if="canPurgeData && !tenant.suspended_at" class="text-warning mb-0 mt-2">
+                    {{ t('platform.compliance_purge_requires_suspend') }}
+                </p>
+            </div>
+        </div>
+        <div class="card border-0 shadow-sm mt-3">
             <div class="card-header bg-white fw-semibold">Activity</div>
             <ul class="list-group list-group-flush small">
                 <li v-for="(a, i) in activities" :key="i" class="list-group-item d-flex justify-content-between">
@@ -218,6 +290,50 @@
         </ConfirmModal>
 
         <ConfirmModal
+            :show="showPurgeModal"
+            :title="t('platform.compliance_purge_modal_title', { name: tenant.name })"
+            :confirm-label="t('platform.compliance_purge')"
+            confirm-class="btn-danger"
+            :processing="purgeForm.processing"
+            @close="closePurgeModal"
+            @confirm="submitPurge"
+        >
+            <p class="small text-danger mb-3">{{ t('platform.compliance_purge_warning') }}</p>
+            <label class="form-label small mb-1" for="purge-reason">{{ t('common.reason') }}</label>
+            <textarea
+                id="purge-reason"
+                v-model="purgeForm.reason"
+                class="form-control form-control-sm mb-3"
+                :class="{ 'is-invalid': purgeForm.errors.reason }"
+                rows="3"
+                maxlength="2000"
+                required
+            />
+            <div v-if="purgeForm.errors.reason" class="invalid-feedback d-block mb-2">
+                {{ purgeForm.errors.reason }}
+            </div>
+            <label class="form-label small mb-1" for="purge-slug">
+                {{ t('platform.compliance_confirm_slug', { slug: tenant.slug }) }}
+            </label>
+            <input
+                id="purge-slug"
+                v-model="purgeForm.confirm_slug"
+                type="text"
+                class="form-control form-control-sm"
+                :class="{ 'is-invalid': purgeForm.errors.confirm_slug || purgeForm.errors.purge }"
+                :placeholder="tenant.slug"
+                autocomplete="off"
+                required
+            />
+            <div v-if="purgeForm.errors.confirm_slug" class="invalid-feedback d-block">
+                {{ purgeForm.errors.confirm_slug }}
+            </div>
+            <div v-if="purgeForm.errors.purge" class="invalid-feedback d-block">
+                {{ purgeForm.errors.purge }}
+            </div>
+        </ConfirmModal>
+
+        <ConfirmModal
             :show="showUnsuspendModal"
             :title="t('platform.unsuspend_modal_title', { name: tenant.name })"
             :confirm-label="t('common.unsuspend')"
@@ -246,13 +362,22 @@ const props = defineProps({
     canImpersonate: { type: Boolean, default: false },
     canResendOwnerInvite: { type: Boolean, default: false },
     ownerInvitePending: { type: Object, default: null },
+    canExportData: { type: Boolean, default: false },
+    canPurgeData: { type: Boolean, default: false },
+    tenantInvoices: { type: Array, default: () => [] },
+    billingStatus: { type: String, default: 'trialing' },
+    gracePeriodEndsAt: { type: String, default: null },
+    catalogTemplates: { type: Array, default: () => [] },
 });
 
 const { t } = useLocale();
 const showSuspendModal = ref(false);
 const showUnsuspendModal = ref(false);
+const showPurgeModal = ref(false);
 const suspendForm = useForm({ reason: '' });
 const unsuspendForm = useForm({});
+const purgeForm = useForm({ confirm_slug: '', reason: '' });
+const catalogForm = useForm({ catalog_template_id: null });
 
 const resendInviteForm = useForm({});
 
@@ -272,6 +397,18 @@ function formatDate(iso) {
     return String(iso).slice(0, 10);
 }
 
+function formatInvoiceMoney(inv) {
+    const amount = Number(inv.amount_cents || 0) / 100;
+    const currency = inv.currency ?? 'BDT';
+
+    return new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(amount);
+}
+
 function submitOwner() {
     ownerForm.post(`/platform/tenants/${props.tenant.id}/owner`, {
         preserveScroll: true,
@@ -280,6 +417,17 @@ function submitOwner() {
             ownerForm.owner_invite = true;
         },
     });
+}
+
+function applyCatalog() {
+    const tplId = catalogForm.catalog_template_id;
+    if (!tplId) {
+        return;
+    }
+
+    catalogForm
+        .transform(() => ({ tenant_id: props.tenant.id }))
+        .post(`/platform/catalog-templates/${tplId}/apply`, { preserveScroll: true });
 }
 
 function resendInvite() {
@@ -337,5 +485,28 @@ function impersonate() {
         return;
     }
     router.post(`/platform/tenants/${props.tenant.id}/impersonate`);
+}
+
+function openPurgeModal() {
+    purgeForm.clearErrors();
+    purgeForm.confirm_slug = '';
+    purgeForm.reason = '';
+    showPurgeModal.value = true;
+}
+
+function closePurgeModal() {
+    if (purgeForm.processing) {
+        return;
+    }
+    showPurgeModal.value = false;
+}
+
+function submitPurge() {
+    purgeForm.post(`/platform/tenants/${props.tenant.id}/purge`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showPurgeModal.value = false;
+        },
+    });
 }
 </script>

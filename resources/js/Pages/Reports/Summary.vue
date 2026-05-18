@@ -27,7 +27,7 @@
             <div class="col-md-6">
                 <div class="card border-0 shadow-sm card-body">
                     <div class="text-muted small">Total sales (range)</div>
-                    <div class="h3 mb-0">{{ salesTotal }}</div>
+                    <div class="h3 mb-0">{{ formatMoney(salesTotal) }}</div>
                 </div>
             </div>
         </div>
@@ -38,8 +38,8 @@
                     <tr>
                         <th>Invoice</th>
                         <th>Date</th>
-                        <th class="text-end">Total</th>
-                        <th class="text-end">Due</th>
+                        <th class="text-end">Total ({{ currencyCode() }})</th>
+                        <th class="text-end">Due ({{ currencyCode() }})</th>
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -47,8 +47,8 @@
                     <tr v-for="s in salesInRange.data" :key="s.id">
                         <td>{{ s.invoice_no }}</td>
                         <td>{{ s.sold_at }}</td>
-                        <td class="text-end">{{ s.total }}</td>
-                        <td class="text-end">{{ s.due }}</td>
+                        <td class="text-end">{{ formatMoney(s.total) }}</td>
+                        <td class="text-end">{{ formatMoney(s.due) }}</td>
                         <td>{{ s.status }}</td>
                     </tr>
                 </tbody>
@@ -60,7 +60,7 @@
                 <span>Product #{{ row.product_id }}</span>
                 <span>
                     <span class="badge bg-primary rounded-pill me-1">{{ row.qty }}</span>
-                    <span class="text-muted small">rev {{ row.revenue }}</span>
+                    <span class="text-muted small">rev {{ formatMoney(row.revenue) }}</span>
                 </span>
             </li>
             <li v-if="!topProducts.length" class="list-group-item text-muted small">No lines in this range.</li>
@@ -70,6 +70,7 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useMoney } from '@/composables/useMoney';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, reactive } from 'vue';
 
@@ -80,6 +81,8 @@ const props = defineProps({
     salesInRange: { type: Object, required: true },
     topProducts: { type: Array, required: true },
 });
+
+const { formatMoney, currencyCode } = useMoney();
 
 const range = reactive({
     date_from: props.dateFrom,

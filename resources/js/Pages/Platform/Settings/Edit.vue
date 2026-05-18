@@ -73,6 +73,104 @@
                 </div>
             </div>
 
+            <h2 class="h6 mt-4">{{ t('platform.settings_section_region') }}</h2>
+            <p class="small text-muted">{{ t('platform.settings_region_help') }}</p>
+            <div class="row g-2 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">{{ t('platform.settings_default_locale') }}</label>
+                    <select v-model="form.default_locale" class="form-select" required>
+                        <option value="en">English</option>
+                        <option value="bn">বাংলা</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">{{ t('platform.settings_default_timezone') }}</label>
+                    <input v-model="form.default_timezone" class="form-control" required />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">{{ t('platform.settings_default_country') }}</label>
+                    <input v-model="form.default_country_code" class="form-control" maxlength="2" required />
+                </div>
+            </div>
+
+            <h2 class="h6 mt-4">{{ t('platform.settings_section_compliance') }}</h2>
+            <p class="small text-muted">{{ t('platform.settings_compliance_help') }}</p>
+            <div class="row g-2 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">{{ t('platform.settings_audit_retention_days') }}</label>
+                    <input
+                        v-model.number="form.audit_log_retention_days"
+                        type="number"
+                        min="30"
+                        max="3650"
+                        class="form-control"
+                        :class="{ 'is-invalid': form.errors.audit_log_retention_days }"
+                        required
+                    />
+                    <div v-if="form.errors.audit_log_retention_days" class="invalid-feedback d-block">
+                        {{ form.errors.audit_log_retention_days }}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{{ t('platform.settings_export_retention_days') }}</label>
+                    <input
+                        v-model.number="form.compliance_export_retention_days"
+                        type="number"
+                        min="1"
+                        max="90"
+                        class="form-control"
+                        :class="{ 'is-invalid': form.errors.compliance_export_retention_days }"
+                        required
+                    />
+                </div>
+            </div>
+
+            <h2 class="h6 mt-4">{{ t('platform.settings_section_billing') }}</h2>
+            <p class="small text-muted">{{ t('platform.settings_billing_help') }}</p>
+            <div class="row g-2 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">{{ t('platform.settings_billing_grace_days') }}</label>
+                    <input
+                        v-model.number="form.billing_grace_days"
+                        type="number"
+                        min="0"
+                        max="90"
+                        class="form-control"
+                        required
+                    />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">{{ t('platform.settings_default_currency') }}</label>
+                    <select
+                        v-model="form.default_currency"
+                        class="form-select"
+                        :class="{ 'is-invalid': form.errors.default_currency }"
+                        required
+                    >
+                        <option v-for="code in currencies" :key="code" :value="code">
+                            {{ currencyLabel(code) }}
+                        </option>
+                    </select>
+                    <div class="form-text">{{ t('platform.settings_default_currency_help') }}</div>
+                    <div v-if="form.errors.default_currency" class="invalid-feedback d-block">
+                        {{ form.errors.default_currency }}
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <div class="form-check mb-2">
+                        <input
+                            id="auto-suspend-billing"
+                            v-model="form.auto_suspend_on_payment_failure"
+                            type="checkbox"
+                            class="form-check-input"
+                        />
+                        <label class="form-check-label small" for="auto-suspend-billing">
+                            {{ t('platform.settings_auto_suspend_payment') }}
+                        </label>
+                    </div>
+                </div>
+            </div>
+
             <h2 class="h6 mt-4">{{ t('platform.settings_section_features') }}</h2>
             <p class="small text-muted">{{ t('platform.settings_features_help') }}</p>
             <div class="mb-3">
@@ -102,7 +200,12 @@ import { Head, useForm } from '@inertiajs/vue3';
 
 const props = defineProps({
     settings: { type: Object, required: true },
+    currencies: { type: Array, default: () => ['BDT', 'USD', 'EUR', 'GBP', 'INR', 'SAR'] },
 });
+
+function currencyLabel(code) {
+    return t(`platform.currency_${String(code).toLowerCase()}`, code);
+}
 
 const { t } = useLocale();
 
@@ -118,6 +221,14 @@ const form = useForm({
         reports: props.settings.feature_flags?.reports ?? true,
         stock_transfers: props.settings.feature_flags?.stock_transfers ?? true,
     },
+    audit_log_retention_days: props.settings.audit_log_retention_days ?? 365,
+    compliance_export_retention_days: props.settings.compliance_export_retention_days ?? 7,
+    billing_grace_days: props.settings.billing_grace_days ?? 7,
+    auto_suspend_on_payment_failure: props.settings.auto_suspend_on_payment_failure ?? true,
+    default_currency: props.settings.default_currency ?? 'BDT',
+    default_locale: props.settings.default_locale ?? 'en',
+    default_timezone: props.settings.default_timezone ?? 'Asia/Dhaka',
+    default_country_code: props.settings.default_country_code ?? 'BD',
 });
 
 function submit() {

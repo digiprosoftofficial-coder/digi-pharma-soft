@@ -25,8 +25,11 @@
                     <input v-model.number="line.quantity" type="number" min="0.0001" step="0.0001" class="form-control form-control-sm" required />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label small">Refund unit price</label>
-                    <input v-model.number="line.unit_price" type="number" min="0" step="0.01" class="form-control form-control-sm" required />
+                    <label class="form-label small">Refund unit price ({{ currencyCode() }})</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">{{ currencySymbol() }}</span>
+                        <input v-model.number="line.unit_price" type="number" min="0" step="0.01" class="form-control form-control-sm" required />
+                    </div>
                 </div>
                 <div class="col-md-2">
                     <button type="button" class="btn btn-sm btn-outline-danger" @click="form.lines.splice(i, 1)">×</button>
@@ -43,9 +46,12 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useMoney } from '@/composables/useMoney';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
 defineProps({ sales: { type: Array, required: true } });
+
+const { currencyCode, currencySymbol } = useMoney();
 
 const form = useForm({
     sale_id: null,

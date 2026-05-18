@@ -106,6 +106,7 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useMoney } from '@/composables/useMoney';
 import { Head } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -116,9 +117,7 @@ const props = defineProps({
     activities: { type: Array, required: true },
 });
 
-function formatMoney(n) {
-    return Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+const { formatMoney } = useMoney();
 
 function barHeight(total) {
     const max = Math.max(...props.chartDays.map((d) => d.total), 1);

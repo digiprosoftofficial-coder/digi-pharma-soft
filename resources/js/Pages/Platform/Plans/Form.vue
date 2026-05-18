@@ -13,8 +13,11 @@
             </div>
             <div class="row g-2 mb-2">
                 <div class="col-md-6">
-                    <label class="form-label">Price (cents)</label>
-                    <input v-model.number="form.price_cents" type="number" min="0" class="form-control" required />
+                    <label class="form-label">{{ t('platform.plan_price_bdt') }}</label>
+                    <input v-model.number="priceTaka" type="number" min="0" step="0.01" class="form-control" required />
+                    <div class="form-text">
+                        {{ t('platform.plan_price_preview') }}: {{ formatMoney(priceTaka, { currency }) }}
+                    </div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Trial days</label>
@@ -40,11 +43,19 @@
 <script setup>
 import PlatformShellLayout from '@/Layouts/PlatformShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
+import { useMoney } from '@/composables/useMoney';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
-const props = defineProps({ plan: { type: Object, default: null } });
+const props = defineProps({
+    plan: { type: Object, default: null },
+    currency: { type: String, default: 'BDT' },
+});
 
 const { t } = useLocale();
+const { formatMoney } = useMoney({ currency: props.currency });
+
+const priceTaka = ref(Number(props.plan?.price_cents ?? 0) / 100);
 
 const form = useForm({
     name: props.plan?.name ?? '',
@@ -58,6 +69,8 @@ const form = useForm({
 });
 
 function submit() {
+    form.price_cents = Math.round(Number(priceTaka.value || 0) * 100);
+
     if (props.plan) {
         form.put(`/platform/plans/${props.plan.id}`);
     } else {

@@ -12,7 +12,7 @@
                         <th>Name</th>
                         <th>SKU</th>
                         <th>Barcode</th>
-                        <th>Sale</th>
+                        <th class="text-end">Sale ({{ currencyCode() }})</th>
                         <th>Stock</th>
                         <th></th>
                     </tr>
@@ -22,7 +22,7 @@
                         <td>{{ p.name }}</td>
                         <td>{{ p.sku }}</td>
                         <td>{{ p.barcode || '—' }}</td>
-                        <td>{{ p.sale_price }}</td>
+                        <td class="text-end">{{ formatMoney(p.sale_price) }}</td>
                         <td>
                             <span v-if="p.batches?.length">
                                 {{ p.batches.reduce((s, b) => s + Number(b.quantity_on_hand), 0) }}
@@ -50,9 +50,12 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useMoney } from '@/composables/useMoney';
 import { Head, Link } from '@inertiajs/vue3';
 
 defineProps({
     products: { type: Object, required: true },
 });
+
+const { formatMoney, currencyCode } = useMoney();
 </script>

@@ -23,12 +23,24 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Purchase price</label>
-                    <input v-model="form.purchase_price" type="number" step="0.0001" min="0" class="form-control" required />
+                    <label class="form-label">Purchase price ({{ currencyCode() }})</label>
+                    <div class="input-group">
+                        <span class="input-group-text">{{ currencySymbol() }}</span>
+                        <input v-model="form.purchase_price" type="number" step="0.0001" min="0" class="form-control" required />
+                    </div>
+                    <div v-if="Number(form.purchase_price) > 0" class="form-text">
+                        {{ formatMoney(form.purchase_price) }}
+                    </div>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Sale price</label>
-                    <input v-model="form.sale_price" type="number" step="0.0001" min="0" class="form-control" required />
+                    <label class="form-label">Sale price ({{ currencyCode() }})</label>
+                    <div class="input-group">
+                        <span class="input-group-text">{{ currencySymbol() }}</span>
+                        <input v-model="form.sale_price" type="number" step="0.0001" min="0" class="form-control" required />
+                    </div>
+                    <div v-if="Number(form.sale_price) > 0" class="form-text">
+                        {{ formatMoney(form.sale_price) }}
+                    </div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Min stock alert</label>
@@ -51,11 +63,14 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useMoney } from '@/composables/useMoney';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
 const props = defineProps({
     product: { type: Object, default: null },
 });
+
+const { formatMoney, currencyCode, currencySymbol } = useMoney();
 
 const form = useForm({
     name: props.product?.name ?? '',

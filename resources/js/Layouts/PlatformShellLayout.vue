@@ -66,8 +66,13 @@ const navItems = computed(() => [
     { href: '/platform/dashboard', label: t('platform.nav_overview') },
     { href: '/platform/tenants', label: t('platform.nav_pharmacies') },
     { href: '/platform/plans', label: t('platform.nav_plans') },
+    { href: '/platform/resellers', label: t('platform.nav_resellers') },
+    { href: '/platform/catalog-templates', label: t('platform.nav_catalog') },
+    { href: '/platform/announcements', label: t('platform.nav_announcements') },
+    { href: '/platform/billing', label: t('platform.nav_billing') },
     { href: '/platform/admins', label: t('platform.nav_admins') },
     { href: '/platform/audit', label: t('platform.nav_audit') },
+    { href: '/platform/health', label: t('platform.nav_health') },
     { href: '/platform/settings', label: t('platform.nav_settings') },
 ]);
 

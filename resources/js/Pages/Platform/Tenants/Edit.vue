@@ -40,6 +40,13 @@
                     <div class="form-text">{{ t('platform.subscription_ends_extend_hint') }}</div>
                 </div>
             </div>
+            <div v-if="resellers.length" class="mb-3">
+                <label class="form-label">{{ t('platform.reseller_label') }}</label>
+                <select v-model="form.reseller_id" class="form-select">
+                    <option :value="null">—</option>
+                    <option v-for="r in resellers" :key="r.id" :value="r.id">{{ r.name }}</option>
+                </select>
+            </div>
             <div class="mb-3">
                 <label class="form-label">Plan</label>
                 <select v-model="form.subscription_plan_id" class="form-select">
@@ -73,6 +80,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 const props = defineProps({
     tenant: { type: Object, required: true },
     plans: { type: Array, required: true },
+    resellers: { type: Array, default: () => [] },
 });
 
 const { t } = useLocale();
@@ -86,6 +94,7 @@ const form = useForm({
     subscription_ends_at: initialSubscriptionEnds,
     subscription_plan_id: props.tenant.subscription?.plan_id ?? null,
     internal_notes: props.tenant.internal_notes ?? '',
+    reseller_id: props.tenant.reseller_id ?? null,
 });
 
 const { subscriptionInputKey, onSubscriptionEndsChange, committedSubscriptionEnds } = useSubscriptionEndsConfirm(

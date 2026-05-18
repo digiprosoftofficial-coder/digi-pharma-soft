@@ -21,8 +21,11 @@
                                 </select>
                             </div>
                             <div class="mb-2">
-                                <label class="form-label small">Amount</label>
-                                <input v-model.number="entryForm.amount" type="number" min="0.0001" step="0.0001" class="form-control form-control-sm" required />
+                                <label class="form-label small">Amount ({{ currencyCode() }})</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">{{ currencySymbol() }}</span>
+                                    <input v-model.number="entryForm.amount" type="number" min="0.0001" step="0.0001" class="form-control form-control-sm" required />
+                                </div>
                             </div>
                             <div class="mb-2">
                                 <label class="form-label small">Memo</label>
@@ -41,7 +44,7 @@
                             <tr>
                                 <th>Posted</th>
                                 <th>Dir</th>
-                                <th class="text-end">Amount</th>
+                                <th class="text-end">Amount ({{ currencyCode() }})</th>
                                 <th>Memo</th>
                             </tr>
                         </thead>
@@ -49,7 +52,7 @@
                             <tr v-for="e in entries.data" :key="e.id">
                                 <td>{{ e.posted_at }}</td>
                                 <td>{{ e.direction }}</td>
-                                <td class="text-end">{{ e.amount }}</td>
+                                <td class="text-end">{{ formatMoney(e.amount) }}</td>
                                 <td class="small">{{ e.memo || '—' }}</td>
                             </tr>
                         </tbody>
@@ -62,6 +65,7 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useMoney } from '@/composables/useMoney';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { usePermissions } from '@/composables/usePermissions';
 
@@ -71,6 +75,7 @@ const props = defineProps({
 });
 
 const { can } = usePermissions();
+const { formatMoney, currencyCode, currencySymbol } = useMoney();
 
 const entryForm = useForm({
     direction: 'debit',

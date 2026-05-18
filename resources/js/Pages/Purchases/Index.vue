@@ -13,8 +13,8 @@
                             <th>Invoice</th>
                             <th>Supplier</th>
                             <th>Date</th>
-                            <th class="text-end">Total</th>
-                            <th class="text-end">Due</th>
+                            <th class="text-end">Total ({{ currencyCode() }})</th>
+                            <th class="text-end">Due ({{ currencyCode() }})</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -22,8 +22,8 @@
                             <td>{{ p.invoice_no }}</td>
                             <td>{{ p.supplier?.name }}</td>
                             <td>{{ p.purchased_at }}</td>
-                            <td class="text-end">{{ p.total }}</td>
-                            <td class="text-end">{{ p.due }}</td>
+                            <td class="text-end">{{ formatMoney(p.total) }}</td>
+                            <td class="text-end">{{ formatMoney(p.due) }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -34,7 +34,10 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useMoney } from '@/composables/useMoney';
 import { Head, Link } from '@inertiajs/vue3';
 
 defineProps({ purchases: { type: Object, required: true } });
+
+const { formatMoney, currencyCode } = useMoney();
 </script>

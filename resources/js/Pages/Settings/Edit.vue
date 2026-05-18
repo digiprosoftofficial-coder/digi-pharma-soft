@@ -20,6 +20,18 @@
                 <label class="form-label">Address</label>
                 <textarea v-model="form.settings.address" class="form-control" rows="2"></textarea>
             </div>
+            <div class="mb-2">
+                <label class="form-label">Currency</label>
+                <select v-model="form.settings.currency" class="form-select">
+                    <option v-for="code in currencies" :key="code" :value="code">
+                        {{ currencyLabel(code) }}
+                    </option>
+                </select>
+                <div class="form-text">
+                    Platform default: <strong>{{ platformDefaultCurrency }}</strong>. Changing this updates every monetary input and display in your pharmacy.
+                </div>
+                <div v-if="form.errors['settings.currency']" class="text-danger small">{{ form.errors['settings.currency'] }}</div>
+            </div>
             <button v-if="can('settings.manage')" type="submit" class="btn btn-primary" :disabled="form.processing">Save</button>
             <p v-else class="small text-muted mb-0">View only — you need settings.manage to update.</p>
         </form>
@@ -33,6 +45,8 @@ import { usePermissions } from '@/composables/usePermissions';
 
 const props = defineProps({
     tenant: { type: Object, required: true },
+    currencies: { type: Array, default: () => ['BDT', 'USD', 'EUR', 'GBP', 'INR', 'SAR'] },
+    platformDefaultCurrency: { type: String, default: 'BDT' },
 });
 
 const { can } = usePermissions();
@@ -42,8 +56,34 @@ const form = useForm({
     settings: {
         phone: props.tenant.settings?.phone ?? '',
         address: props.tenant.settings?.address ?? '',
+        currency: props.tenant.settings?.currency ?? props.tenant.currency ?? props.platformDefaultCurrency,
     },
 });
+
+const currencyNames = {
+    BDT: 'Bangladeshi Taka',
+    USD: 'US Dollar',
+    EUR: 'Euro',
+    GBP: 'Pound Sterling',
+    INR: 'Indian Rupee',
+    SAR: 'Saudi Riyal',
+};
+
+function currencyLabel(code) {
+    let symbol = code;
+    try {
+        const parts = new Intl.NumberFormat(undefined, {
+            style: 'currency',
+            currency: code,
+            currencyDisplay: 'narrowSymbol',
+        }).formatToParts(0);
+        symbol = parts.find((p) => p.type === 'currency')?.value ?? code;
+    } catch (e) {
+        symbol = code;
+    }
+    const name = currencyNames[code] ?? code;
+    return `${code} — ${name} (${symbol})`;
+}
 
 function submit() {
     if (!can('settings.manage')) {

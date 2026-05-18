@@ -11,14 +11,14 @@
                     <tr>
                         <th>Reference</th>
                         <th>Date</th>
-                        <th class="text-end">Refund</th>
+                        <th class="text-end">Refund ({{ currencyCode() }})</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="r in saleReturns.data" :key="r.id">
                         <td>{{ r.reference_no }}</td>
                         <td>{{ r.returned_at }}</td>
-                        <td class="text-end">{{ r.total_refund }}</td>
+                        <td class="text-end">{{ formatMoney(r.total_refund) }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -28,7 +28,10 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useMoney } from '@/composables/useMoney';
 import { Head, Link } from '@inertiajs/vue3';
 
 defineProps({ saleReturns: { type: Object, required: true } });
+
+const { formatMoney, currencyCode } = useMoney();
 </script>
