@@ -20,3 +20,46 @@ export function unitLabel(sellUnit) {
     }
     return sellUnit;
 }
+
+export function unitConversionFactor(product, sellUnit) {
+    const row = product.units?.find((u) => u.sell_unit === sellUnit);
+    return Number(row?.conversion_factor ?? 1);
+}
+
+/** Stock on hand expressed in the selected sell unit. */
+export function stockInSellUnit({ baseStock, baseUnit, sellUnit, units, piecesPerStrip }) {
+    const stock = Number(baseStock ?? 0);
+    if (Number.isNaN(stock)) {
+        return 0;
+    }
+
+    if (sellUnit === baseUnit) {
+        return stock;
+    }
+
+    if (sellUnit === 'piece' && baseUnit === 'strip' && piecesPerStrip) {
+        return stock * Number(piecesPerStrip);
+    }
+
+    if (sellUnit === 'piece' && baseUnit === 'piece') {
+        return stock;
+    }
+
+    const factor = unitConversionFactor({ units }, sellUnit);
+    return stock / Math.max(0.0001, factor);
+}
+
+export function totalPiecesFromStock({ baseStock, baseUnit, piecesPerStrip }) {
+    const stock = Number(baseStock ?? 0);
+    const pps = Number(piecesPerStrip ?? 0);
+    if (!pps || Number.isNaN(stock)) {
+        return null;
+    }
+    if (baseUnit === 'piece') {
+        return stock;
+    }
+    if (baseUnit === 'strip') {
+        return stock * pps;
+    }
+    return null;
+}

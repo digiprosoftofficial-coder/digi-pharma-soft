@@ -9,6 +9,13 @@ use Illuminate\Validation\Rule;
 
 class UpdateProductRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('pieces_per_strip') && $this->input('pieces_per_strip') === '') {
+            $this->merge(['pieces_per_strip' => null]);
+        }
+    }
+
     public function authorize(): bool
     {
         /** @var Product $product */
@@ -34,6 +41,7 @@ class UpdateProductRequest extends FormRequest
             'barcode' => ['nullable', 'string', 'max:64', Rule::unique('products', 'barcode')->where('tenant_id', $tenantId)->ignore($product->getKey())],
             'product_type' => ['sometimes', ProductCatalogOptions::productTypeRule()],
             'base_unit' => ['sometimes', ProductCatalogOptions::sellUnitRule()],
+            'pieces_per_strip' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
             'units' => ['sometimes', 'array', 'min:1'],
             'units.*.sell_unit' => ['required_with:units', ProductCatalogOptions::sellUnitRule()],
             'units.*.conversion_factor' => ['nullable', 'numeric', 'min:0.0001'],
@@ -42,6 +50,15 @@ class UpdateProductRequest extends FormRequest
             'units.*.is_default' => ['sometimes', 'boolean'],
             'min_stock' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['sometimes', 'boolean'],
+            'stock_adjustment' => ['nullable', 'numeric', 'not_in:0'],
+            'stock_adjust_batch_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('product_batches', 'id')
+                    ->where('tenant_id', $tenantId)
+                    ->where('product_id', $product->getKey()),
+            ],
+            'stock_adjust_batch_no' => ['nullable', 'string', 'max:64'],
         ];
     }
 }

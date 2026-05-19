@@ -2,6 +2,7 @@
 
 namespace App\Domain\Catalog\Models;
 
+use App\Domain\Purchasing\Models\PurchaseLine;
 use App\Support\Models\TenantModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,12 +11,13 @@ class Product extends TenantModel
 {
     protected $fillable = [
         'tenant_id', 'category_id', 'manufacturer_id', 'name', 'sku', 'barcode',
-        'product_type', 'base_unit', 'unit', 'purchase_price', 'sale_price', 'min_stock', 'is_active',
+        'product_type', 'base_unit', 'pieces_per_strip', 'unit', 'purchase_price', 'sale_price', 'min_stock', 'is_active',
     ];
 
     protected function casts(): array
     {
         return [
+            'pieces_per_strip' => 'decimal:4',
             'purchase_price' => 'decimal:4',
             'sale_price' => 'decimal:4',
             'is_active' => 'boolean',
@@ -40,6 +42,11 @@ class Product extends TenantModel
     public function units(): HasMany
     {
         return $this->hasMany(ProductUnit::class)->orderBy('sort_order')->orderBy('sell_unit');
+    }
+
+    public function purchaseLines(): HasMany
+    {
+        return $this->hasMany(PurchaseLine::class);
     }
 
     public function defaultUnit(): ?ProductUnit

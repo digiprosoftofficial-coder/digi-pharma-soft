@@ -43,6 +43,7 @@
         <path v-else-if="name === 'return'" d="M4 7h12l-3-3M20 17H8l3 3" />
         <path v-else-if="name === 'bill'" d="M6 4h12v16H6z M9 8h6M9 12h6M9 16h4" />
         <path v-else-if="name === 'category'" d="M4 6h7v7H4zM13 6h7v4h-7zM13 13h7v7h-7zM4 16h7v4H4z" />
+        <path v-else-if="name === 'tag'" d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82zM7 7h.01" />
         <path v-else-if="name === 'factory'" d="M3 21V9l6-3v6l6-3v12" />
         <path v-else-if="name === 'upload'" d="M12 16V4M8 8l4-4 4 4M4 20h16" />
         <path v-else-if="name === 'transfer'" d="M7 7h11l-3-3M17 17H6l3 3" />

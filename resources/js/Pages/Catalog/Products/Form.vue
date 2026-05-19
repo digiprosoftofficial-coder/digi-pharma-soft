@@ -37,6 +37,21 @@
                     </select>
                     <p class="form-text small mb-0">Inventory is tracked in this unit.</p>
                 </div>
+                <div v-if="showPiecesPerStrip" class="col-md-4">
+                    <label class="form-label">Pieces per strip</label>
+                    <input
+                        v-model="form.pieces_per_strip"
+                        type="number"
+                        min="1"
+                        step="1"
+                        class="form-control"
+                        :class="{ 'is-invalid': form.errors.pieces_per_strip }"
+                        placeholder="e.g. 10"
+                        @input="syncPiecesPerStripToUnits"
+                    />
+                    <div v-if="form.errors.pieces_per_strip" class="text-danger small">{{ form.errors.pieces_per_strip }}</div>
+                    <p v-else class="form-text small mb-0">Tablets/capsules in one strip — needed for piece sales &amp; stock count.</p>
+                </div>
                 <div class="col-md-4">
                     <label class="form-label">Min stock alert</label>
                     <input v-model="form.min_stock" type="number" min="0" class="form-control" />
@@ -57,18 +72,133 @@
                 </div>
             </div>
 
+            <div v-if="!existing" class="mt-4 card border-primary border-2">
+                <div class="card-header bg-primary-subtle py-3">
+                    <h2 class="h5 mb-1">Opening stock</h2>
+                    <p class="small text-muted mb-0">
+                        Set how much you have on hand when adding this product (in <strong>{{ unitLabel(form.base_unit) }}</strong>).
+                        Leave quantity empty if stock will come from a purchase later.
+                    </p>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Quantity</label>
+                            <input
+                                v-model.number="form.opening_quantity"
+                                type="number"
+                                min="0"
+                                step="0.0001"
+                                class="form-control form-control-lg"
+                                placeholder="e.g. 100"
+                            />
+                            <div v-if="form.errors.opening_quantity" class="text-danger small">{{ form.errors.opening_quantity }}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Batch no</label>
+                            <input
+                                v-model="form.opening_batch_no"
+                                type="text"
+                                class="form-control"
+                                :placeholder="form.sku ? `OPEN-${form.sku}` : 'Auto if empty'"
+                            />
+                            <div v-if="form.errors.opening_batch_no" class="text-danger small">{{ form.errors.opening_batch_no }}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Expiry date</label>
+                            <input v-model="form.opening_expiry_date" type="date" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="existing" class="mt-4 card border-warning border-2">
+                <div class="card-header bg-warning-subtle py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h2 class="h5 mb-1">Stock</h2>
+                        <p class="small text-muted mb-0">Adjust on-hand quantity in <strong>{{ unitLabel(form.base_unit) }}</strong>.</p>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge text-bg-dark fs-6 px-3 py-2">
+                            Total: {{ formatQty(totalStock) }} {{ unitLabel(form.base_unit) }}
+                        </span>
+                        <span v-if="totalStockPieces !== null" class="badge text-bg-secondary fs-6 px-3 py-2">
+                            {{ formatQty(totalStockPieces) }} pieces
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div v-if="batches.length" class="table-responsive mb-3">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Batch</th>
+                                    <th>Expiry</th>
+                                    <th class="text-end">On hand</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="b in batches" :key="b.id">
+                                    <td>{{ b.batch_no }}</td>
+                                    <td>{{ b.expiry_date || '—' }}</td>
+                                    <td class="text-end">{{ formatQty(b.quantity_on_hand) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p v-else class="text-muted small mb-3">No batches yet. A positive adjustment will create one.</p>
+
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Adjust by (+ / −)</label>
+                            <input
+                                v-model.number="form.stock_adjustment"
+                                type="number"
+                                step="0.0001"
+                                class="form-control form-control-lg"
+                                placeholder="e.g. 50 or -10"
+                            />
+                            <p class="form-text small mb-0">Positive adds stock; negative removes.</p>
+                            <div v-if="form.errors.stock_adjustment" class="text-danger small">{{ form.errors.stock_adjustment }}</div>
+                        </div>
+                        <div v-if="batches.length > 1" class="col-md-4">
+                            <label class="form-label">Apply to batch</label>
+                            <select v-model="form.stock_adjust_batch_id" class="form-select">
+                                <option :value="null">— Select batch —</option>
+                                <option v-for="b in batches" :key="b.id" :value="b.id">
+                                    {{ b.batch_no }} ({{ formatQty(b.quantity_on_hand) }})
+                                </option>
+                            </select>
+                            <div v-if="form.errors.stock_adjust_batch_id" class="text-danger small">{{ form.errors.stock_adjust_batch_id }}</div>
+                        </div>
+                        <div v-else-if="!batches.length" class="col-md-4">
+                            <label class="form-label">New batch no</label>
+                            <input
+                                v-model="form.stock_adjust_batch_no"
+                                type="text"
+                                class="form-control"
+                                :placeholder="`ADJ-${existing.sku}`"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="mt-4">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <h2 class="h6 mb-0">Sell units &amp; prices</h2>
                     <button type="button" class="btn btn-sm btn-outline-secondary" @click="addUnitRow">Add unit</button>
                 </div>
                 <div v-if="form.errors.units" class="text-danger small mb-2">{{ form.errors.units }}</div>
+                <p v-if="hasStripUnitRow" class="small text-muted mb-2">
+                    Strip purchase/sale prices auto-fill piece and box (using conversion factors).
+                </p>
                 <div class="table-responsive">
                     <table class="table table-sm align-middle">
                         <thead class="table-light">
                             <tr>
                                 <th>Unit</th>
-                                <th style="width: 8rem">Per base unit</th>
+                                <th style="width: 8rem">{{ conversionColumnLabel }}</th>
                                 <th style="width: 9rem">Purchase</th>
                                 <th style="width: 9rem">Sale</th>
                                 <th>Default</th>
@@ -87,16 +217,34 @@
                                         v-model.number="row.conversion_factor"
                                         type="number"
                                         min="0.0001"
-                                        step="0.0001"
+                                        step="any"
                                         class="form-control form-control-sm"
                                         :disabled="row.sell_unit === form.base_unit"
+                                        @input="onUnitConversionInput(row)"
+                                        @blur="onConversionFactorBlur(row)"
                                     />
                                 </td>
                                 <td>
-                                    <input v-model="row.purchase_price" type="number" min="0" step="0.0001" class="form-control form-control-sm" required />
+                                    <input
+                                        v-model="row.purchase_price"
+                                        type="number"
+                                        min="0"
+                                        step="0.0001"
+                                        class="form-control form-control-sm"
+                                        required
+                                        @input="onStripPriceInput(row)"
+                                    />
                                 </td>
                                 <td>
-                                    <input v-model="row.sale_price" type="number" min="0" step="0.0001" class="form-control form-control-sm" required />
+                                    <input
+                                        v-model="row.sale_price"
+                                        type="number"
+                                        min="0"
+                                        step="0.0001"
+                                        class="form-control form-control-sm"
+                                        required
+                                        @input="onStripPriceInput(row)"
+                                    />
                                 </td>
                                 <td class="text-center">
                                     <input
@@ -123,25 +271,6 @@
                 </div>
             </div>
 
-            <div v-if="!existing" class="mt-4 border rounded p-3 bg-light">
-                <h2 class="h6">Opening stock (optional)</h2>
-                <p class="small text-muted mb-2">Create an initial batch in base unit when adding a new product.</p>
-                <div class="row g-2">
-                    <div class="col-md-4">
-                        <label class="form-label small">Batch no</label>
-                        <input v-model="form.opening_batch_no" type="text" class="form-control form-control-sm" />
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small">Expiry date</label>
-                        <input v-model="form.opening_expiry_date" type="date" class="form-control form-control-sm" />
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small">Quantity (base unit)</label>
-                        <input v-model.number="form.opening_quantity" type="number" min="0" step="0.0001" class="form-control form-control-sm" />
-                    </div>
-                </div>
-            </div>
-
             <div class="mt-3">
                 <div class="form-check">
                     <input id="active" v-model="form.is_active" type="checkbox" class="form-check-input" />
@@ -160,6 +289,7 @@
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { computed, watch } from 'vue';
 
 const props = defineProps({
     product: { type: Object, default: null },
@@ -187,9 +317,18 @@ function unitLabel(u) {
     return u.charAt(0).toUpperCase() + u.slice(1);
 }
 
+function formatQty(n) {
+    const v = Number(n);
+    if (Number.isNaN(v)) {
+        return '0';
+    }
+    return v % 1 === 0 ? String(v) : v.toFixed(2);
+}
+
 function buildDefaultUnits() {
     return [
         { sell_unit: 'strip', conversion_factor: 1, purchase_price: '0', sale_price: '0', is_default: true },
+        { sell_unit: 'piece', conversion_factor: 0.1, purchase_price: '0', sale_price: '0', is_default: false },
         { sell_unit: 'box', conversion_factor: 10, purchase_price: '0', sale_price: '0', is_default: false },
     ];
 }
@@ -199,7 +338,7 @@ function initialUnits() {
     if (product?.units?.length) {
         return product.units.map((u) => ({
             sell_unit: u.sell_unit,
-            conversion_factor: Number(u.conversion_factor),
+            conversion_factor: formatConversionFactor(u.conversion_factor),
             purchase_price: String(u.purchase_price),
             sale_price: String(u.sale_price),
             is_default: Boolean(u.is_default),
@@ -210,6 +349,47 @@ function initialUnits() {
 
 const existing = productData();
 
+const batches = computed(() => {
+    const raw = existing?.batches;
+    if (!raw) {
+        return [];
+    }
+    if (Array.isArray(raw)) {
+        return raw;
+    }
+    return raw.data ?? [];
+});
+
+const totalStock = computed(() =>
+    batches.value.reduce((sum, b) => sum + Number(b.quantity_on_hand ?? 0), 0),
+);
+
+const showPiecesPerStrip = computed(() => {
+    const units = form.units.map((r) => r.sell_unit);
+    return units.includes('piece') || units.includes('strip') || form.base_unit === 'piece' || form.base_unit === 'strip';
+});
+
+const conversionColumnLabel = computed(() => {
+    const base = unitLabel(form.base_unit);
+    return `${base} per 1 unit`;
+});
+
+const hasStripUnitRow = computed(() => form.units.some((r) => r.sell_unit === 'strip'));
+
+const totalStockPieces = computed(() => {
+    const pps = Number(form.pieces_per_strip);
+    if (!pps || pps <= 0) {
+        return null;
+    }
+    if (form.base_unit === 'strip') {
+        return totalStock.value * pps;
+    }
+    if (form.base_unit === 'piece') {
+        return totalStock.value;
+    }
+    return null;
+});
+
 const form = useForm({
     name: existing?.name ?? '',
     sku: existing?.sku ?? '',
@@ -218,12 +398,19 @@ const form = useForm({
     manufacturer_id: existing?.manufacturer?.id ?? null,
     product_type: existing?.product_type ?? 'tablet',
     base_unit: existing?.base_unit ?? 'strip',
+    pieces_per_strip:
+        existing?.pieces_per_strip != null && existing.pieces_per_strip !== ''
+            ? Number(existing.pieces_per_strip)
+            : '',
     units: initialUnits(),
     min_stock: existing?.min_stock ?? 0,
     is_active: existing?.is_active ?? true,
     opening_batch_no: '',
     opening_expiry_date: '',
     opening_quantity: null,
+    stock_adjustment: null,
+    stock_adjust_batch_id: null,
+    stock_adjust_batch_no: '',
 });
 
 function onBaseUnitChange() {
@@ -232,7 +419,141 @@ function onBaseUnitChange() {
             row.conversion_factor = 1;
         }
     });
+    syncPiecesPerStripToUnits();
 }
+
+function unitRowFactor(row) {
+    if (row.sell_unit === form.base_unit) {
+        return 1;
+    }
+    const factor = Number(row.conversion_factor);
+    return Number.isNaN(factor) || factor <= 0 ? 0 : factor;
+}
+
+const CONVERSION_FACTOR_DECIMALS = 4;
+
+function formatConversionFactor(value) {
+    const n = Number(value);
+    if (Number.isNaN(n) || n <= 0) {
+        return 0.0001;
+    }
+    const scale = 10 ** CONVERSION_FACTOR_DECIMALS;
+    return Math.round(n * scale) / scale;
+}
+
+function formatDerivedPrice(value) {
+    if (Number.isNaN(value) || value < 0) {
+        return '0';
+    }
+    const rounded = Math.round(value * 10000) / 10000;
+    return Number.isInteger(rounded) ? String(rounded) : String(rounded);
+}
+
+function syncDerivedUnitPricesFromStrip() {
+    const stripRow = form.units.find((r) => r.sell_unit === 'strip');
+    if (!stripRow) {
+        return;
+    }
+
+    const stripFactor = unitRowFactor(stripRow);
+    if (stripFactor <= 0) {
+        return;
+    }
+
+    const stripPurchase = Number(stripRow.purchase_price);
+    const stripSale = Number(stripRow.sale_price);
+    const hasPurchase = stripRow.purchase_price !== '' && !Number.isNaN(stripPurchase);
+    const hasSale = stripRow.sale_price !== '' && !Number.isNaN(stripSale);
+
+    const basePurchase = hasPurchase ? stripPurchase / stripFactor : null;
+    const baseSale = hasSale ? stripSale / stripFactor : null;
+
+    form.units.forEach((row) => {
+        if (row.sell_unit === 'strip') {
+            return;
+        }
+        if (row.sell_unit === 'piece' || row.sell_unit === 'box') {
+            const factor = unitRowFactor(row);
+            if (factor <= 0) {
+                return;
+            }
+            if (basePurchase !== null) {
+                row.purchase_price = formatDerivedPrice(basePurchase * factor);
+            }
+            if (baseSale !== null) {
+                row.sale_price = formatDerivedPrice(baseSale * factor);
+            }
+        }
+    });
+}
+
+function onStripPriceInput(row) {
+    if (row.sell_unit !== 'strip') {
+        return;
+    }
+    syncDerivedUnitPricesFromStrip();
+}
+
+function onUnitConversionInput(row) {
+    if (row.sell_unit === 'box' && form.units.some((r) => r.sell_unit === 'strip')) {
+        syncDerivedUnitPricesFromStrip();
+    }
+}
+
+function onConversionFactorBlur(row) {
+    if (row.sell_unit === form.base_unit) {
+        return;
+    }
+    row.conversion_factor = formatConversionFactor(row.conversion_factor);
+}
+
+function syncPiecesPerStripToUnits() {
+    const pps = Number(form.pieces_per_strip);
+    if (!pps || pps <= 0) {
+        return;
+    }
+
+    if (form.base_unit === 'strip') {
+        let pieceRow = form.units.find((r) => r.sell_unit === 'piece');
+        const pieceFactor = formatConversionFactor(1 / pps);
+        if (!pieceRow) {
+            form.units.push({
+                sell_unit: 'piece',
+                conversion_factor: pieceFactor,
+                purchase_price: '0',
+                sale_price: '0',
+                is_default: false,
+            });
+        } else {
+            pieceRow.conversion_factor = pieceFactor;
+        }
+    } else if (form.base_unit === 'piece') {
+        let stripRow = form.units.find((r) => r.sell_unit === 'strip');
+        const stripFactor = formatConversionFactor(pps);
+        if (!stripRow) {
+            form.units.push({
+                sell_unit: 'strip',
+                conversion_factor: stripFactor,
+                purchase_price: '0',
+                sale_price: '0',
+                is_default: false,
+            });
+        } else {
+            stripRow.conversion_factor = stripFactor;
+        }
+    }
+
+    syncDerivedUnitPricesFromStrip();
+}
+
+watch(
+    () => form.units.map((r) => r.sell_unit).join(','),
+    () => {
+        if (showPiecesPerStrip.value && form.pieces_per_strip) {
+            syncPiecesPerStripToUnits();
+        }
+    },
+);
 
 function setDefault(idx) {
     form.units.forEach((row, i) => {
@@ -260,17 +581,53 @@ function removeUnitRow(idx) {
     }
 }
 
-function submit() {
+function normalizePiecesPerStripForSubmit(value) {
+    if (value === '' || value === null || value === undefined) {
+        return null;
+    }
+    const n = Number(value);
+    if (Number.isNaN(n) || n <= 0) {
+        return null;
+    }
+    return n;
+}
+
+function buildPayload() {
+    syncPiecesPerStripToUnits();
+
     const payload = {
         ...form.data(),
+        pieces_per_strip: normalizePiecesPerStripForSubmit(form.pieces_per_strip),
         units: form.units.map((row) => ({
             sell_unit: row.sell_unit,
-            conversion_factor: row.sell_unit === form.base_unit ? 1 : row.conversion_factor,
+            conversion_factor:
+                row.sell_unit === form.base_unit ? 1 : formatConversionFactor(row.conversion_factor),
             purchase_price: row.purchase_price,
             sale_price: row.sale_price,
             is_default: row.is_default,
         })),
     };
+
+    if (!existing) {
+        delete payload.stock_adjustment;
+        delete payload.stock_adjust_batch_id;
+        delete payload.stock_adjust_batch_no;
+    } else {
+        delete payload.opening_batch_no;
+        delete payload.opening_expiry_date;
+        delete payload.opening_quantity;
+        if (payload.stock_adjustment === null || payload.stock_adjustment === '') {
+            delete payload.stock_adjustment;
+            delete payload.stock_adjust_batch_id;
+            delete payload.stock_adjust_batch_no;
+        }
+    }
+
+    return payload;
+}
+
+function submit() {
+    const payload = buildPayload();
 
     if (existing) {
         form.transform(() => payload).put(`/products/${existing.id}`);

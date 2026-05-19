@@ -15,7 +15,7 @@ use InvalidArgumentException;
 final class PurchaseService
 {
     /**
-     * @param  array<int, array{product_id:int,batch_no:string,expiry_date?:string,quantity:float,unit_cost:float,sell_unit?:string}>  $lines
+     * @param  array<int, array{product_id:int,batch_no:string,expiry_date?:string,quantity:float,unit_cost:float,sell_unit?:string,conversion_factor?:float|null}>  $lines
      */
     public function recordPurchase(
         Supplier $supplier,
@@ -55,7 +55,8 @@ final class PurchaseService
                     $sellUnit = $unitConfig?->sell_unit ?? $sellUnit;
                 }
 
-                $factor = (float) ($unitConfig->conversion_factor ?? 1);
+                $override = isset($line['conversion_factor']) ? (float) $line['conversion_factor'] : null;
+                $factor = ProductUnitResolver::resolveConversionFactor($product, $sellUnit, $override);
                 $quantityBase = (float) ProductUnitResolver::quantityBase($line['quantity'], $factor);
                 $lineTotal = $line['quantity'] * $line['unit_cost'];
 
@@ -86,6 +87,13 @@ final class PurchaseService
 
                 $batch->quantity_on_hand = (string) ((float) $batch->quantity_on_hand + $quantityBase);
                 $batch->purchase_unit_cost = $line['unit_cost'];
+
+                $baseUnit = $product->base_unit ?? 'strip';
+                if ($sellUnit !== $baseUnit) {
+                    $batch->pack_sell_unit = $sellUnit;
+                    $batch->pack_conversion_factor = $factor;
+                }
+
                 $batch->save();
 
                 StockMovement::query()->create([

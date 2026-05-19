@@ -17,6 +17,7 @@ return [
     'product_list' => 'পণ্য তালিকা',
     'new_product' => 'নতুন পণ্য',
     'categories' => 'ক্যাটাগরি',
+    'product_types' => 'পণ্যের ধরন',
     'manufacturers' => 'প্রস্তুতকারক',
     'bulk_import' => 'বাল্ক ইমপোর্ট',
     'inventory' => 'ইনভেন্টরি',

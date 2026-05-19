@@ -38,7 +38,11 @@ final class SaleService
                 $sellUnit = $unit->sell_unit;
             }
 
-            $factor = (float) $unit->conversion_factor;
+            $factor = ProductUnitResolver::conversionFactorForBatch(
+                $batch->product,
+                $batch,
+                $sellUnit,
+            );
 
             return [
                 'product_batch_id' => $line['product_batch_id'],

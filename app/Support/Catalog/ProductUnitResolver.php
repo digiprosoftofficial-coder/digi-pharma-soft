@@ -3,6 +3,7 @@
 namespace App\Support\Catalog;
 
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductBatch;
 use App\Domain\Catalog\Models\ProductUnit;
 use InvalidArgumentException;
 
@@ -26,6 +27,45 @@ final class ProductUnitResolver
         $base = (float) $quantity * (float) $conversionFactor;
 
         return number_format($base, 4, '.', '');
+    }
+
+    public static function resolveConversionFactor(
+        Product $product,
+        string $sellUnit,
+        ?float $override = null,
+    ): float {
+        $baseUnit = $product->base_unit ?? 'strip';
+
+        if ($sellUnit === $baseUnit) {
+            return 1.0;
+        }
+
+        if ($override !== null && $override > 0) {
+            return max(0.0001, $override);
+        }
+
+        return (float) self::forProduct($product, $sellUnit)->conversion_factor;
+    }
+
+    public static function conversionFactorForBatch(
+        Product $product,
+        ProductBatch $batch,
+        string $sellUnit,
+        ?float $override = null,
+    ): float {
+        if ($override !== null && $override > 0) {
+            return max(0.0001, $override);
+        }
+
+        if (
+            $batch->pack_sell_unit === $sellUnit
+            && $batch->pack_conversion_factor !== null
+            && (float) $batch->pack_conversion_factor > 0
+        ) {
+            return (float) $batch->pack_conversion_factor;
+        }
+
+        return self::resolveConversionFactor($product, $sellUnit);
     }
 
     /**

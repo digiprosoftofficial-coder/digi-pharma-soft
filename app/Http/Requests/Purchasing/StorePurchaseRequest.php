@@ -33,6 +33,7 @@ class StorePurchaseRequest extends FormRequest
             'lines.*.expiry_date' => ['nullable', 'date'],
             'lines.*.quantity' => ['required', 'numeric', 'min:0.0001'],
             'lines.*.sell_unit' => ['required', ProductCatalogOptions::sellUnitRule()],
+            'lines.*.conversion_factor' => ['nullable', 'numeric', 'min:0.0001'],
             'lines.*.unit_cost' => ['required', 'numeric', 'min:0'],
         ];
     }

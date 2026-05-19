@@ -10,6 +10,7 @@ class ProductBatch extends TenantModel
     protected $fillable = [
         'tenant_id', 'product_id', 'batch_no', 'expiry_date',
         'quantity_on_hand', 'purchase_unit_cost',
+        'pack_sell_unit', 'pack_conversion_factor',
     ];
 
     protected function casts(): array
@@ -18,6 +19,7 @@ class ProductBatch extends TenantModel
             'expiry_date' => 'date',
             'quantity_on_hand' => 'decimal:4',
             'purchase_unit_cost' => 'decimal:4',
+            'pack_conversion_factor' => 'decimal:4',
         ];
     }
 

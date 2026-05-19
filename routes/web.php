@@ -28,6 +28,7 @@ use App\Http\Controllers\Tenant\CategoryController;
 use App\Http\Controllers\Tenant\ManufacturerController;
 use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\ProductImportController;
+use App\Http\Controllers\Tenant\ProductTypeController;
 use App\Http\Controllers\Tenant\PromotionsController;
 use App\Http\Controllers\Tenant\PurchaseController;
 use App\Http\Controllers\Tenant\ReportController;
@@ -76,8 +77,9 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
             Route::get('/accounts/{ledger_account}', [LedgerAccountController::class, 'show'])->name('accounts.show');
             Route::post('/accounts/{ledger_account}/entries', [LedgerEntryController::class, 'store'])->name('accounts.entries.store');
 
-            Route::resource('products', ProductController::class)->except(['show']);
+            Route::resource('products', ProductController::class);
             Route::resource('categories', CategoryController::class)->except(['show']);
+            Route::resource('product-types', ProductTypeController::class)->except(['show']);
             Route::resource('manufacturers', ManufacturerController::class)->except(['show']);
             Route::get('/catalog/import', [ProductImportController::class, 'index'])->name('catalog.import.index');
             Route::get('/catalog/import/sample', [ProductImportController::class, 'sample'])->name('catalog.import.sample');

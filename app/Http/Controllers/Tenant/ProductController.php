@@ -58,6 +58,42 @@ final class ProductController extends Controller
         return redirect()->route('tenant.products.index')->with('success', __('Product created.'));
     }
 
+    public function show(Product $product): Response
+    {
+        $product->load([
+            'category',
+            'manufacturer',
+            'units',
+            'batches' => fn ($q) => $q->orderBy('expiry_date'),
+        ]);
+
+        $baseStock = $product->batches->sum(fn ($batch) => (float) $batch->quantity_on_hand);
+        $purchasedQuantity = (float) $product->purchaseLines()->sum('quantity_base');
+
+        $stockByUnit = $product->units->map(function ($unit) use ($baseStock) {
+            $factor = max(0.0001, (float) $unit->conversion_factor);
+
+            return [
+                'sell_unit' => $unit->sell_unit,
+                'conversion_factor' => (string) $unit->conversion_factor,
+                'is_default' => (bool) $unit->is_default,
+                'quantity_on_hand' => number_format($baseStock / $factor, 4, '.', ''),
+            ];
+        })->values()->all();
+
+        $stockPieces = \App\Support\Catalog\ProductStockCalculator::totalPieces($product, $baseStock);
+
+        return Inertia::render('Catalog/Products/Show', [
+            'product' => (new ProductResource($product))->resolve(request()),
+            'stockBase' => number_format($baseStock, 4, '.', ''),
+            'stockPieces' => $stockPieces !== null
+                ? \App\Support\Catalog\ProductStockCalculator::formatQuantity($stockPieces)
+                : null,
+            'purchasedQuantity' => number_format($purchasedQuantity, 4, '.', ''),
+            'stockByUnit' => $stockByUnit,
+        ]);
+    }
+
     public function edit(Product $product): Response
     {
         $this->authorize('update', $product);
@@ -74,7 +110,9 @@ final class ProductController extends Controller
     {
         $this->productService->updateProduct($product, $request->validated());
 
-        return redirect()->route('tenant.products.index')->with('success', __('Product updated.'));
+        return redirect()
+            ->route('tenant.products.show', $product)
+            ->with('success', __('Product updated.'));
     }
 
     public function destroy(Product $product): RedirectResponse

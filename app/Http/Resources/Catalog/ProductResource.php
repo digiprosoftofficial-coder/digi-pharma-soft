@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Catalog;
 
+use App\Support\Catalog\ProductStockCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -20,11 +21,18 @@ class ProductResource extends JsonResource
             'barcode' => $this->barcode,
             'product_type' => $this->product_type ?? 'other',
             'base_unit' => $this->base_unit ?? 'strip',
+            'pieces_per_strip' => $this->pieces_per_strip !== null ? (string) $this->pieces_per_strip : null,
             'unit' => $this->unit,
+            'stock_pieces' => $this->when(
+                $this->resolveBaseStockForResource() !== null,
+                fn () => $this->formatStockPieces(),
+            ),
             'purchase_price' => (string) $this->purchase_price,
             'sale_price' => (string) $this->sale_price,
             'min_stock' => $this->min_stock,
             'is_active' => $this->is_active,
+            'stock_on_hand' => (string) ($this->stock_on_hand ?? $this->stockOnHandFromBatches()),
+            'purchased_quantity' => (string) ($this->purchased_quantity ?? '0'),
             'units' => $this->whenLoaded('units', fn () => $this->units->map(fn ($u) => [
                 'sell_unit' => $u->sell_unit,
                 'conversion_factor' => (string) $u->conversion_factor,
@@ -36,5 +44,44 @@ class ProductResource extends JsonResource
             'manufacturer' => $this->whenLoaded('manufacturer', fn () => ['id' => $this->manufacturer->id, 'name' => $this->manufacturer->name]),
             'batches' => $this->whenLoaded('batches', fn () => ProductBatchResource::collection($this->batches)),
         ];
+    }
+
+    private function stockOnHandFromBatches(): string
+    {
+        if (! $this->relationLoaded('batches')) {
+            return '0';
+        }
+
+        $total = $this->batches->sum(fn ($batch) => (float) $batch->quantity_on_hand);
+
+        return (string) $total;
+    }
+
+    private function resolveBaseStockForResource(): ?float
+    {
+        if (isset($this->stock_on_hand)) {
+            return (float) $this->stock_on_hand;
+        }
+
+        if ($this->relationLoaded('batches')) {
+            return (float) $this->batches->sum(fn ($batch) => (float) $batch->quantity_on_hand);
+        }
+
+        return null;
+    }
+
+    private function formatStockPieces(): ?string
+    {
+        $baseStock = $this->resolveBaseStockForResource();
+        if ($baseStock === null) {
+            return null;
+        }
+
+        $pieces = ProductStockCalculator::totalPieces($this->resource, $baseStock);
+        if ($pieces === null) {
+            return null;
+        }
+
+        return ProductStockCalculator::formatQuantity($pieces);
     }
 }

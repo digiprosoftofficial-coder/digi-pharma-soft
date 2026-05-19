@@ -38,6 +38,56 @@ class ProductUnitsTest extends TestCase
         $this->assertCount(2, $product->units);
     }
 
+    public function test_product_index_shows_stock_and_purchased_quantities(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+        $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
+        $supplier = \App\Domain\Purchasing\Models\Supplier::query()->firstOrFail();
+
+        $this->actingAs($user)->post('/purchases', [
+            'supplier_id' => $supplier->getKey(),
+            'invoice_no' => 'INV-TEST-001',
+            'purchased_at' => now()->toDateString(),
+            'paid' => 0,
+            'lines' => [[
+                'product_id' => $product->getKey(),
+                'batch_no' => 'BATCH-PUR-1',
+                'quantity' => 30,
+                'sell_unit' => 'strip',
+                'unit_cost' => 20,
+            ]],
+        ])->assertRedirect();
+
+        $response = $this->actingAs($user)->get('/products');
+        $response->assertOk()->assertInertia(fn ($page) => $page->component('Catalog/Products/Index'));
+
+        $row = collect($response->inertiaProps('products.data'))->firstWhere('sku', 'PAR-500');
+        $this->assertNotNull($row);
+        $this->assertSame(530.0, (float) $row['stock_on_hand']);
+        $this->assertSame(30.0, (float) $row['purchased_quantity']);
+    }
+
+    public function test_product_show_page_displays_stock_by_unit(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+        $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
+
+        $this->actingAs($user)
+            ->get("/products/{$product->getKey()}")
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Catalog/Products/Show')
+                ->where('product.sku', 'PAR-500')
+                ->where('stockBase', '500.0000')
+                ->has('stockByUnit', 2)
+                ->where('stockByUnit.0.sell_unit', 'strip')
+                ->where('stockByUnit.0.quantity_on_hand', '500.0000')
+                ->where('stockByUnit.1.sell_unit', 'box')
+                ->where('stockByUnit.1.quantity_on_hand', '50.0000'));
+    }
+
     public function test_product_edit_page_includes_resolved_product_data(): void
     {
         $this->seed();
@@ -52,6 +102,50 @@ class ProductUnitsTest extends TestCase
                 ->where('product.name', 'Paracetamol 500mg')
                 ->where('product.sku', 'PAR-500')
                 ->has('product.units', 2));
+    }
+
+    public function test_product_update_adjusts_stock_on_single_batch(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+        $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
+        $batch = ProductBatch::query()->where('product_id', $product->getKey())->firstOrFail();
+        $before = (float) $batch->quantity_on_hand;
+
+        $this->actingAs($user)->put("/products/{$product->getKey()}", [
+            'stock_adjustment' => 25,
+        ])->assertRedirect(route('tenant.products.index'));
+
+        $batch->refresh();
+        $this->assertSame($before + 25.0, (float) $batch->quantity_on_hand);
+
+        $this->assertDatabaseHas('stock_movements', [
+            'product_batch_id' => $batch->getKey(),
+            'type' => 'adjustment',
+            'quantity_delta' => '25.0000',
+        ]);
+    }
+
+    public function test_product_create_with_opening_quantity_creates_batch(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+
+        $this->actingAs($user)->post('/products', [
+            'name' => 'Vitamin C',
+            'sku' => 'VIT-C-100',
+            'product_type' => 'tablet',
+            'base_unit' => 'strip',
+            'units' => [
+                ['sell_unit' => 'strip', 'conversion_factor' => 1, 'purchase_price' => 10, 'sale_price' => 15, 'is_default' => true],
+            ],
+            'opening_quantity' => 80,
+        ])->assertRedirect(route('tenant.products.index'));
+
+        $product = Product::query()->where('sku', 'VIT-C-100')->firstOrFail();
+        $batch = ProductBatch::query()->where('product_id', $product->getKey())->firstOrFail();
+        $this->assertSame(80.0, (float) $batch->quantity_on_hand);
+        $this->assertStringStartsWith('OPEN-', $batch->batch_no);
     }
 
     public function test_pos_sale_deducts_stock_in_base_units_when_selling_boxes(): void

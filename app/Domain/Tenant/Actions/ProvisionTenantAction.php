@@ -6,6 +6,7 @@ use App\Domain\Billing\Models\SubscriptionPlan;
 use App\Domain\Billing\Models\TenantSubscription;
 use App\Domain\Tenant\Models\Tenant;
 use App\Models\User;
+use App\Support\Catalog\SeedDefaultProductTypes;
 use App\Support\Permission\TenantRoleProvisioner;
 use App\Support\Platform\PlatformSettings;
 use Illuminate\Support\Facades\DB;
@@ -62,6 +63,7 @@ final class ProvisionTenantAction
             ]);
 
             TenantRoleProvisioner::provision((int) $tenant->getKey());
+            SeedDefaultProductTypes::forTenant((int) $tenant->getKey());
 
             if (empty($data['add_owner_later'])) {
                 $this->attachOwner->execute($tenant, [

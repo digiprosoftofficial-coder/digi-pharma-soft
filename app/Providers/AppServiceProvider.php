@@ -10,6 +10,7 @@ use App\Domain\Platform\Models\PlatformAnnouncement;
 use App\Domain\Platform\Models\PlatformSetting;
 use App\Domain\Platform\Models\Reseller;
 use App\Domain\Tenant\Models\Tenant;
+use App\Domain\Catalog\Models\CatalogProductType;
 use App\Domain\Catalog\Models\Category;
 use App\Domain\Catalog\Models\Manufacturer;
 use App\Domain\Catalog\Models\Product;
@@ -26,6 +27,7 @@ use App\Policies\CustomerPolicy;
 use App\Policies\DiscountCouponPolicy;
 use App\Policies\EmployeePolicy;
 use App\Policies\LedgerAccountPolicy;
+use App\Policies\CatalogProductTypePolicy;
 use App\Policies\CategoryPolicy;
 use App\Policies\ManufacturerPolicy;
 use App\Policies\ProductPolicy;
@@ -82,6 +84,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::policy(Product::class, ProductPolicy::class);
         Gate::policy(Category::class, CategoryPolicy::class);
+        Gate::policy(CatalogProductType::class, CatalogProductTypePolicy::class);
         Gate::policy(Manufacturer::class, ManufacturerPolicy::class);
         Gate::policy(Sale::class, SalePolicy::class);
         Gate::policy(Purchase::class, PurchasePolicy::class);

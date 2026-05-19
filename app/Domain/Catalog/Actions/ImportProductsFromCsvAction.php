@@ -61,7 +61,7 @@ final class ImportProductsFromCsvAction
     }
 
     /**
-     * @return array{headers:list<string>,rows:list<array{row:int,data:array<string,mixed>,errors:list<string>}>,valid_count:int,error_count:int}
+     * @return array{headers:list<string>,rows:list<array{row:int,data:array<string,mixed>,raw:array<string,string>,errors:list<string>}>,valid_count:int,error_count:int}
      */
     public function preview(UploadedFile $file): array
     {
@@ -98,7 +98,7 @@ final class ImportProductsFromCsvAction
                 $errorCount++;
             }
 
-            $rows[] = ['row' => $rowNum, 'data' => $normalized, 'errors' => $errors];
+            $rows[] = ['row' => $rowNum, 'data' => $normalized, 'raw' => $assoc, 'errors' => $errors];
 
             if (count($rows) >= 500) {
                 break;

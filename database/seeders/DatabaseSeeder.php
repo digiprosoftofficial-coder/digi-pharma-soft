@@ -9,6 +9,7 @@ use App\Domain\Catalog\Models\Manufacturer;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductBatch;
 use App\Support\Catalog\ProductUnitResolver;
+use App\Support\Catalog\SeedDefaultProductTypes;
 use App\Domain\Accounting\Models\LedgerAccount;
 use App\Domain\Purchasing\Models\Supplier;
 use App\Domain\Sales\Models\DiscountCoupon;
@@ -50,6 +51,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call(RolePermissionSeeder::class);
+        SeedDefaultProductTypes::forTenant((int) $tenant->getKey());
 
         $registrar = app(PermissionRegistrar::class);
 

@@ -37,11 +37,14 @@
                         </thead>
                         <tbody>
                             <tr v-for="(line, idx) in cart" :key="idx">
-                                <td>{{ line.name }}</td>
+                                <td>
+                                    <div>{{ line.name }}</div>
+                                    <div class="small text-muted">{{ lineStockHint(line) }}</div>
+                                </td>
                                 <td>
                                     <select v-model="line.sell_unit" class="form-select form-select-sm" @change="onUnitChange(line)">
                                         <option v-for="u in line.unit_options" :key="u.sell_unit" :value="u.sell_unit">
-                                            {{ u.sell_unit }}
+                                            {{ unitLabel(u.sell_unit) }}
                                         </option>
                                     </select>
                                 </td>
@@ -83,7 +86,7 @@
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { useMoney } from '@/composables/useMoney';
-import { defaultSellUnit, unitSalePrice } from '@/composables/useProductUnits';
+import { defaultSellUnit, stockInSellUnit, unitLabel, unitSalePrice } from '@/composables/useProductUnits';
 import { Head, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
@@ -115,11 +118,36 @@ async function runSearch() {
     results.value = data.data;
 }
 
+function formatQty(value) {
+    const n = Number(value ?? 0);
+    if (Number.isNaN(n)) {
+        return '0';
+    }
+    return n % 1 === 0 ? String(n) : n.toFixed(2);
+}
+
 function onUnitChange(line) {
     line.unit_price = unitSalePrice(
         { units: line.unit_options, sale_price: line.fallback_sale_price },
         line.sell_unit,
     );
+}
+
+function lineStockHint(line) {
+    const avail = stockInSellUnit({
+        baseStock: line.batch_stock,
+        baseUnit: line.base_unit,
+        sellUnit: line.sell_unit,
+        units: line.unit_options,
+        piecesPerStrip: line.pieces_per_strip,
+    });
+    const unit = unitLabel(line.sell_unit);
+    let hint = `In stock: ${formatQty(avail)} ${unit}`;
+    if (line.sell_unit !== 'piece' && line.pieces_per_strip && line.base_unit === 'strip') {
+        const pieces = Number(line.batch_stock) * Number(line.pieces_per_strip);
+        hint += ` (${formatQty(pieces)} pieces)`;
+    }
+    return hint;
 }
 
 function addLine(item) {
@@ -132,6 +160,9 @@ function addLine(item) {
     cart.value.push({
         product_batch_id: batch.id,
         name: item.name,
+        base_unit: item.base_unit ?? 'strip',
+        pieces_per_strip: item.pieces_per_strip ? Number(item.pieces_per_strip) : null,
+        batch_stock: Number(batch.quantity_on_hand ?? 0),
         sell_unit: sellUnit,
         unit_options: item.units?.length ? item.units : [{ sell_unit: sellUnit, sale_price: item.sale_price }],
         fallback_sale_price: item.sale_price,

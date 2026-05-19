@@ -8,6 +8,13 @@ use Illuminate\Validation\Rule;
 
 class StoreProductRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('pieces_per_strip') && $this->input('pieces_per_strip') === '') {
+            $this->merge(['pieces_per_strip' => null]);
+        }
+    }
+
     public function authorize(): bool
     {
         return $this->user()?->can('create', \App\Domain\Catalog\Models\Product::class) ?? false;
@@ -28,6 +35,7 @@ class StoreProductRequest extends FormRequest
             'barcode' => ['nullable', 'string', 'max:64', Rule::unique('products', 'barcode')->where('tenant_id', $tenantId)],
             'product_type' => ['required', ProductCatalogOptions::productTypeRule()],
             'base_unit' => ['required', ProductCatalogOptions::sellUnitRule()],
+            'pieces_per_strip' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
             'units' => ['required', 'array', 'min:1'],
             'units.*.sell_unit' => ['required', ProductCatalogOptions::sellUnitRule()],
             'units.*.conversion_factor' => ['nullable', 'numeric', 'min:0.0001'],
@@ -36,7 +44,7 @@ class StoreProductRequest extends FormRequest
             'units.*.is_default' => ['sometimes', 'boolean'],
             'min_stock' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['sometimes', 'boolean'],
-            'opening_batch_no' => ['nullable', 'string', 'max:64', 'required_with:opening_quantity'],
+            'opening_batch_no' => ['nullable', 'string', 'max:64'],
             'opening_expiry_date' => ['nullable', 'date'],
             'opening_quantity' => ['nullable', 'numeric', 'min:0.0001'],
         ];

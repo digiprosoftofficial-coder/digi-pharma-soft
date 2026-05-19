@@ -12,6 +12,28 @@ class ProductImportTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_import_preview_returns_csv_columns_and_raw_values(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+
+        $csv = "name,sku,barcode,product_type,base_unit,category_slug,manufacturer_name,purchase_price,sale_price,min_stock,is_active\n";
+        $csv .= "Vitamin C 500mg,VIT-C-500,,tablet,strip,general,Demo Labs,10,18,5,1\n";
+
+        $file = UploadedFile::fake()->createWithContent('products.csv', $csv);
+
+        $this->actingAs($user)
+            ->from(route('tenant.catalog.import.index'))
+            ->post('/catalog/import/preview', ['file' => $file])
+            ->assertRedirect(route('tenant.catalog.import.index'))
+            ->assertSessionHas('import_preview', fn (array $preview) => $preview['headers'] === [
+                'name', 'sku', 'barcode', 'product_type', 'base_unit',
+                'category_slug', 'manufacturer_name', 'purchase_price', 'sale_price', 'min_stock', 'is_active',
+            ]
+                && $preview['rows'][0]['raw']['name'] === 'Vitamin C 500mg'
+                && $preview['rows'][0]['raw']['sku'] === 'VIT-C-500');
+    }
+
     public function test_owner_can_import_products_from_csv(): void
     {
         $this->seed();

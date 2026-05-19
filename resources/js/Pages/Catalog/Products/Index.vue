@@ -43,24 +43,30 @@
                         <th>SKU</th>
                         <th>Unit</th>
                         <th class="text-end">Sale ({{ currencyCode() }})</th>
-                        <th>Stock</th>
+                        <th class="text-end">On hand</th>
+                        <th class="text-end">Purchased</th>
                         <th>Status</th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="p in products.data" :key="p.id">
-                        <td>{{ p.name }}</td>
+                        <td>
+                            <Link :href="`/products/${p.id}`" class="text-decoration-none fw-medium">{{ p.name }}</Link>
+                        </td>
                         <td class="text-capitalize">{{ p.product_type || '—' }}</td>
                         <td>{{ p.category?.name || '—' }}</td>
                         <td>{{ p.sku }}</td>
                         <td class="text-capitalize">{{ p.unit || p.base_unit }}</td>
                         <td class="text-end">{{ formatMoney(p.sale_price) }}</td>
-                        <td>
-                            <span v-if="p.batches?.length">
-                                {{ p.batches.reduce((s, b) => s + Number(b.quantity_on_hand), 0) }}
-                            </span>
-                            <span v-else>0</span>
+                        <td class="text-end">
+                            <span class="fw-semibold">{{ formatQty(p.stock_on_hand) }}</span>
+                            <span class="text-muted small ms-1">{{ unitLabel(p.base_unit || p.unit) }}</span>
+                            <div v-if="p.stock_pieces" class="small text-muted">{{ formatQty(p.stock_pieces) }} pcs</div>
+                        </td>
+                        <td class="text-end">
+                            <span>{{ formatQty(p.purchased_quantity) }}</span>
+                            <span class="text-muted small ms-1">{{ unitLabel(p.base_unit || p.unit) }}</span>
                         </td>
                         <td>
                             <span class="badge" :class="p.is_active ? 'text-bg-success' : 'text-bg-secondary'">
@@ -68,6 +74,7 @@
                             </span>
                         </td>
                         <td class="text-end text-nowrap">
+                            <Link :href="`/products/${p.id}`" class="btn btn-sm btn-outline-primary me-1">View</Link>
                             <a :href="`/barcodes/${p.id}`" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary me-1">Barcode</a>
                             <Link v-if="can('products.manage')" :href="`/products/${p.id}/edit`" class="btn btn-sm btn-outline-secondary me-1">Edit</Link>
                             <button
@@ -81,7 +88,7 @@
                         </td>
                     </tr>
                     <tr v-if="!products.data?.length">
-                        <td colspan="9" class="text-muted text-center py-4">No products found.</td>
+                        <td colspan="10" class="text-muted text-center py-4">No products found.</td>
                     </tr>
                 </tbody>
             </table>
@@ -112,6 +119,21 @@ const props = defineProps({
 
 const { formatMoney, currencyCode } = useMoney();
 const { can } = usePermissions();
+
+function formatQty(value) {
+    const n = Number(value ?? 0);
+    if (Number.isNaN(n)) {
+        return '0';
+    }
+    return n % 1 === 0 ? String(n) : n.toFixed(2);
+}
+
+function unitLabel(unit) {
+    if (!unit) {
+        return '';
+    }
+    return unit.charAt(0).toUpperCase() + unit.slice(1);
+}
 
 const filterForm = reactive({
     q: props.filters.q ?? '',

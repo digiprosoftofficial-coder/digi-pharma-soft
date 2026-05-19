@@ -5,7 +5,9 @@ namespace App\Domain\Catalog\Services;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductBatch;
 use App\Domain\Catalog\Repositories\ProductRepository;
+use App\Domain\Inventory\Models\StockMovement;
 use App\Support\Catalog\ProductCatalogOptions;
+use App\Support\Catalog\ProductStockCalculator;
 use App\Support\Catalog\ProductUnitResolver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -25,7 +27,11 @@ final class ProductService
             }
 
             $baseUnit = $data['base_unit'] ?? 'strip';
-            $units = $this->normalizeUnitsPayload($data['units'] ?? [], $baseUnit);
+            $units = $this->normalizeUnitsPayload(
+                $data['units'] ?? [],
+                $baseUnit,
+                isset($data['pieces_per_strip']) ? (float) $data['pieces_per_strip'] : null,
+            );
 
             $default = collect($units)->firstWhere('is_default', true) ?? $units[0];
 
@@ -37,6 +43,7 @@ final class ProductService
                 'barcode' => $barcode,
                 'product_type' => $data['product_type'] ?? 'other',
                 'base_unit' => $baseUnit,
+                'pieces_per_strip' => $this->normalizePiecesPerStrip($data['pieces_per_strip'] ?? null),
                 'unit' => $default['sell_unit'],
                 'purchase_price' => $default['purchase_price'],
                 'sale_price' => $default['sale_price'],
@@ -80,9 +87,24 @@ final class ProductService
     {
         return DB::transaction(function () use ($product, $data) {
             $baseUnit = $data['base_unit'] ?? $product->base_unit;
-            $units = isset($data['units'])
-                ? $this->normalizeUnitsPayload($data['units'], $baseUnit)
+            $piecesPerStrip = array_key_exists('pieces_per_strip', $data)
+                ? (isset($data['pieces_per_strip']) ? (float) $data['pieces_per_strip'] : null)
                 : null;
+
+            if (isset($data['units'])) {
+                $units = $this->normalizeUnitsPayload($data['units'], $baseUnit, $piecesPerStrip);
+            } elseif ($piecesPerStrip !== null && $piecesPerStrip > 0) {
+                $existingUnits = $product->units->map(fn ($u) => [
+                    'sell_unit' => $u->sell_unit,
+                    'conversion_factor' => (float) $u->conversion_factor,
+                    'purchase_price' => $u->purchase_price,
+                    'sale_price' => $u->sale_price,
+                    'is_default' => (bool) $u->is_default,
+                ])->all();
+                $units = $this->normalizeUnitsPayload($existingUnits, $baseUnit, $piecesPerStrip);
+            } else {
+                $units = null;
+            }
 
             $default = $units
                 ? (collect($units)->firstWhere('is_default', true) ?? $units[0])
@@ -96,6 +118,9 @@ final class ProductService
                 'barcode' => array_key_exists('barcode', $data) ? $data['barcode'] : $product->barcode,
                 'product_type' => $data['product_type'] ?? $product->product_type,
                 'base_unit' => $baseUnit,
+                'pieces_per_strip' => array_key_exists('pieces_per_strip', $data)
+                    ? $this->normalizePiecesPerStrip($data['pieces_per_strip'])
+                    : $product->pieces_per_strip,
                 'unit' => $default['sell_unit'] ?? $product->unit,
                 'purchase_price' => $default['purchase_price'] ?? $product->purchase_price,
                 'sale_price' => $default['sale_price'] ?? $product->sale_price,
@@ -107,20 +132,132 @@ final class ProductService
                 ProductUnitResolver::syncProductUnits($product->fresh(), $units);
             }
 
-            return $product->fresh(['units']);
+            $this->applyStockAdjustmentIfProvided($product->fresh(['units', 'batches']), $data);
+
+            return $product->fresh(['units', 'batches']);
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function applyStockAdjustmentIfProvided(Product $product, array $data): void
+    {
+        if (! array_key_exists('stock_adjustment', $data)) {
+            return;
+        }
+
+        $delta = $data['stock_adjustment'];
+        if ($delta === null || $delta === '') {
+            return;
+        }
+
+        $delta = (float) $delta;
+        if ($delta === 0.0) {
+            return;
+        }
+
+        $batchId = $data['stock_adjust_batch_id'] ?? null;
+        $batch = null;
+
+        if ($batchId) {
+            $batch = ProductBatch::query()
+                ->where('product_id', $product->getKey())
+                ->whereKey($batchId)
+                ->lockForUpdate()
+                ->first();
+
+            if ($batch === null) {
+                throw ValidationException::withMessages([
+                    'stock_adjust_batch_id' => [__('catalog.stock_adjust_batch_invalid')],
+                ]);
+            }
+        } else {
+            $batches = ProductBatch::query()
+                ->where('product_id', $product->getKey())
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+
+            if ($batches->count() === 1) {
+                $batch = $batches->first();
+            } elseif ($batches->count() > 1) {
+                throw ValidationException::withMessages([
+                    'stock_adjust_batch_id' => [__('catalog.stock_adjust_batch_required')],
+                ]);
+            }
+        }
+
+        if ($batch === null) {
+            if ($delta <= 0) {
+                throw ValidationException::withMessages([
+                    'stock_adjustment' => [__('catalog.stock_adjustment_no_batch')],
+                ]);
+            }
+
+            $batchNo = filled($data['stock_adjust_batch_no'] ?? null)
+                ? (string) $data['stock_adjust_batch_no']
+                : 'ADJ-'.strtoupper($product->sku);
+
+            $defaultUnit = $product->defaultUnit();
+
+            $batch = ProductBatch::query()->create([
+                'product_id' => $product->getKey(),
+                'batch_no' => $batchNo,
+                'quantity_on_hand' => 0,
+                'purchase_unit_cost' => $defaultUnit?->purchase_price ?? $product->purchase_price,
+            ]);
+        }
+
+        $newQty = (float) $batch->quantity_on_hand + $delta;
+        if ($newQty < 0) {
+            throw ValidationException::withMessages([
+                'stock_adjustment' => [__('catalog.stock_adjustment_below_zero')],
+            ]);
+        }
+
+        $batch->quantity_on_hand = (string) $newQty;
+        $batch->save();
+
+        StockMovement::query()->create([
+            'product_batch_id' => $batch->getKey(),
+            'type' => 'adjustment',
+            'reference_type' => Product::class,
+            'reference_id' => $product->getKey(),
+            'quantity_delta' => (string) $delta,
+            'meta' => ['source' => 'product_form'],
+        ]);
     }
 
     /**
      * @param  array<int, array<string, mixed>>  $units
      * @return array<int, array<string, mixed>>
      */
-    private function normalizeUnitsPayload(array $units, string $baseUnit): array
+    private function normalizePiecesPerStrip(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $n = (float) $value;
+
+        return $n > 0 ? number_format($n, 4, '.', '') : null;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $units
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeUnitsPayload(array $units, string $baseUnit, ?float $piecesPerStrip = null): array
     {
         if ($units === []) {
             throw ValidationException::withMessages([
                 'units' => [__('catalog.units_required')],
             ]);
+        }
+
+        if ($piecesPerStrip !== null && $piecesPerStrip > 0) {
+            $units = $this->applyPiecesPerStrip($units, $baseUnit, $piecesPerStrip);
         }
 
         $normalized = [];
@@ -170,5 +307,47 @@ final class ProductService
         }
 
         return $normalized;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $units
+     * @return array<int, array<string, mixed>>
+     */
+    private function applyPiecesPerStrip(array $units, string $baseUnit, float $piecesPerStrip): array
+    {
+        $piecesPerStrip = max(0.0001, $piecesPerStrip);
+
+        if ($baseUnit === 'strip') {
+            $units = $this->upsertUnitRow($units, 'piece', 1 / $piecesPerStrip);
+        } elseif ($baseUnit === 'piece') {
+            $units = $this->upsertUnitRow($units, 'strip', $piecesPerStrip);
+        }
+
+        return $units;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $units
+     * @return array<int, array<string, mixed>>
+     */
+    private function upsertUnitRow(array $units, string $sellUnit, float $conversionFactor): array
+    {
+        foreach ($units as $i => $row) {
+            if (($row['sell_unit'] ?? '') === $sellUnit) {
+                $units[$i]['conversion_factor'] = $conversionFactor;
+
+                return $units;
+            }
+        }
+
+        $units[] = [
+            'sell_unit' => $sellUnit,
+            'conversion_factor' => $conversionFactor,
+            'purchase_price' => 0,
+            'sale_price' => 0,
+            'is_default' => false,
+        ];
+
+        return $units;
     }
 }

@@ -17,6 +17,7 @@ return [
     'product_list' => 'Product list',
     'new_product' => 'New product',
     'categories' => 'Categories',
+    'product_types' => 'Product types',
     'manufacturers' => 'Manufacturers',
     'bulk_import' => 'Bulk import',
     'inventory' => 'Inventory',

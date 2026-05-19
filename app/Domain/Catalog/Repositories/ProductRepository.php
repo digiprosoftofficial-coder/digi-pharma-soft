@@ -14,7 +14,9 @@ final class ProductRepository
     public function paginateForTenant(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         $query = Product::query()
-            ->with(['category', 'manufacturer', 'batches', 'units'])
+            ->with(['category', 'manufacturer', 'units'])
+            ->withSum('batches as stock_on_hand', 'quantity_on_hand')
+            ->withSum('purchaseLines as purchased_quantity', 'quantity_base')
             ->orderByDesc('id');
 
         if (! empty($filters['q'])) {

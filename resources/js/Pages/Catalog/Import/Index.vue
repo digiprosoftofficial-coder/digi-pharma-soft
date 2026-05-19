@@ -26,31 +26,48 @@
         </form>
 
         <div v-if="preview" class="card border-0 shadow-sm">
-            <div class="card-header bg-white fw-semibold">
-                Preview — {{ preview.valid_count }} valid, {{ preview.error_count }} with errors
+            <div class="card-header bg-white">
+                <div class="fw-semibold">Preview — {{ preview.valid_count }} valid, {{ preview.error_count }} with errors</div>
+                <p v-if="preview.headers?.length" class="small text-muted mb-0 mt-1">
+                    Columns detected: {{ preview.headers.map(headerLabel).join(', ') }}
+                </p>
             </div>
             <div class="table-responsive">
-                <table class="table table-sm mb-0">
+                <table class="table table-sm table-bordered mb-0 align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th>Row</th>
-                            <th>Name</th>
-                            <th>SKU</th>
-                            <th>Status</th>
+                            <th class="text-nowrap">#</th>
+                            <th v-for="h in preview.headers" :key="h" class="text-nowrap">
+                                {{ headerLabel(h) }}
+                            </th>
+                            <th class="text-nowrap">Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="row in preview.rows.slice(0, 20)" :key="row.row">
-                            <td>{{ row.row }}</td>
-                            <td>{{ row.data.name }}</td>
-                            <td>{{ row.data.sku }}</td>
+                        <tr
+                            v-for="row in previewRows"
+                            :key="row.row"
+                            :class="row.errors.length ? 'table-danger' : ''"
+                        >
+                            <td class="text-muted">{{ row.row }}</td>
+                            <td v-for="h in preview.headers" :key="h" class="small text-nowrap">
+                                {{ cellValue(row, h) }}
+                            </td>
                             <td>
                                 <span v-if="row.errors.length" class="text-danger small">{{ row.errors.join('; ') }}</span>
                                 <span v-else class="text-success small">OK</span>
                             </td>
                         </tr>
+                        <tr v-if="!previewRows.length">
+                            <td :colspan="(preview.headers?.length ?? 0) + 2" class="text-muted text-center py-3">
+                                No data rows in file.
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
+            </div>
+            <div v-if="preview.rows.length > previewLimit" class="card-footer small text-muted">
+                Showing first {{ previewLimit }} of {{ preview.rows.length }} rows.
             </div>
         </div>
     </TenantShellLayout>
@@ -59,15 +76,34 @@
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
-defineProps({ preview: { type: Object, default: null } });
+const props = defineProps({ preview: { type: Object, default: null } });
+
+const previewLimit = 50;
 
 const fileInput = ref(null);
 const selectedFile = ref(null);
 
 const previewForm = useForm({ file: null });
 const importForm = useForm({ file: null, skip_duplicates: true });
+
+const previewRows = computed(() => props.preview?.rows?.slice(0, previewLimit) ?? []);
+
+function headerLabel(key) {
+    if (!key) {
+        return '';
+    }
+    return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function cellValue(row, header) {
+    const value = row.raw?.[header];
+    if (value === undefined || value === null || value === '') {
+        return '—';
+    }
+    return value;
+}
 
 function onFile(e) {
     selectedFile.value = e.target.files?.[0] ?? null;
