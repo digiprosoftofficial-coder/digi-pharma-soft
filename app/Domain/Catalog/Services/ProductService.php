@@ -27,10 +27,13 @@ final class ProductService
             }
 
             $baseUnit = $data['base_unit'] ?? 'strip';
+            $piecesPerStrip = isset($data['pieces_per_strip']) ? (float) $data['pieces_per_strip'] : null;
+            $boxesPerCarton = isset($data['boxes_per_carton']) ? (float) $data['boxes_per_carton'] : null;
             $units = $this->normalizeUnitsPayload(
                 $data['units'] ?? [],
                 $baseUnit,
-                isset($data['pieces_per_strip']) ? (float) $data['pieces_per_strip'] : null,
+                $piecesPerStrip,
+                $boxesPerCarton,
             );
 
             $default = collect($units)->firstWhere('is_default', true) ?? $units[0];
@@ -44,6 +47,7 @@ final class ProductService
                 'product_type' => $data['product_type'] ?? 'other',
                 'base_unit' => $baseUnit,
                 'pieces_per_strip' => $this->normalizePiecesPerStrip($data['pieces_per_strip'] ?? null),
+                'boxes_per_carton' => $this->normalizeBoxesPerCarton($data['boxes_per_carton'] ?? null),
                 'unit' => $default['sell_unit'],
                 'purchase_price' => $default['purchase_price'],
                 'sale_price' => $default['sale_price'],
@@ -90,10 +94,13 @@ final class ProductService
             $piecesPerStrip = array_key_exists('pieces_per_strip', $data)
                 ? (isset($data['pieces_per_strip']) ? (float) $data['pieces_per_strip'] : null)
                 : null;
+            $boxesPerCarton = array_key_exists('boxes_per_carton', $data)
+                ? (isset($data['boxes_per_carton']) ? (float) $data['boxes_per_carton'] : null)
+                : null;
 
             if (isset($data['units'])) {
-                $units = $this->normalizeUnitsPayload($data['units'], $baseUnit, $piecesPerStrip);
-            } elseif ($piecesPerStrip !== null && $piecesPerStrip > 0) {
+                $units = $this->normalizeUnitsPayload($data['units'], $baseUnit, $piecesPerStrip, $boxesPerCarton);
+            } elseif (($piecesPerStrip !== null && $piecesPerStrip > 0) || ($boxesPerCarton !== null && $boxesPerCarton > 0)) {
                 $existingUnits = $product->units->map(fn ($u) => [
                     'sell_unit' => $u->sell_unit,
                     'conversion_factor' => (float) $u->conversion_factor,
@@ -101,7 +108,12 @@ final class ProductService
                     'sale_price' => $u->sale_price,
                     'is_default' => (bool) $u->is_default,
                 ])->all();
-                $units = $this->normalizeUnitsPayload($existingUnits, $baseUnit, $piecesPerStrip);
+                $units = $this->normalizeUnitsPayload(
+                    $existingUnits,
+                    $baseUnit,
+                    $piecesPerStrip ?? ($product->pieces_per_strip !== null ? (float) $product->pieces_per_strip : null),
+                    $boxesPerCarton ?? ($product->boxes_per_carton !== null ? (float) $product->boxes_per_carton : null),
+                );
             } else {
                 $units = null;
             }
@@ -121,6 +133,9 @@ final class ProductService
                 'pieces_per_strip' => array_key_exists('pieces_per_strip', $data)
                     ? $this->normalizePiecesPerStrip($data['pieces_per_strip'])
                     : $product->pieces_per_strip,
+                'boxes_per_carton' => array_key_exists('boxes_per_carton', $data)
+                    ? $this->normalizeBoxesPerCarton($data['boxes_per_carton'])
+                    : $product->boxes_per_carton,
                 'unit' => $default['sell_unit'] ?? $product->unit,
                 'purchase_price' => $default['purchase_price'] ?? $product->purchase_price,
                 'sale_price' => $default['sale_price'] ?? $product->sale_price,
@@ -244,12 +259,27 @@ final class ProductService
         return $n > 0 ? number_format($n, 4, '.', '') : null;
     }
 
+    private function normalizeBoxesPerCarton(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $n = (float) $value;
+
+        return $n > 0 ? number_format($n, 4, '.', '') : null;
+    }
+
     /**
      * @param  array<int, array<string, mixed>>  $units
      * @return array<int, array<string, mixed>>
      */
-    private function normalizeUnitsPayload(array $units, string $baseUnit, ?float $piecesPerStrip = null): array
-    {
+    private function normalizeUnitsPayload(
+        array $units,
+        string $baseUnit,
+        ?float $piecesPerStrip = null,
+        ?float $boxesPerCarton = null,
+    ): array {
         if ($units === []) {
             throw ValidationException::withMessages([
                 'units' => [__('catalog.units_required')],
@@ -258,6 +288,10 @@ final class ProductService
 
         if ($piecesPerStrip !== null && $piecesPerStrip > 0) {
             $units = $this->applyPiecesPerStrip($units, $baseUnit, $piecesPerStrip);
+        }
+
+        if ($boxesPerCarton !== null && $boxesPerCarton > 0) {
+            $units = $this->applyBoxesPerCarton($units, $boxesPerCarton);
         }
 
         $normalized = [];
@@ -324,6 +358,29 @@ final class ProductService
         }
 
         return $units;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $units
+     * @return array<int, array<string, mixed>>
+     */
+    private function applyBoxesPerCarton(array $units, float $boxesPerCarton): array
+    {
+        $boxesPerCarton = max(0.0001, $boxesPerCarton);
+        $boxFactor = null;
+
+        foreach ($units as $row) {
+            if (($row['sell_unit'] ?? '') === 'box') {
+                $boxFactor = max(0.0001, (float) ($row['conversion_factor'] ?? 1));
+                break;
+            }
+        }
+
+        if ($boxFactor === null) {
+            return $units;
+        }
+
+        return $this->upsertUnitRow($units, 'carton', $boxesPerCarton * $boxFactor);
     }
 
     /**

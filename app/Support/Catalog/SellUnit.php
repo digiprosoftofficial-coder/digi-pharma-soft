@@ -7,6 +7,7 @@ enum SellUnit: string
     case Piece = 'piece';
     case Strip = 'strip';
     case Box = 'box';
+    case Carton = 'carton';
 
     /**
      * @return list<string>

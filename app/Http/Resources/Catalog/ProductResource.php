@@ -22,6 +22,7 @@ class ProductResource extends JsonResource
             'product_type' => $this->product_type ?? 'other',
             'base_unit' => $this->base_unit ?? 'strip',
             'pieces_per_strip' => $this->pieces_per_strip !== null ? (string) $this->pieces_per_strip : null,
+            'boxes_per_carton' => $this->boxes_per_carton !== null ? (string) $this->boxes_per_carton : null,
             'unit' => $this->unit,
             'stock_pieces' => $this->when(
                 $this->resolveBaseStockForResource() !== null,

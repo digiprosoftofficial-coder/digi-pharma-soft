@@ -13,6 +13,9 @@ class StoreProductRequest extends FormRequest
         if ($this->has('pieces_per_strip') && $this->input('pieces_per_strip') === '') {
             $this->merge(['pieces_per_strip' => null]);
         }
+        if ($this->has('boxes_per_carton') && $this->input('boxes_per_carton') === '') {
+            $this->merge(['boxes_per_carton' => null]);
+        }
     }
 
     public function authorize(): bool
@@ -36,6 +39,7 @@ class StoreProductRequest extends FormRequest
             'product_type' => ['required', ProductCatalogOptions::productTypeRule()],
             'base_unit' => ['required', ProductCatalogOptions::sellUnitRule()],
             'pieces_per_strip' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
+            'boxes_per_carton' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
             'units' => ['required', 'array', 'min:1'],
             'units.*.sell_unit' => ['required', ProductCatalogOptions::sellUnitRule()],
             'units.*.conversion_factor' => ['nullable', 'numeric', 'min:0.0001'],

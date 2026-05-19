@@ -118,6 +118,10 @@
                                 <dt class="col-sm-4">Pieces per strip</dt>
                                 <dd class="col-sm-8">{{ formatQty(product.pieces_per_strip) }}</dd>
                             </template>
+                            <template v-if="product.boxes_per_carton">
+                                <dt class="col-sm-4">Boxes per carton</dt>
+                                <dd class="col-sm-8">{{ formatQty(product.boxes_per_carton) }}</dd>
+                            </template>
                             <dt class="col-sm-4">Default sale</dt>
                             <dd class="col-sm-8">{{ formatMoney(product.sale_price) }}</dd>
                         </dl>

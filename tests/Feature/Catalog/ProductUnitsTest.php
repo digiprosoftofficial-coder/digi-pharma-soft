@@ -173,4 +173,62 @@ class ProductUnitsTest extends TestCase
         $this->assertSame('box', $line->sell_unit);
         $this->assertSame(20.0, (float) $line->quantity_base);
     }
+
+    public function test_product_can_be_created_with_carton_sell_unit(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+
+        $this->actingAs($user)->post('/products', [
+            'name' => 'Bulk Paracetamol',
+            'sku' => 'PAR-BULK',
+            'product_type' => 'tablet',
+            'base_unit' => 'strip',
+            'units' => [
+                ['sell_unit' => 'strip', 'conversion_factor' => 1, 'purchase_price' => 50, 'sale_price' => 70, 'is_default' => true],
+                ['sell_unit' => 'carton', 'conversion_factor' => 120, 'purchase_price' => 5400, 'sale_price' => 7800, 'is_default' => false],
+            ],
+            'min_stock' => 5,
+            'is_active' => true,
+        ])->assertRedirect(route('tenant.products.index'));
+
+        $product = Product::query()->where('sku', 'PAR-BULK')->firstOrFail();
+        $carton = $product->units()->where('sell_unit', 'carton')->first();
+        $this->assertNotNull($carton);
+        $this->assertSame(120.0, (float) $carton->conversion_factor);
+    }
+
+    public function test_pos_sale_deducts_stock_in_base_units_when_selling_cartons(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+        $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
+        $product->units()->create([
+            'sell_unit' => 'carton',
+            'conversion_factor' => 100,
+            'purchase_price' => 4500,
+            'sale_price' => 6000,
+            'is_default' => false,
+            'sort_order' => 2,
+        ]);
+        $batch = ProductBatch::query()->where('product_id', $product->getKey())->firstOrFail();
+        $before = (float) $batch->quantity_on_hand;
+
+        $this->actingAs($user)->post('/pos/sales', [
+            'lines' => [[
+                'product_batch_id' => $batch->getKey(),
+                'quantity' => 1,
+                'sell_unit' => 'carton',
+                'unit_price' => 6000,
+            ]],
+            'payments' => [['method' => 'cash', 'amount' => 6000]],
+        ])->assertRedirect();
+
+        $batch->refresh();
+        $this->assertSame($before - 100.0, (float) $batch->quantity_on_hand);
+
+        $line = SaleLine::query()->latest('id')->first();
+        $this->assertSame('carton', $line->sell_unit);
+        $this->assertSame(100.0, (float) $line->quantity_base);
+    }
 }

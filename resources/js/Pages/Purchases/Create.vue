@@ -146,26 +146,41 @@
                 <div v-if="needsPackSize(line)" class="row g-2 mt-1 pt-2 border-top">
                     <div class="col-md-4">
                         <label class="form-label small mb-0">
-                            {{ unitLabel(line.base_unit) }} per 1 {{ unitLabel(line.sell_unit) }}
-                            <span class="text-muted fw-normal">(this receipt)</span>
+                            {{ packSizeLabel(line) }}
                         </label>
                         <input
+                            v-if="usesBoxesPerCarton(line)"
+                            v-model.number="line.pack_boxes_per_carton"
+                            type="number"
+                            min="0.0001"
+                            step="any"
+                            class="form-control form-control-sm mt-1"
+                            required
+                            @input="syncLineConversionFromPackInput(line)"
+                        />
+                        <input
+                            v-else
                             v-model.number="line.conversion_factor"
                             type="number"
                             min="0.0001"
-                            step="0.0001"
+                            step="any"
                             class="form-control form-control-sm mt-1"
                             required
                         />
                     </div>
                     <div class="col-md-8 d-flex align-items-end">
-                        <p v-if="lineQuantityBase(line) > 0" class="small text-muted mb-1">
-                            Adds <strong>{{ formatQty(lineQuantityBase(line)) }}</strong>
-                            {{ unitLabel(line.base_unit) }}(s) to stock
-                            <span v-if="Number(line.conversion_factor) !== defaultConversion(line)" class="text-warning">
-                                (catalog default: {{ defaultConversion(line) }})
-                            </span>
-                        </p>
+                        <div v-if="lineQuantityBase(line) > 0" class="small text-muted mb-1">
+                            <p v-if="usesBoxesPerCarton(line) && packSizeBreakdown(line)" class="mb-1">
+                                {{ packSizeBreakdown(line) }}
+                            </p>
+                            <p class="mb-0">
+                                Adds <strong>{{ formatQty(lineQuantityBase(line)) }}</strong>
+                                {{ unitLabel(line.base_unit) }}(s) to stock
+                                <span v-if="packSizeDiffersFromDefault(line)" class="text-warning">
+                                    ({{ packSizeDefaultHint(line) }})
+                                </span>
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -182,7 +197,14 @@
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
-import { defaultSellUnit, unitLabel, unitPurchasePrice } from '@/composables/useProductUnits';
+import {
+    boxConversionFactor,
+    catalogBoxesPerCarton,
+    defaultSellUnit,
+    hasBoxAndCartonUnits,
+    unitLabel,
+    unitPurchasePrice,
+} from '@/composables/useProductUnits';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
@@ -247,6 +269,88 @@ function productBaseUnit(product) {
     return product.base_unit ?? product.unit ?? 'strip';
 }
 
+function formatConversionFactor(value) {
+    const n = Number(value);
+    if (Number.isNaN(n) || n <= 0) {
+        return 0.0001;
+    }
+    return Math.round(n * 10000) / 10000;
+}
+
+function usesBoxesPerCarton(line) {
+    return line.sell_unit === 'carton' && hasBoxAndCartonUnits(line.unit_options);
+}
+
+function usesStripsPerBox(line) {
+    return line.sell_unit === 'box' && line.base_unit === 'strip';
+}
+
+function packSizeLabel(line) {
+    if (usesBoxesPerCarton(line)) {
+        return t('catalog.purchase_boxes_per_carton');
+    }
+    if (usesStripsPerBox(line)) {
+        return t('catalog.purchase_strips_per_box');
+    }
+    return `${unitLabel(line.base_unit)} per 1 ${unitLabel(line.sell_unit)} (this receipt)`;
+}
+
+function defaultBoxesPerCarton(line) {
+    const product = { units: line.unit_options, boxes_per_carton: line.catalog_boxes_per_carton };
+    const value = catalogBoxesPerCarton(product);
+    return value && value > 0 ? value : defaultConversion(line) / Math.max(0.0001, boxConversionFactor(line.unit_options));
+}
+
+function syncLineConversionFromPackInput(line) {
+    if (!usesBoxesPerCarton(line)) {
+        return;
+    }
+    const boxes = Number(line.pack_boxes_per_carton);
+    const boxFactor = boxConversionFactor(line.unit_options);
+    if (Number.isNaN(boxes) || boxes <= 0 || boxFactor <= 0) {
+        return;
+    }
+    line.conversion_factor = formatConversionFactor(boxes * boxFactor);
+}
+
+function initLinePackFields(line) {
+    if (usesBoxesPerCarton(line)) {
+        line.pack_boxes_per_carton = defaultBoxesPerCarton(line);
+        syncLineConversionFromPackInput(line);
+    }
+}
+
+function packSizeBreakdown(line) {
+    if (!usesBoxesPerCarton(line)) {
+        return '';
+    }
+    const factor = Number(line.conversion_factor);
+    if (Number.isNaN(factor) || factor <= 0) {
+        return '';
+    }
+    return t('catalog.purchase_pack_equals', {
+        qty: formatQty(factor),
+        unit: unitLabel(line.base_unit),
+        sell_unit: unitLabel(line.sell_unit),
+    });
+}
+
+function packSizeDiffersFromDefault(line) {
+    if (usesBoxesPerCarton(line)) {
+        const def = defaultBoxesPerCarton(line);
+        const current = Number(line.pack_boxes_per_carton);
+        return !Number.isNaN(current) && Math.abs(current - def) > 0.0001;
+    }
+    return Number(line.conversion_factor) !== defaultConversion(line);
+}
+
+function packSizeDefaultHint(line) {
+    if (usesBoxesPerCarton(line)) {
+        return t('catalog.purchase_catalog_default_boxes', { qty: formatQty(defaultBoxesPerCarton(line)) });
+    }
+    return `catalog default: ${defaultConversion(line)}`;
+}
+
 function defaultConversion(line) {
     const option = line.unit_options.find((u) => u.sell_unit === line.sell_unit);
     return Number(option?.conversion_factor ?? 1);
@@ -258,6 +362,9 @@ function needsPackSize(line) {
 
 function lineQuantityBase(line) {
     const qty = Number(line.quantity);
+    if (usesBoxesPerCarton(line)) {
+        syncLineConversionFromPackInput(line);
+    }
     const factor = needsPackSize(line) ? Number(line.conversion_factor) : 1;
     if (Number.isNaN(qty) || Number.isNaN(factor)) {
         return 0;
@@ -280,12 +387,18 @@ function addProductLine(product) {
         batch_no: '',
         expiry_date: '',
         sell_unit: sellUnit,
-        conversion_factor: defaultConversion({ sell_unit: sellUnit, unit_options: unitOptions }),
+        conversion_factor: 1,
         quantity: 1,
         unit_cost: unitPurchasePrice(product, sellUnit),
         unit_options: unitOptions,
         existing_batches: existingBatches,
+        catalog_boxes_per_carton: product.boxes_per_carton ?? null,
+        pack_boxes_per_carton: null,
     };
+    initLinePackFields(line);
+    if (!usesBoxesPerCarton(line)) {
+        line.conversion_factor = defaultConversion(line);
+    }
     form.lines.push(line);
     searchQuery.value = '';
     searchResults.value = [];
@@ -304,6 +417,11 @@ function applyBatchPick(line) {
         if (batch.pack_sell_unit && batch.pack_conversion_factor) {
             line.sell_unit = batch.pack_sell_unit;
             line.conversion_factor = Number(batch.pack_conversion_factor);
+            if (usesBoxesPerCarton(line)) {
+                const boxFactor = boxConversionFactor(line.unit_options);
+                line.pack_boxes_per_carton =
+                    boxFactor > 0 ? formatConversionFactor(Number(batch.pack_conversion_factor) / boxFactor) : null;
+            }
         }
     }
 }
@@ -314,7 +432,11 @@ function onUnitChange(line) {
         purchase_price: line.unit_options[0]?.purchase_price,
     };
     line.unit_cost = unitPurchasePrice(product, line.sell_unit);
-    line.conversion_factor = defaultConversion(line);
+    line.pack_boxes_per_carton = null;
+    initLinePackFields(line);
+    if (!usesBoxesPerCarton(line)) {
+        line.conversion_factor = defaultConversion(line);
+    }
 }
 
 function removeLine(index) {
@@ -325,6 +447,9 @@ function submit() {
     form.transform((data) => ({
         ...data,
         lines: data.lines.map((line) => {
+            if (usesBoxesPerCarton(line)) {
+                syncLineConversionFromPackInput(line);
+            }
             const payload = {
                 product_id: line.product_id,
                 batch_no: line.batch_no,

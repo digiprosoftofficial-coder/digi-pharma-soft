@@ -26,6 +26,34 @@ export function unitConversionFactor(product, sellUnit) {
     return Number(row?.conversion_factor ?? 1);
 }
 
+export function boxConversionFactor(productOrUnits) {
+    const units = productOrUnits?.units ?? productOrUnits;
+    if (!Array.isArray(units)) {
+        return 0;
+    }
+    const row = units.find((u) => u.sell_unit === 'box');
+    return Number(row?.conversion_factor ?? 0);
+}
+
+export function catalogBoxesPerCarton(product) {
+    if (product?.boxes_per_carton != null && product.boxes_per_carton !== '') {
+        return Number(product.boxes_per_carton);
+    }
+    const boxFactor = boxConversionFactor(product);
+    const cartonFactor = unitConversionFactor(product, 'carton');
+    if (boxFactor > 0 && cartonFactor > 0) {
+        return cartonFactor / boxFactor;
+    }
+    return null;
+}
+
+export function hasBoxAndCartonUnits(units) {
+    if (!Array.isArray(units)) {
+        return false;
+    }
+    return units.some((u) => u.sell_unit === 'box') && units.some((u) => u.sell_unit === 'carton');
+}
+
 /** Stock on hand expressed in the selected sell unit. */
 export function stockInSellUnit({ baseStock, baseUnit, sellUnit, units, piecesPerStrip }) {
     const stock = Number(baseStock ?? 0);

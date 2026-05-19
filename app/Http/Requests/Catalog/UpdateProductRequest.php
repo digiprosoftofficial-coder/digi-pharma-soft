@@ -14,6 +14,9 @@ class UpdateProductRequest extends FormRequest
         if ($this->has('pieces_per_strip') && $this->input('pieces_per_strip') === '') {
             $this->merge(['pieces_per_strip' => null]);
         }
+        if ($this->has('boxes_per_carton') && $this->input('boxes_per_carton') === '') {
+            $this->merge(['boxes_per_carton' => null]);
+        }
     }
 
     public function authorize(): bool
@@ -42,6 +45,7 @@ class UpdateProductRequest extends FormRequest
             'product_type' => ['sometimes', ProductCatalogOptions::productTypeRule()],
             'base_unit' => ['sometimes', ProductCatalogOptions::sellUnitRule()],
             'pieces_per_strip' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
+            'boxes_per_carton' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
             'units' => ['sometimes', 'array', 'min:1'],
             'units.*.sell_unit' => ['required_with:units', ProductCatalogOptions::sellUnitRule()],
             'units.*.conversion_factor' => ['nullable', 'numeric', 'min:0.0001'],

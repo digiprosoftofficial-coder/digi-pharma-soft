@@ -11,13 +11,14 @@ class Product extends TenantModel
 {
     protected $fillable = [
         'tenant_id', 'category_id', 'manufacturer_id', 'name', 'sku', 'barcode',
-        'product_type', 'base_unit', 'pieces_per_strip', 'unit', 'purchase_price', 'sale_price', 'min_stock', 'is_active',
+        'product_type', 'base_unit', 'pieces_per_strip', 'boxes_per_carton', 'unit', 'purchase_price', 'sale_price', 'min_stock', 'is_active',
     ];
 
     protected function casts(): array
     {
         return [
             'pieces_per_strip' => 'decimal:4',
+            'boxes_per_carton' => 'decimal:4',
             'purchase_price' => 'decimal:4',
             'sale_price' => 'decimal:4',
             'is_active' => 'boolean',

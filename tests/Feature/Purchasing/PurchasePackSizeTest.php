@@ -96,4 +96,94 @@ class PurchasePackSizeTest extends TestCase
         $this->assertSame('6.0000', (string) $saleLine->conversion_factor);
         $this->assertSame('0.0000', (string) $batch->fresh()->quantity_on_hand);
     }
+
+    public function test_purchase_carton_with_custom_boxes_per_carton_updates_stock(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+        $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
+        $product->units()->create([
+            'sell_unit' => 'carton',
+            'conversion_factor' => 120,
+            'purchase_price' => 5000,
+            'sale_price' => 7000,
+            'is_default' => false,
+            'sort_order' => 2,
+        ]);
+        $product->update(['boxes_per_carton' => 12]);
+        $supplier = Supplier::query()->firstOrFail();
+
+        $this->actingAs($user)->post('/purchases', [
+            'supplier_id' => $supplier->getKey(),
+            'invoice_no' => 'INV-CTN-5',
+            'purchased_at' => now()->toDateString(),
+            'paid' => 0,
+            'lines' => [[
+                'product_id' => $product->getKey(),
+                'batch_no' => 'CTN-5-BOX',
+                'quantity' => 2,
+                'sell_unit' => 'carton',
+                'conversion_factor' => 50,
+                'unit_cost' => 2500,
+            ]],
+        ])->assertRedirect(route('tenant.purchases.index'));
+
+        $batch = ProductBatch::query()
+            ->where('product_id', $product->getKey())
+            ->where('batch_no', 'CTN-5-BOX')
+            ->firstOrFail();
+
+        $this->assertSame('carton', $batch->pack_sell_unit);
+        $this->assertSame('50.0000', (string) $batch->pack_conversion_factor);
+        $this->assertSame('100.0000', (string) $batch->quantity_on_hand);
+    }
+
+    public function test_pos_sale_from_batch_uses_batch_pack_size_for_carton(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+        $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
+        $product->units()->create([
+            'sell_unit' => 'carton',
+            'conversion_factor' => 120,
+            'purchase_price' => 5000,
+            'sale_price' => 7000,
+            'is_default' => false,
+            'sort_order' => 2,
+        ]);
+        $supplier = Supplier::query()->firstOrFail();
+
+        $this->actingAs($user)->post('/purchases', [
+            'supplier_id' => $supplier->getKey(),
+            'invoice_no' => 'INV-CTN-POS',
+            'purchased_at' => now()->toDateString(),
+            'paid' => 0,
+            'lines' => [[
+                'product_id' => $product->getKey(),
+                'batch_no' => 'CTN-5-POS',
+                'quantity' => 1,
+                'sell_unit' => 'carton',
+                'conversion_factor' => 50,
+                'unit_cost' => 2500,
+            ]],
+        ]);
+
+        $batch = ProductBatch::query()->where('batch_no', 'CTN-5-POS')->firstOrFail();
+
+        $this->actingAs($user)->post('/pos/sales', [
+            'lines' => [[
+                'product_batch_id' => $batch->getKey(),
+                'quantity' => 1,
+                'sell_unit' => 'carton',
+                'unit_price' => 7000,
+            ]],
+            'payments' => [['method' => 'cash', 'amount' => 7000]],
+            'discount' => 0,
+            'tax' => 0,
+        ])->assertRedirect();
+
+        $saleLine = SaleLine::query()->latest('id')->firstOrFail();
+        $this->assertSame('50.0000', (string) $saleLine->quantity_base);
+        $this->assertSame('50.0000', (string) $saleLine->conversion_factor);
+    }
 }

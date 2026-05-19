@@ -52,6 +52,26 @@
                     <div v-if="form.errors.pieces_per_strip" class="text-danger small">{{ form.errors.pieces_per_strip }}</div>
                     <p v-else class="form-text small mb-0">Tablets/capsules in one strip — needed for piece sales &amp; stock count.</p>
                 </div>
+                <div v-if="showBoxesPerCarton" class="col-md-4">
+                    <label class="form-label">Boxes per carton</label>
+                    <input
+                        v-model="form.boxes_per_carton"
+                        type="number"
+                        min="1"
+                        step="1"
+                        class="form-control"
+                        :class="{ 'is-invalid': form.errors.boxes_per_carton }"
+                        placeholder="e.g. 12"
+                        @input="syncBoxesPerCartonToUnits"
+                    />
+                    <div v-if="form.errors.boxes_per_carton" class="text-danger small">{{ form.errors.boxes_per_carton }}</div>
+                    <p v-else class="form-text small mb-0">
+                        Boxes in one carton — syncs carton conversion (× box size).
+                        <span v-if="cartonConversionPreview" class="d-block">
+                            = {{ formatQty(cartonConversionPreview) }} {{ unitLabel(form.base_unit) }} per carton
+                        </span>
+                    </p>
+                </div>
                 <div class="col-md-4">
                     <label class="form-label">Min stock alert</label>
                     <input v-model="form.min_stock" type="number" min="0" class="form-control" />
@@ -191,7 +211,7 @@
                 </div>
                 <div v-if="form.errors.units" class="text-danger small mb-2">{{ form.errors.units }}</div>
                 <p v-if="hasStripUnitRow" class="small text-muted mb-2">
-                    Strip purchase/sale prices auto-fill piece and box (using conversion factors).
+                    Strip purchase/sale prices auto-fill piece, box, and carton (using conversion factors).
                 </p>
                 <div class="table-responsive">
                     <table class="table table-sm align-middle">
@@ -295,7 +315,7 @@ const props = defineProps({
     product: { type: Object, default: null },
     catalogOptions: {
         type: Object,
-        default: () => ({ productTypes: ['other'], sellUnits: ['piece', 'strip', 'box'] }),
+        default: () => ({ productTypes: ['other'], sellUnits: ['piece', 'strip', 'box', 'carton'] }),
     },
     categories: { type: Array, default: () => [] },
     manufacturers: { type: Array, default: () => [] },
@@ -347,6 +367,19 @@ function initialUnits() {
     return buildDefaultUnits();
 }
 
+function initialBoxesPerCarton(units) {
+    const product = productData();
+    if (product?.boxes_per_carton != null && product.boxes_per_carton !== '') {
+        return Number(product.boxes_per_carton);
+    }
+    const carton = units.find((u) => u.sell_unit === 'carton');
+    const box = units.find((u) => u.sell_unit === 'box');
+    if (carton && box && Number(box.conversion_factor) > 0) {
+        return Math.round((Number(carton.conversion_factor) / Number(box.conversion_factor)) * 10000) / 10000;
+    }
+    return '';
+}
+
 const existing = productData();
 
 const batches = computed(() => {
@@ -372,6 +405,21 @@ const showPiecesPerStrip = computed(() => {
 const conversionColumnLabel = computed(() => {
     const base = unitLabel(form.base_unit);
     return `${base} per 1 unit`;
+});
+
+const showBoxesPerCarton = computed(() => {
+    const units = form.units.map((r) => r.sell_unit);
+    return units.includes('carton') && units.includes('box');
+});
+
+const cartonConversionPreview = computed(() => {
+    const bpc = Number(form.boxes_per_carton);
+    const boxRow = form.units.find((r) => r.sell_unit === 'box');
+    const boxFactor = boxRow ? unitRowFactor(boxRow) : 0;
+    if (!bpc || bpc <= 0 || boxFactor <= 0) {
+        return null;
+    }
+    return formatConversionFactor(bpc * boxFactor);
 });
 
 const hasStripUnitRow = computed(() => form.units.some((r) => r.sell_unit === 'strip'));
@@ -402,6 +450,7 @@ const form = useForm({
         existing?.pieces_per_strip != null && existing.pieces_per_strip !== ''
             ? Number(existing.pieces_per_strip)
             : '',
+    boxes_per_carton: initialBoxesPerCarton(initialUnits()),
     units: initialUnits(),
     min_stock: existing?.min_stock ?? 0,
     is_active: existing?.is_active ?? true,
@@ -420,6 +469,7 @@ function onBaseUnitChange() {
         }
     });
     syncPiecesPerStripToUnits();
+    syncBoxesPerCartonToUnits();
 }
 
 function unitRowFactor(row) {
@@ -472,7 +522,7 @@ function syncDerivedUnitPricesFromStrip() {
         if (row.sell_unit === 'strip') {
             return;
         }
-        if (row.sell_unit === 'piece' || row.sell_unit === 'box') {
+        if (row.sell_unit === 'piece' || row.sell_unit === 'box' || row.sell_unit === 'carton') {
             const factor = unitRowFactor(row);
             if (factor <= 0) {
                 return;
@@ -495,7 +545,10 @@ function onStripPriceInput(row) {
 }
 
 function onUnitConversionInput(row) {
-    if (row.sell_unit === 'box' && form.units.some((r) => r.sell_unit === 'strip')) {
+    if (row.sell_unit === 'box') {
+        syncBoxesPerCartonToUnits();
+    }
+    if ((row.sell_unit === 'box' || row.sell_unit === 'carton') && form.units.some((r) => r.sell_unit === 'strip')) {
         syncDerivedUnitPricesFromStrip();
     }
 }
@@ -546,11 +599,43 @@ function syncPiecesPerStripToUnits() {
     syncDerivedUnitPricesFromStrip();
 }
 
+function syncBoxesPerCartonToUnits() {
+    const bpc = Number(form.boxes_per_carton);
+    if (!bpc || bpc <= 0) {
+        return;
+    }
+
+    const boxRow = form.units.find((r) => r.sell_unit === 'box');
+    const boxFactor = boxRow ? unitRowFactor(boxRow) : 0;
+    if (boxFactor <= 0) {
+        return;
+    }
+
+    const cartonFactor = formatConversionFactor(bpc * boxFactor);
+    let cartonRow = form.units.find((r) => r.sell_unit === 'carton');
+    if (!cartonRow) {
+        form.units.push({
+            sell_unit: 'carton',
+            conversion_factor: cartonFactor,
+            purchase_price: '0',
+            sale_price: '0',
+            is_default: false,
+        });
+    } else {
+        cartonRow.conversion_factor = cartonFactor;
+    }
+
+    syncDerivedUnitPricesFromStrip();
+}
+
 watch(
     () => form.units.map((r) => r.sell_unit).join(','),
     () => {
         if (showPiecesPerStrip.value && form.pieces_per_strip) {
             syncPiecesPerStripToUnits();
+        }
+        if (showBoxesPerCarton.value && form.boxes_per_carton) {
+            syncBoxesPerCartonToUnits();
         }
     },
 );
@@ -592,12 +677,25 @@ function normalizePiecesPerStripForSubmit(value) {
     return n;
 }
 
+function normalizeBoxesPerCartonForSubmit(value) {
+    if (value === '' || value === null || value === undefined) {
+        return null;
+    }
+    const n = Number(value);
+    if (Number.isNaN(n) || n <= 0) {
+        return null;
+    }
+    return n;
+}
+
 function buildPayload() {
     syncPiecesPerStripToUnits();
+    syncBoxesPerCartonToUnits();
 
     const payload = {
         ...form.data(),
         pieces_per_strip: normalizePiecesPerStripForSubmit(form.pieces_per_strip),
+        boxes_per_carton: normalizeBoxesPerCartonForSubmit(form.boxes_per_carton),
         units: form.units.map((row) => ({
             sell_unit: row.sell_unit,
             conversion_factor:
