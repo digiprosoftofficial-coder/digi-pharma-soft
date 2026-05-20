@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Catalog;
 
+use App\Support\Catalog\ProductImageStorage;
 use App\Support\Catalog\ProductStockCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -17,11 +18,13 @@ class ProductResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'generic_name' => $this->generic_name,
             'sku' => $this->sku,
             'barcode' => $this->barcode,
             'product_type' => $this->product_type ?? 'other',
             'base_unit' => $this->base_unit ?? 'strip',
             'pieces_per_strip' => $this->pieces_per_strip !== null ? (string) $this->pieces_per_strip : null,
+            'strips_per_box' => $this->strips_per_box !== null ? (string) $this->strips_per_box : null,
             'boxes_per_carton' => $this->boxes_per_carton !== null ? (string) $this->boxes_per_carton : null,
             'unit' => $this->unit,
             'stock_pieces' => $this->when(
@@ -30,6 +33,10 @@ class ProductResource extends JsonResource
             ),
             'purchase_price' => (string) $this->purchase_price,
             'sale_price' => (string) $this->sale_price,
+            'wholesale_price' => $this->wholesale_price !== null ? (string) $this->wholesale_price : null,
+            'vat_percent' => $this->vat_percent !== null ? (string) $this->vat_percent : null,
+            'short_description' => $this->short_description,
+            'image_url' => ProductImageStorage::url($this->image_path),
             'min_stock' => $this->min_stock,
             'is_active' => $this->is_active,
             'stock_on_hand' => (string) ($this->stock_on_hand ?? $this->stockOnHandFromBatches()),

@@ -7,8 +7,12 @@ use App\Domain\Catalog\Models\ProductBatch;
 use App\Domain\Catalog\Repositories\ProductRepository;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Support\Catalog\ProductCatalogOptions;
+use App\Support\Catalog\ProductImageStorage;
+use App\Support\Catalog\ProductSkuGenerator;
 use App\Support\Catalog\ProductStockCalculator;
 use App\Support\Catalog\ProductUnitResolver;
+use App\Support\Tenant\TenantFeatures;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -17,10 +21,12 @@ final class ProductService
 {
     public function __construct(private readonly ProductRepository $products) {}
 
-    public function createProduct(array $data): Product
+    public function createProduct(array $data, ?UploadedFile $image = null): Product
     {
-        return DB::transaction(function () use ($data) {
-            $sku = $data['sku'];
+        return DB::transaction(function () use ($data, $image) {
+            $sku = filled($data['sku'] ?? null)
+                ? (string) $data['sku']
+                : ProductSkuGenerator::generate();
             $barcode = $data['barcode'] ?? null;
             if ($barcode === null || $barcode === '') {
                 $barcode = 'BC-'.Str::upper(Str::slug($sku, '')).'-'.Str::upper(Str::random(4));
@@ -28,11 +34,13 @@ final class ProductService
 
             $baseUnit = $data['base_unit'] ?? 'strip';
             $piecesPerStrip = isset($data['pieces_per_strip']) ? (float) $data['pieces_per_strip'] : null;
+            $stripsPerBox = isset($data['strips_per_box']) ? (float) $data['strips_per_box'] : null;
             $boxesPerCarton = isset($data['boxes_per_carton']) ? (float) $data['boxes_per_carton'] : null;
             $units = $this->normalizeUnitsPayload(
                 $data['units'] ?? [],
                 $baseUnit,
                 $piecesPerStrip,
+                $stripsPerBox,
                 $boxesPerCarton,
             );
 
@@ -42,15 +50,23 @@ final class ProductService
                 'category_id' => $data['category_id'] ?? null,
                 'manufacturer_id' => $data['manufacturer_id'] ?? null,
                 'name' => $data['name'],
+                'generic_name' => $this->normalizeOptionalString($data['generic_name'] ?? null),
                 'sku' => $sku,
                 'barcode' => $barcode,
                 'product_type' => $data['product_type'] ?? 'other',
                 'base_unit' => $baseUnit,
                 'pieces_per_strip' => $this->normalizePiecesPerStrip($data['pieces_per_strip'] ?? null),
+                'strips_per_box' => $this->normalizeStripsPerBox($data['strips_per_box'] ?? null),
                 'boxes_per_carton' => $this->normalizeBoxesPerCarton($data['boxes_per_carton'] ?? null),
                 'unit' => $default['sell_unit'],
                 'purchase_price' => $default['purchase_price'],
                 'sale_price' => $default['sale_price'],
+                'wholesale_price' => TenantFeatures::wholesalePricingEnabled(tenant())
+                    ? $this->normalizeOptionalDecimal($data['wholesale_price'] ?? null)
+                    : null,
+                'vat_percent' => $this->normalizeOptionalDecimal($data['vat_percent'] ?? null),
+                'short_description' => $this->normalizeOptionalString($data['short_description'] ?? null),
+                'image_path' => $image ? ProductImageStorage::store($image) : null,
                 'min_stock' => $data['min_stock'] ?? 0,
                 'is_active' => $data['is_active'] ?? true,
             ]);
@@ -87,20 +103,27 @@ final class ProductService
         ]);
     }
 
-    public function updateProduct(Product $product, array $data): Product
+    public function updateProduct(Product $product, array $data, ?UploadedFile $image = null): Product
     {
-        return DB::transaction(function () use ($product, $data) {
+        return DB::transaction(function () use ($product, $data, $image) {
             $baseUnit = $data['base_unit'] ?? $product->base_unit;
             $piecesPerStrip = array_key_exists('pieces_per_strip', $data)
                 ? (isset($data['pieces_per_strip']) ? (float) $data['pieces_per_strip'] : null)
+                : null;
+            $stripsPerBox = array_key_exists('strips_per_box', $data)
+                ? (isset($data['strips_per_box']) ? (float) $data['strips_per_box'] : null)
                 : null;
             $boxesPerCarton = array_key_exists('boxes_per_carton', $data)
                 ? (isset($data['boxes_per_carton']) ? (float) $data['boxes_per_carton'] : null)
                 : null;
 
             if (isset($data['units'])) {
-                $units = $this->normalizeUnitsPayload($data['units'], $baseUnit, $piecesPerStrip, $boxesPerCarton);
-            } elseif (($piecesPerStrip !== null && $piecesPerStrip > 0) || ($boxesPerCarton !== null && $boxesPerCarton > 0)) {
+                $units = $this->normalizeUnitsPayload($data['units'], $baseUnit, $piecesPerStrip, $stripsPerBox, $boxesPerCarton);
+            } elseif (
+                ($piecesPerStrip !== null && $piecesPerStrip > 0)
+                || ($stripsPerBox !== null && $stripsPerBox > 0)
+                || ($boxesPerCarton !== null && $boxesPerCarton > 0)
+            ) {
                 $existingUnits = $product->units->map(fn ($u) => [
                     'sell_unit' => $u->sell_unit,
                     'conversion_factor' => (float) $u->conversion_factor,
@@ -112,6 +135,7 @@ final class ProductService
                     $existingUnits,
                     $baseUnit,
                     $piecesPerStrip ?? ($product->pieces_per_strip !== null ? (float) $product->pieces_per_strip : null),
+                    $stripsPerBox ?? ($product->strips_per_box !== null ? (float) $product->strips_per_box : null),
                     $boxesPerCarton ?? ($product->boxes_per_carton !== null ? (float) $product->boxes_per_carton : null),
                 );
             } else {
@@ -122,10 +146,23 @@ final class ProductService
                 ? (collect($units)->firstWhere('is_default', true) ?? $units[0])
                 : null;
 
+            $imagePath = $product->image_path;
+            if (! empty($data['remove_image'])) {
+                ProductImageStorage::delete($imagePath);
+                $imagePath = null;
+            }
+            if ($image) {
+                ProductImageStorage::delete($imagePath);
+                $imagePath = ProductImageStorage::store($image);
+            }
+
             $this->products->update($product, [
                 'category_id' => $data['category_id'] ?? $product->category_id,
                 'manufacturer_id' => $data['manufacturer_id'] ?? $product->manufacturer_id,
                 'name' => $data['name'] ?? $product->name,
+                'generic_name' => array_key_exists('generic_name', $data)
+                    ? $this->normalizeOptionalString($data['generic_name'])
+                    : $product->generic_name,
                 'sku' => $data['sku'] ?? $product->sku,
                 'barcode' => array_key_exists('barcode', $data) ? $data['barcode'] : $product->barcode,
                 'product_type' => $data['product_type'] ?? $product->product_type,
@@ -133,12 +170,25 @@ final class ProductService
                 'pieces_per_strip' => array_key_exists('pieces_per_strip', $data)
                     ? $this->normalizePiecesPerStrip($data['pieces_per_strip'])
                     : $product->pieces_per_strip,
+                'strips_per_box' => array_key_exists('strips_per_box', $data)
+                    ? $this->normalizeStripsPerBox($data['strips_per_box'])
+                    : $product->strips_per_box,
                 'boxes_per_carton' => array_key_exists('boxes_per_carton', $data)
                     ? $this->normalizeBoxesPerCarton($data['boxes_per_carton'])
                     : $product->boxes_per_carton,
                 'unit' => $default['sell_unit'] ?? $product->unit,
                 'purchase_price' => $default['purchase_price'] ?? $product->purchase_price,
                 'sale_price' => $default['sale_price'] ?? $product->sale_price,
+                'wholesale_price' => TenantFeatures::wholesalePricingEnabled(tenant()) && array_key_exists('wholesale_price', $data)
+                    ? $this->normalizeOptionalDecimal($data['wholesale_price'])
+                    : $product->wholesale_price,
+                'vat_percent' => array_key_exists('vat_percent', $data)
+                    ? $this->normalizeOptionalDecimal($data['vat_percent'])
+                    : $product->vat_percent,
+                'short_description' => array_key_exists('short_description', $data)
+                    ? $this->normalizeOptionalString($data['short_description'])
+                    : $product->short_description,
+                'image_path' => $imagePath,
                 'min_stock' => $data['min_stock'] ?? $product->min_stock,
                 'is_active' => $data['is_active'] ?? $product->is_active,
             ]);
@@ -248,7 +298,38 @@ final class ProductService
      * @param  array<int, array<string, mixed>>  $units
      * @return array<int, array<string, mixed>>
      */
+    private function normalizeOptionalString(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return trim((string) $value);
+    }
+
+    private function normalizeOptionalDecimal(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $n = (float) $value;
+
+        return $n >= 0 ? number_format($n, 4, '.', '') : null;
+    }
+
     private function normalizePiecesPerStrip(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $n = (float) $value;
+
+        return $n > 0 ? number_format($n, 4, '.', '') : null;
+    }
+
+    private function normalizeStripsPerBox(mixed $value): ?string
     {
         if ($value === null || $value === '') {
             return null;
@@ -278,6 +359,7 @@ final class ProductService
         array $units,
         string $baseUnit,
         ?float $piecesPerStrip = null,
+        ?float $stripsPerBox = null,
         ?float $boxesPerCarton = null,
     ): array {
         if ($units === []) {
@@ -288,6 +370,10 @@ final class ProductService
 
         if ($piecesPerStrip !== null && $piecesPerStrip > 0) {
             $units = $this->applyPiecesPerStrip($units, $baseUnit, $piecesPerStrip);
+        }
+
+        if ($stripsPerBox !== null && $stripsPerBox > 0) {
+            $units = $this->applyStripsPerBox($units, $baseUnit, $stripsPerBox);
         }
 
         if ($boxesPerCarton !== null && $boxesPerCarton > 0) {
@@ -358,6 +444,19 @@ final class ProductService
         }
 
         return $units;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $units
+     * @return array<int, array<string, mixed>>
+     */
+    private function applyStripsPerBox(array $units, string $baseUnit, float $stripsPerBox): array
+    {
+        if ($baseUnit !== 'strip') {
+            return $units;
+        }
+
+        return $this->upsertUnitRow($units, 'box', max(0.0001, $stripsPerBox));
     }
 
     /**

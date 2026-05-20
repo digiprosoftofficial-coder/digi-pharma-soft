@@ -53,7 +53,7 @@ final class ProductController extends Controller
 
     public function store(StoreProductRequest $request): RedirectResponse
     {
-        $this->productService->createProduct($request->validated());
+        $this->productService->createProduct($request->validated(), $request->file('image'));
 
         return redirect()->route('tenant.products.index')->with('success', __('Product created.'));
     }
@@ -108,7 +108,7 @@ final class ProductController extends Controller
 
     public function update(UpdateProductRequest $request, Product $product): RedirectResponse
     {
-        $this->productService->updateProduct($product, $request->validated());
+        $this->productService->updateProduct($product, $request->validated(), $request->file('image'));
 
         return redirect()
             ->route('tenant.products.show', $product)

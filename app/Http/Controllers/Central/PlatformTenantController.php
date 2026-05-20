@@ -13,6 +13,7 @@ use App\Domain\Tenant\Actions\UnsuspendTenantAction;
 use App\Domain\Tenant\Models\Tenant;
 use App\Http\Controllers\Controller;
 use App\Support\Platform\PlatformSettings;
+use App\Support\Tenant\TenantFeatures;
 use App\Support\Tenant\TenantPresenter;
 use App\Support\Tenant\TenantStatus;
 use Illuminate\Http\RedirectResponse;
@@ -185,7 +186,7 @@ final class PlatformTenantController extends Controller
 
         return Inertia::render('Platform/Tenants/Edit', [
             'tenant' => TenantPresenter::detail($tenant),
-            'plans' => SubscriptionPlan::query()->orderBy('name')->get(['id', 'name', 'trial_days']),
+            'plans' => SubscriptionPlan::query()->orderBy('name')->get(['id', 'name', 'trial_days', 'features']),
             'resellers' => Reseller::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
         ]);
     }
@@ -202,6 +203,7 @@ final class PlatformTenantController extends Controller
             'subscription_plan_id' => ['nullable', 'integer', 'exists:subscription_plans,id'],
             'internal_notes' => ['nullable', 'string', 'max:5000'],
             'reseller_id' => ['nullable', 'integer', 'exists:resellers,id'],
+            'wholesale_pricing_override' => ['nullable', 'string', Rule::in(['inherit', 'on', 'off'])],
         ]);
 
         $tenant->name = $validated['name'];
@@ -210,6 +212,26 @@ final class PlatformTenantController extends Controller
         $tenant->is_active = $request->boolean('is_active', true);
         $tenant->trial_ends_at = $validated['trial_ends_at'] ?? $tenant->trial_ends_at;
         $tenant->subscription_ends_at = $validated['subscription_ends_at'] ?? $tenant->subscription_ends_at;
+
+        if (array_key_exists('wholesale_pricing_override', $validated)) {
+            $settings = $tenant->settings ?? [];
+            $features = $settings['features'] ?? [];
+
+            if ($validated['wholesale_pricing_override'] === 'inherit') {
+                unset($features[TenantFeatures::WHOLESALE_PRICING]);
+            } else {
+                $features[TenantFeatures::WHOLESALE_PRICING] = $validated['wholesale_pricing_override'] === 'on';
+            }
+
+            if ($features === []) {
+                unset($settings['features']);
+            } else {
+                $settings['features'] = $features;
+            }
+
+            $tenant->settings = $settings;
+        }
+
         $tenant->save();
 
         if (! empty($validated['subscription_plan_id'])) {

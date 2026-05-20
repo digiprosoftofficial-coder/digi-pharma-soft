@@ -47,6 +47,22 @@
                         <dd class="col-7">{{ formatDate(tenant.trial_ends_at) }}</dd>
                         <dt class="col-5">Subscription ends</dt>
                         <dd class="col-7">{{ formatDate(tenant.subscription_ends_at) }}</dd>
+                        <dt class="col-5">{{ t('platform.wholesale_override_label') }}</dt>
+                        <dd class="col-7">
+                            <span
+                                class="badge"
+                                :class="tenant.wholesale_pricing_enabled ? 'text-bg-success' : 'text-bg-secondary'"
+                            >
+                                {{
+                                    tenant.wholesale_pricing_enabled
+                                        ? t('platform.wholesale_effective_on')
+                                        : t('platform.wholesale_effective_off')
+                                }}
+                            </span>
+                            <span v-if="tenant.wholesale_pricing_override !== 'inherit'" class="text-muted small ms-1">
+                                ({{ t(`platform.wholesale_override_${tenant.wholesale_pricing_override}`) }})
+                            </span>
+                        </dd>
                     </dl>
                 </div>
             </div>

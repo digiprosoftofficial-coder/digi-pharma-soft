@@ -35,6 +35,17 @@ export function boxConversionFactor(productOrUnits) {
     return Number(row?.conversion_factor ?? 0);
 }
 
+export function catalogStripsPerBox(product) {
+    if (product?.strips_per_box != null && product.strips_per_box !== '') {
+        return Number(product.strips_per_box);
+    }
+    if ((product?.base_unit ?? 'strip') === 'strip') {
+        const factor = boxConversionFactor(product);
+        return factor > 0 ? factor : null;
+    }
+    return null;
+}
+
 export function catalogBoxesPerCarton(product) {
     if (product?.boxes_per_carton != null && product.boxes_per_carton !== '') {
         return Number(product.boxes_per_carton);

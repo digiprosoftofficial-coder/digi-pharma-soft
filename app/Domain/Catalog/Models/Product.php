@@ -10,17 +10,22 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Product extends TenantModel
 {
     protected $fillable = [
-        'tenant_id', 'category_id', 'manufacturer_id', 'name', 'sku', 'barcode',
-        'product_type', 'base_unit', 'pieces_per_strip', 'boxes_per_carton', 'unit', 'purchase_price', 'sale_price', 'min_stock', 'is_active',
+        'tenant_id', 'category_id', 'manufacturer_id', 'name', 'generic_name', 'sku', 'barcode',
+        'product_type', 'base_unit', 'pieces_per_strip', 'strips_per_box', 'boxes_per_carton', 'unit',
+        'purchase_price', 'sale_price', 'wholesale_price', 'vat_percent', 'short_description', 'image_path',
+        'min_stock', 'is_active',
     ];
 
     protected function casts(): array
     {
         return [
             'pieces_per_strip' => 'decimal:4',
+            'strips_per_box' => 'decimal:4',
             'boxes_per_carton' => 'decimal:4',
             'purchase_price' => 'decimal:4',
             'sale_price' => 'decimal:4',
+            'wholesale_price' => 'decimal:4',
+            'vat_percent' => 'decimal:4',
             'is_active' => 'boolean',
         ];
     }

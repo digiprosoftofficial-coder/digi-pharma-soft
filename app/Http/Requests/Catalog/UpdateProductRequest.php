@@ -4,6 +4,7 @@ namespace App\Http\Requests\Catalog;
 
 use App\Domain\Catalog\Models\Product;
 use App\Support\Catalog\ProductCatalogOptions;
+use App\Support\Tenant\TenantFeatures;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -14,8 +15,20 @@ class UpdateProductRequest extends FormRequest
         if ($this->has('pieces_per_strip') && $this->input('pieces_per_strip') === '') {
             $this->merge(['pieces_per_strip' => null]);
         }
+        if ($this->has('strips_per_box') && $this->input('strips_per_box') === '') {
+            $this->merge(['strips_per_box' => null]);
+        }
         if ($this->has('boxes_per_carton') && $this->input('boxes_per_carton') === '') {
             $this->merge(['boxes_per_carton' => null]);
+        }
+        foreach (['generic_name', 'short_description', 'wholesale_price', 'vat_percent'] as $field) {
+            if ($this->has($field) && $this->input($field) === '') {
+                $this->merge([$field => null]);
+            }
+        }
+
+        if (! TenantFeatures::wholesalePricingEnabled(tenant())) {
+            $this->offsetUnset('wholesale_price');
         }
     }
 
@@ -40,11 +53,20 @@ class UpdateProductRequest extends FormRequest
             'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('tenant_id', $tenantId)],
             'manufacturer_id' => ['nullable', 'integer', Rule::exists('manufacturers', 'id')->where('tenant_id', $tenantId)],
             'name' => ['sometimes', 'string', 'max:255'],
+            'generic_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'sku' => ['sometimes', 'string', 'max:64', Rule::unique('products', 'sku')->where('tenant_id', $tenantId)->ignore($product->getKey())],
             'barcode' => ['nullable', 'string', 'max:64', Rule::unique('products', 'barcode')->where('tenant_id', $tenantId)->ignore($product->getKey())],
+            'wholesale_price' => TenantFeatures::wholesalePricingEnabled(tenant())
+                ? ['sometimes', 'nullable', 'numeric', 'min:0']
+                : ['prohibited'],
+            'vat_percent' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
+            'short_description' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'image' => ['nullable', 'image', 'max:5120'],
+            'remove_image' => ['sometimes', 'boolean'],
             'product_type' => ['sometimes', ProductCatalogOptions::productTypeRule()],
             'base_unit' => ['sometimes', ProductCatalogOptions::sellUnitRule()],
             'pieces_per_strip' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
+            'strips_per_box' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
             'boxes_per_carton' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
             'units' => ['sometimes', 'array', 'min:1'],
             'units.*.sell_unit' => ['required_with:units', ProductCatalogOptions::sellUnitRule()],

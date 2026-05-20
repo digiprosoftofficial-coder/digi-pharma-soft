@@ -7,6 +7,7 @@
             <div>
                 <Link href="/products" class="small text-decoration-none">← Products</Link>
                 <h1 class="h4 mb-1">{{ product.name }}</h1>
+                <p v-if="product.generic_name" class="text-muted small mb-1">{{ product.generic_name }}</p>
                 <p class="text-muted small mb-0">
                     SKU <strong>{{ product.sku }}</strong>
                     <span v-if="product.barcode" class="ms-2">· Barcode {{ product.barcode }}</span>
@@ -118,17 +119,46 @@
                                 <dt class="col-sm-4">Pieces per strip</dt>
                                 <dd class="col-sm-8">{{ formatQty(product.pieces_per_strip) }}</dd>
                             </template>
+                            <template v-if="product.strips_per_box">
+                                <dt class="col-sm-4">Strips per box</dt>
+                                <dd class="col-sm-8">{{ formatQty(product.strips_per_box) }}</dd>
+                            </template>
                             <template v-if="product.boxes_per_carton">
                                 <dt class="col-sm-4">Boxes per carton</dt>
                                 <dd class="col-sm-8">{{ formatQty(product.boxes_per_carton) }}</dd>
                             </template>
+                            <template v-if="wholesaleEnabled">
+                                <dt class="col-sm-4">Wholesale</dt>
+                                <dd class="col-sm-8">{{ product.wholesale_price ? formatMoney(product.wholesale_price) : '—' }}</dd>
+                            </template>
+                            <dt class="col-sm-4">VAT / tax</dt>
+                            <dd class="col-sm-8">{{ product.vat_percent ? `${formatQty(product.vat_percent)}%` : '—' }}</dd>
                             <dt class="col-sm-4">Default sale</dt>
                             <dd class="col-sm-8">{{ formatMoney(product.sale_price) }}</dd>
+                            <template v-if="product.short_description">
+                                <dt class="col-sm-4">Description</dt>
+                                <dd class="col-sm-8">{{ product.short_description }}</dd>
+                            </template>
                         </dl>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-6">
+            <div class="col-lg-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white fw-semibold">Image</div>
+                    <div class="card-body text-center">
+                        <img
+                            v-if="product.image_url"
+                            :src="product.image_url"
+                            :alt="product.name"
+                            class="img-fluid rounded border"
+                            style="max-height: 160px"
+                        />
+                        <p v-else class="text-muted small mb-0">No image.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3">
                 <div class="card border-0 shadow-sm h-100 text-center">
                     <div class="card-header bg-white fw-semibold">Barcode label</div>
                     <div class="card-body">
@@ -179,7 +209,7 @@ import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { useMoney } from '@/composables/useMoney';
 import { unitLabel, unitPurchasePrice, unitSalePrice } from '@/composables/useProductUnits';
 import { usePermissions } from '@/composables/usePermissions';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const props = defineProps({
@@ -189,6 +219,9 @@ const props = defineProps({
     stockByUnit: { type: Array, default: () => [] },
     stockPieces: { type: String, default: null },
 });
+
+const page = usePage();
+const wholesaleEnabled = computed(() => page.props.features?.wholesale_pricing ?? false);
 
 const { formatMoney } = useMoney();
 const { can } = usePermissions();

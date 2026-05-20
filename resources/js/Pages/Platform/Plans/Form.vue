@@ -33,6 +33,11 @@
                     <input id="freports" v-model="form.features.reports" type="checkbox" class="form-check-input" />
                     <label class="form-check-label" for="freports">Reports</label>
                 </div>
+                <div class="form-check">
+                    <input id="fwholesale" v-model="form.features.wholesale_pricing" type="checkbox" class="form-check-input" />
+                    <label class="form-check-label" for="fwholesale">{{ t('platform.feature_wholesale_pricing') }}</label>
+                </div>
+                <p class="form-text small mb-0">{{ t('platform.feature_wholesale_pricing_help') }}</p>
             </div>
             <button type="submit" class="btn btn-primary" :disabled="form.processing">{{ t('common.save') }}</button>
             <Link href="/platform/plans" class="btn btn-link">{{ t('common.cancel') }}</Link>
@@ -65,6 +70,7 @@ const form = useForm({
     features: {
         pos: props.plan?.features?.pos ?? true,
         reports: props.plan?.features?.reports ?? true,
+        wholesale_pricing: props.plan?.features?.wholesale_pricing ?? false,
     },
 });
 

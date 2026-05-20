@@ -88,11 +88,13 @@ final class PlatformPlanController extends Controller
             'features' => ['nullable', 'array'],
             'features.pos' => ['boolean'],
             'features.reports' => ['boolean'],
+            'features.wholesale_pricing' => ['boolean'],
         ]);
 
         $validated['features'] = [
             'pos' => $request->boolean('features.pos', true),
             'reports' => $request->boolean('features.reports', true),
+            'wholesale_pricing' => $request->boolean('features.wholesale_pricing', false),
         ];
 
         return $validated;

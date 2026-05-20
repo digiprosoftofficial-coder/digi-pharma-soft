@@ -37,6 +37,9 @@ final class TenantPresenter
         return [
             ...self::listItem($tenant),
             'settings' => $tenant->settings ?? [],
+            'wholesale_pricing_override' => TenantFeatures::wholesalePricingOverrideMode($tenant),
+            'wholesale_pricing_enabled' => TenantFeatures::wholesalePricingEnabled($tenant),
+            'plan_wholesale_pricing' => TenantFeatures::fromPlan($tenant, TenantFeatures::WHOLESALE_PRICING),
             'internal_notes' => $tenant->internal_notes,
             'users' => $tenant->relationLoaded('users')
                 ? $tenant->users->map(fn ($u) => [

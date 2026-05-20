@@ -55,6 +55,26 @@
                 </select>
             </div>
             <div class="mb-3">
+                <label class="form-label">{{ t('platform.wholesale_override_label') }}</label>
+                <select v-model="form.wholesale_pricing_override" class="form-select">
+                    <option value="inherit">{{ t('platform.wholesale_override_inherit') }}</option>
+                    <option value="on">{{ t('platform.wholesale_override_on') }}</option>
+                    <option value="off">{{ t('platform.wholesale_override_off') }}</option>
+                </select>
+                <p class="form-text small mb-0">
+                    {{
+                        t('platform.wholesale_override_help', {
+                            plan: tenant.plan_wholesale_pricing
+                                ? t('platform.wholesale_plan_on')
+                                : t('platform.wholesale_plan_off'),
+                            effective: tenant.wholesale_pricing_enabled
+                                ? t('platform.wholesale_effective_on')
+                                : t('platform.wholesale_effective_off'),
+                        })
+                    }}
+                </p>
+            </div>
+            <div class="mb-3">
                 <label class="form-label">{{ t('platform.internal_notes') }}</label>
                 <textarea
                     v-model="form.internal_notes"
@@ -95,6 +115,7 @@ const form = useForm({
     subscription_plan_id: props.tenant.subscription?.plan_id ?? null,
     internal_notes: props.tenant.internal_notes ?? '',
     reseller_id: props.tenant.reseller_id ?? null,
+    wholesale_pricing_override: props.tenant.wholesale_pricing_override ?? 'inherit',
 });
 
 const { subscriptionInputKey, onSubscriptionEndsChange, committedSubscriptionEnds } = useSubscriptionEndsConfirm(

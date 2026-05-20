@@ -149,7 +149,17 @@
                             {{ packSizeLabel(line) }}
                         </label>
                         <input
-                            v-if="usesBoxesPerCarton(line)"
+                            v-if="usesStripsPerBox(line)"
+                            v-model.number="line.pack_strips_per_box"
+                            type="number"
+                            min="0.0001"
+                            step="any"
+                            class="form-control form-control-sm mt-1"
+                            required
+                            @input="syncLineConversionFromPackInput(line)"
+                        />
+                        <input
+                            v-else-if="usesBoxesPerCarton(line)"
                             v-model.number="line.pack_boxes_per_carton"
                             type="number"
                             min="0.0001"
@@ -170,7 +180,7 @@
                     </div>
                     <div class="col-md-8 d-flex align-items-end">
                         <div v-if="lineQuantityBase(line) > 0" class="small text-muted mb-1">
-                            <p v-if="usesBoxesPerCarton(line) && packSizeBreakdown(line)" class="mb-1">
+                            <p v-if="usesPackSizeFriendlyInput(line) && packSizeBreakdown(line)" class="mb-1">
                                 {{ packSizeBreakdown(line) }}
                             </p>
                             <p class="mb-0">
@@ -200,6 +210,7 @@ import { useMoney } from '@/composables/useMoney';
 import {
     boxConversionFactor,
     catalogBoxesPerCarton,
+    catalogStripsPerBox,
     defaultSellUnit,
     hasBoxAndCartonUnits,
     unitLabel,
@@ -285,6 +296,10 @@ function usesStripsPerBox(line) {
     return line.sell_unit === 'box' && line.base_unit === 'strip';
 }
 
+function usesPackSizeFriendlyInput(line) {
+    return usesStripsPerBox(line) || usesBoxesPerCarton(line);
+}
+
 function packSizeLabel(line) {
     if (usesBoxesPerCarton(line)) {
         return t('catalog.purchase_boxes_per_carton');
@@ -295,6 +310,12 @@ function packSizeLabel(line) {
     return `${unitLabel(line.base_unit)} per 1 ${unitLabel(line.sell_unit)} (this receipt)`;
 }
 
+function defaultStripsPerBox(line) {
+    const product = { units: line.unit_options, strips_per_box: line.catalog_strips_per_box, base_unit: line.base_unit };
+    const value = catalogStripsPerBox(product);
+    return value && value > 0 ? value : defaultConversion(line);
+}
+
 function defaultBoxesPerCarton(line) {
     const product = { units: line.unit_options, boxes_per_carton: line.catalog_boxes_per_carton };
     const value = catalogBoxesPerCarton(product);
@@ -302,6 +323,13 @@ function defaultBoxesPerCarton(line) {
 }
 
 function syncLineConversionFromPackInput(line) {
+    if (usesStripsPerBox(line)) {
+        const strips = Number(line.pack_strips_per_box);
+        if (!Number.isNaN(strips) && strips > 0) {
+            line.conversion_factor = formatConversionFactor(strips);
+        }
+        return;
+    }
     if (!usesBoxesPerCarton(line)) {
         return;
     }
@@ -314,14 +342,17 @@ function syncLineConversionFromPackInput(line) {
 }
 
 function initLinePackFields(line) {
-    if (usesBoxesPerCarton(line)) {
+    if (usesStripsPerBox(line)) {
+        line.pack_strips_per_box = defaultStripsPerBox(line);
+        syncLineConversionFromPackInput(line);
+    } else if (usesBoxesPerCarton(line)) {
         line.pack_boxes_per_carton = defaultBoxesPerCarton(line);
         syncLineConversionFromPackInput(line);
     }
 }
 
 function packSizeBreakdown(line) {
-    if (!usesBoxesPerCarton(line)) {
+    if (!usesPackSizeFriendlyInput(line)) {
         return '';
     }
     const factor = Number(line.conversion_factor);
@@ -336,6 +367,11 @@ function packSizeBreakdown(line) {
 }
 
 function packSizeDiffersFromDefault(line) {
+    if (usesStripsPerBox(line)) {
+        const def = defaultStripsPerBox(line);
+        const current = Number(line.pack_strips_per_box);
+        return !Number.isNaN(current) && Math.abs(current - def) > 0.0001;
+    }
     if (usesBoxesPerCarton(line)) {
         const def = defaultBoxesPerCarton(line);
         const current = Number(line.pack_boxes_per_carton);
@@ -345,6 +381,9 @@ function packSizeDiffersFromDefault(line) {
 }
 
 function packSizeDefaultHint(line) {
+    if (usesStripsPerBox(line)) {
+        return t('catalog.purchase_catalog_default_strips', { qty: formatQty(defaultStripsPerBox(line)) });
+    }
     if (usesBoxesPerCarton(line)) {
         return t('catalog.purchase_catalog_default_boxes', { qty: formatQty(defaultBoxesPerCarton(line)) });
     }
@@ -362,7 +401,7 @@ function needsPackSize(line) {
 
 function lineQuantityBase(line) {
     const qty = Number(line.quantity);
-    if (usesBoxesPerCarton(line)) {
+    if (usesPackSizeFriendlyInput(line)) {
         syncLineConversionFromPackInput(line);
     }
     const factor = needsPackSize(line) ? Number(line.conversion_factor) : 1;
@@ -392,11 +431,13 @@ function addProductLine(product) {
         unit_cost: unitPurchasePrice(product, sellUnit),
         unit_options: unitOptions,
         existing_batches: existingBatches,
+        catalog_strips_per_box: product.strips_per_box ?? null,
         catalog_boxes_per_carton: product.boxes_per_carton ?? null,
+        pack_strips_per_box: null,
         pack_boxes_per_carton: null,
     };
     initLinePackFields(line);
-    if (!usesBoxesPerCarton(line)) {
+    if (!usesPackSizeFriendlyInput(line)) {
         line.conversion_factor = defaultConversion(line);
     }
     form.lines.push(line);
@@ -417,7 +458,9 @@ function applyBatchPick(line) {
         if (batch.pack_sell_unit && batch.pack_conversion_factor) {
             line.sell_unit = batch.pack_sell_unit;
             line.conversion_factor = Number(batch.pack_conversion_factor);
-            if (usesBoxesPerCarton(line)) {
+            if (usesStripsPerBox(line)) {
+                line.pack_strips_per_box = Number(batch.pack_conversion_factor);
+            } else if (usesBoxesPerCarton(line)) {
                 const boxFactor = boxConversionFactor(line.unit_options);
                 line.pack_boxes_per_carton =
                     boxFactor > 0 ? formatConversionFactor(Number(batch.pack_conversion_factor) / boxFactor) : null;
@@ -432,9 +475,10 @@ function onUnitChange(line) {
         purchase_price: line.unit_options[0]?.purchase_price,
     };
     line.unit_cost = unitPurchasePrice(product, line.sell_unit);
+    line.pack_strips_per_box = null;
     line.pack_boxes_per_carton = null;
     initLinePackFields(line);
-    if (!usesBoxesPerCarton(line)) {
+    if (!usesPackSizeFriendlyInput(line)) {
         line.conversion_factor = defaultConversion(line);
     }
 }
@@ -447,7 +491,7 @@ function submit() {
     form.transform((data) => ({
         ...data,
         lines: data.lines.map((line) => {
-            if (usesBoxesPerCarton(line)) {
+            if (usesPackSizeFriendlyInput(line)) {
                 syncLineConversionFromPackInput(line);
             }
             const payload = {

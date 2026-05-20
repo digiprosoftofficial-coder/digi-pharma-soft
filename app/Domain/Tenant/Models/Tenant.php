@@ -6,6 +6,7 @@ use App\Domain\Billing\Models\PlatformInvoice;
 use App\Domain\Billing\Models\TenantSubscription;
 use App\Domain\Platform\Models\Reseller;
 use App\Support\Platform\PlatformSettings;
+use App\Support\Tenant\TenantFeatures;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -109,5 +110,15 @@ class Tenant extends Model
         $code = strtoupper((string) ($this->settings['currency'] ?? ''));
 
         return strlen($code) === 3 ? $code : PlatformSettings::defaultCurrency();
+    }
+
+    public function featureEnabled(string $feature): bool
+    {
+        return TenantFeatures::enabled($this, $feature);
+    }
+
+    public function wholesalePricingEnabled(): bool
+    {
+        return TenantFeatures::wholesalePricingEnabled($this);
     }
 }

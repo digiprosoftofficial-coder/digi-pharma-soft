@@ -8,6 +8,7 @@ use App\Support\Money\MoneyFormatter;
 use App\Support\Platform\PlatformAnnouncementService;
 use App\Support\Platform\PlatformSettings;
 use App\Support\Tenant\TenantContext;
+use App\Support\Tenant\TenantFeatures;
 use App\Support\Tenant\TenantImpersonation;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -45,6 +46,7 @@ class HandleInertiaRequests extends Middleware
                 'name' => $tenant->name,
                 'slug' => $tenant->slug,
             ] : null,
+            'features' => TenantFeatures::shareForInertia($tenant),
             'money' => $this->moneyShare($tenant, $locale),
             'impersonation' => $impersonation->isActive() && $tenant ? [
                 'active' => true,
