@@ -120,6 +120,15 @@
                         <label class="form-label small">Expiry</label>
                         <input v-model="line.expiry_date" type="date" class="form-control form-control-sm" />
                     </div>
+                    <div v-if="props.storageLocations.length" class="col-md-3">
+                        <label class="form-label small">{{ t('catalog.storage_location_shelf') }}</label>
+                        <select v-model="line.storage_location_id" class="form-select form-select-sm">
+                            <option :value="null">{{ t('catalog.storage_location_use_default') }}</option>
+                            <option v-for="loc in props.storageLocations" :key="loc.id" :value="loc.id">
+                                {{ locationLabel(loc) }}
+                            </option>
+                        </select>
+                    </div>
                     <div class="col-md-2">
                         <label class="form-label small">Unit</label>
                         <select v-model="line.sell_unit" class="form-select form-select-sm" @change="onUnitChange(line)">
@@ -219,7 +228,18 @@ import {
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
-defineProps({ suppliers: { type: Array, required: true } });
+const props = defineProps({
+    suppliers: { type: Array, required: true },
+    storageLocations: { type: Array, default: () => [] },
+});
+
+function locationLabel(loc) {
+    if (!loc) {
+        return '';
+    }
+
+    return loc.code ? `${loc.name} (${loc.code})` : loc.name;
+}
 
 const { t } = useLocale();
 const { formatMoney, currencyCode, currencySymbol } = useMoney();
@@ -435,6 +455,7 @@ function addProductLine(product) {
         catalog_boxes_per_carton: product.boxes_per_carton ?? null,
         pack_strips_per_box: null,
         pack_boxes_per_carton: null,
+        storage_location_id: product.storage_location_id ?? product.storage_location?.id ?? null,
     };
     initLinePackFields(line);
     if (!usesPackSizeFriendlyInput(line)) {
@@ -455,6 +476,7 @@ function applyBatchPick(line) {
     if (batch) {
         line.batch_no = batch.batch_no;
         line.expiry_date = batch.expiry_date ?? '';
+        line.storage_location_id = batch.storage_location_id ?? line.storage_location_id;
         if (batch.pack_sell_unit && batch.pack_conversion_factor) {
             line.sell_unit = batch.pack_sell_unit;
             line.conversion_factor = Number(batch.pack_conversion_factor);
@@ -501,6 +523,7 @@ function submit() {
                 sell_unit: line.sell_unit,
                 quantity: line.quantity,
                 unit_cost: line.unit_cost,
+                storage_location_id: line.storage_location_id || null,
             };
             if (needsPackSize(line)) {
                 payload.conversion_factor = line.conversion_factor;

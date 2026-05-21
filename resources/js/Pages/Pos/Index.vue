@@ -14,7 +14,10 @@
                             class="list-group-item list-group-item-action d-flex justify-content-between"
                             @click="addLine(item)"
                         >
-                            <span>{{ item.name }}</span>
+                            <div>
+                                <span>{{ item.name }}</span>
+                                <small v-if="shelfHint(item)" class="text-muted d-block">{{ shelfHint(item) }}</small>
+                            </div>
                             <span class="text-muted">{{ item.sku }}</span>
                         </li>
                     </ul>
@@ -116,6 +119,17 @@ async function runSearch() {
     }
     const { data } = await window.axios.get('/catalog/product-search', { params: { q: q.value } });
     results.value = data.data;
+}
+
+function shelfHint(item) {
+    const batch = item.batches?.[0];
+    const loc = batch?.effective_storage_location ?? item.effective_storage_location ?? item.storage_location;
+
+    if (!loc) {
+        return '';
+    }
+
+    return loc.code ? `${loc.name} (${loc.code})` : loc.name;
 }
 
 function formatQty(value) {

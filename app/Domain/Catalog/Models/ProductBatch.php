@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ProductBatch extends TenantModel
 {
     protected $fillable = [
-        'tenant_id', 'product_id', 'batch_no', 'expiry_date',
+        'tenant_id', 'product_id', 'storage_location_id', 'batch_no', 'expiry_date',
         'quantity_on_hand', 'purchase_unit_cost',
         'pack_sell_unit', 'pack_conversion_factor',
     ];
@@ -26,5 +26,10 @@ class ProductBatch extends TenantModel
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function storageLocation(): BelongsTo
+    {
+        return $this->belongsTo(StorageLocation::class);
     }
 }

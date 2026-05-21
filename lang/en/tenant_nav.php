@@ -19,6 +19,7 @@ return [
     'categories' => 'Categories',
     'product_types' => 'Product types',
     'manufacturers' => 'Manufacturers',
+    'storage_locations' => 'Shelves / racks',
     'bulk_import' => 'Bulk import',
     'inventory' => 'Inventory',
     'employees' => 'Employees',

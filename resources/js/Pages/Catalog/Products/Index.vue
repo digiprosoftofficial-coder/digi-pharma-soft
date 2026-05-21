@@ -20,6 +20,15 @@
                     </select>
                 </div>
                 <div class="col-md-3">
+                    <label class="form-label small mb-0">{{ t('catalog.storage_location_shelf') }}</label>
+                    <select v-model="filterForm.storage_location_id" class="form-select form-select-sm">
+                        <option value="">{{ t('catalog.storage_location_all') }}</option>
+                        <option v-for="loc in storageLocations" :key="loc.id" :value="String(loc.id)">
+                            {{ loc.code ? `${loc.name} (${loc.code})` : loc.name }}
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-3">
                     <label class="form-label small mb-0">Status</label>
                     <select v-model="filterForm.is_active" class="form-select form-select-sm">
                         <option value="">All</option>
@@ -40,6 +49,7 @@
                         <th>Name</th>
                         <th>Type</th>
                         <th>Category</th>
+                        <th>{{ t('catalog.storage_location_shelf') }}</th>
                         <th>SKU</th>
                         <th>Unit</th>
                         <th class="text-end">Sale ({{ currencyCode() }})</th>
@@ -56,6 +66,7 @@
                         </td>
                         <td class="text-capitalize">{{ p.product_type || '—' }}</td>
                         <td>{{ p.category?.name || '—' }}</td>
+                        <td class="small">{{ shelfLabel(p) }}</td>
                         <td>{{ p.sku }}</td>
                         <td class="text-capitalize">{{ p.unit || p.base_unit }}</td>
                         <td class="text-end">{{ formatMoney(p.sale_price) }}</td>
@@ -88,7 +99,7 @@
                         </td>
                     </tr>
                     <tr v-if="!products.data?.length">
-                        <td colspan="10" class="text-muted text-center py-4">No products found.</td>
+                        <td colspan="11" class="text-muted text-center py-4">No products found.</td>
                     </tr>
                 </tbody>
             </table>
@@ -106,6 +117,7 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { usePermissions } from '@/composables/usePermissions';
 import { Head, Link, router } from '@inertiajs/vue3';
@@ -115,8 +127,10 @@ const props = defineProps({
     products: { type: Object, required: true },
     filters: { type: Object, default: () => ({}) },
     productTypes: { type: Array, default: () => [] },
+    storageLocations: { type: Array, default: () => [] },
 });
 
+const { t } = useLocale();
 const { formatMoney, currencyCode } = useMoney();
 const { can } = usePermissions();
 
@@ -135,10 +149,21 @@ function unitLabel(unit) {
     return unit.charAt(0).toUpperCase() + unit.slice(1);
 }
 
+function shelfLabel(product) {
+    const loc = product.effective_storage_location ?? product.storage_location;
+
+    if (!loc) {
+        return '—';
+    }
+
+    return loc.code ? `${loc.name} (${loc.code})` : loc.name;
+}
+
 const filterForm = reactive({
     q: props.filters.q ?? '',
     product_type: props.filters.product_type ?? '',
     is_active: props.filters.is_active ?? '',
+    storage_location_id: props.filters.storage_location_id ?? '',
 });
 
 function applyFilters() {
@@ -149,6 +174,7 @@ function clearFilters() {
     filterForm.q = '';
     filterForm.product_type = '';
     filterForm.is_active = '';
+    filterForm.storage_location_id = '';
     applyFilters();
 }
 

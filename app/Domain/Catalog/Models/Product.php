@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Product extends TenantModel
 {
     protected $fillable = [
-        'tenant_id', 'category_id', 'manufacturer_id', 'name', 'generic_name', 'sku', 'barcode',
+        'tenant_id', 'category_id', 'manufacturer_id', 'storage_location_id', 'name', 'generic_name', 'sku', 'barcode',
         'product_type', 'base_unit', 'pieces_per_strip', 'strips_per_box', 'boxes_per_carton', 'unit',
         'purchase_price', 'sale_price', 'wholesale_price', 'vat_percent', 'short_description', 'image_path',
         'min_stock', 'is_active',
@@ -38,6 +38,11 @@ class Product extends TenantModel
     public function manufacturer(): BelongsTo
     {
         return $this->belongsTo(Manufacturer::class);
+    }
+
+    public function storageLocation(): BelongsTo
+    {
+        return $this->belongsTo(StorageLocation::class);
     }
 
     public function batches(): HasMany

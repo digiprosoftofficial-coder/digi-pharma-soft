@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Domain\Catalog\Models\Category;
 use App\Domain\Catalog\Models\Manufacturer;
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\StorageLocation;
 use App\Domain\Catalog\Repositories\ProductRepository;
 use App\Domain\Catalog\Services\ProductService;
 use App\Http\Controllers\Controller;
@@ -28,7 +29,7 @@ final class ProductController extends Controller
 
     public function index(Request $request): Response
     {
-        $filters = $request->only(['q', 'product_type', 'is_active']);
+        $filters = $request->only(['q', 'product_type', 'is_active', 'storage_location_id']);
 
         return Inertia::render('Catalog/Products/Index', [
             'products' => $this->products->paginateForTenant($filters)->through(
@@ -36,6 +37,7 @@ final class ProductController extends Controller
             ),
             'filters' => $filters,
             'productTypes' => ProductCatalogOptions::productTypes(),
+            'storageLocations' => $this->storageLocationOptions(),
         ]);
     }
 
@@ -48,6 +50,7 @@ final class ProductController extends Controller
             'catalogOptions' => $this->catalogOptions(),
             'categories' => $this->categoryOptions(),
             'manufacturers' => $this->manufacturerOptions(),
+            'storageLocations' => $this->storageLocationOptions(),
         ]);
     }
 
@@ -63,8 +66,9 @@ final class ProductController extends Controller
         $product->load([
             'category',
             'manufacturer',
+            'storageLocation',
             'units',
-            'batches' => fn ($q) => $q->orderBy('expiry_date'),
+            'batches' => fn ($q) => $q->with('storageLocation')->orderBy('expiry_date'),
         ]);
 
         $baseStock = $product->batches->sum(fn ($batch) => (float) $batch->quantity_on_hand);
@@ -99,10 +103,17 @@ final class ProductController extends Controller
         $this->authorize('update', $product);
 
         return Inertia::render('Catalog/Products/Form', [
-            'product' => (new ProductResource($product->load(['category', 'manufacturer', 'batches', 'units'])))->resolve(request()),
+            'product' => (new ProductResource($product->load([
+                'category',
+                'manufacturer',
+                'storageLocation',
+                'batches.storageLocation',
+                'units',
+            ])))->resolve(request()),
             'catalogOptions' => $this->catalogOptions(),
             'categories' => $this->categoryOptions(),
             'manufacturers' => $this->manufacturerOptions(),
+            'storageLocations' => $this->storageLocationOptions(),
         ]);
     }
 
@@ -155,6 +166,24 @@ final class ProductController extends Controller
             ->orderBy('name')
             ->get(['id', 'name'])
             ->map(fn (Manufacturer $m) => ['id' => $m->id, 'name' => $m->name])
+            ->all();
+    }
+
+    /**
+     * @return list<array{id:int,name:string,code:?string}>
+     */
+    private function storageLocationOptions(): array
+    {
+        return StorageLocation::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name', 'code'])
+            ->map(fn (StorageLocation $loc) => [
+                'id' => $loc->id,
+                'name' => $loc->name,
+                'code' => $loc->code,
+            ])
             ->all();
     }
 }

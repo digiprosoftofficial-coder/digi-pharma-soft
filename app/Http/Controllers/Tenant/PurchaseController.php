@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Domain\Catalog\Models\StorageLocation;
 use App\Domain\Purchasing\Models\Purchase;
 use App\Domain\Purchasing\Models\Supplier;
 use App\Domain\Purchasing\Services\PurchaseService;
@@ -35,6 +36,11 @@ final class PurchaseController extends Controller
 
         return Inertia::render('Purchases/Create', [
             'suppliers' => Supplier::query()->orderBy('name')->get(['id', 'name']),
+            'storageLocations' => StorageLocation::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['id', 'name', 'code']),
         ]);
     }
 

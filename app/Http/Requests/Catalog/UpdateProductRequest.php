@@ -21,7 +21,7 @@ class UpdateProductRequest extends FormRequest
         if ($this->has('boxes_per_carton') && $this->input('boxes_per_carton') === '') {
             $this->merge(['boxes_per_carton' => null]);
         }
-        foreach (['generic_name', 'short_description', 'wholesale_price', 'vat_percent'] as $field) {
+        foreach (['generic_name', 'short_description', 'wholesale_price', 'vat_percent', 'storage_location_id'] as $field) {
             if ($this->has($field) && $this->input($field) === '') {
                 $this->merge([$field => null]);
             }
@@ -52,6 +52,20 @@ class UpdateProductRequest extends FormRequest
         return [
             'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('tenant_id', $tenantId)],
             'manufacturer_id' => ['nullable', 'integer', Rule::exists('manufacturers', 'id')->where('tenant_id', $tenantId)],
+            'storage_location_id' => ['nullable', 'integer', Rule::exists('storage_locations', 'id')->where('tenant_id', $tenantId)],
+            'batch_locations' => ['sometimes', 'array'],
+            'batch_locations.*.id' => [
+                'required',
+                'integer',
+                Rule::exists('product_batches', 'id')
+                    ->where('tenant_id', $tenantId)
+                    ->where('product_id', $product->getKey()),
+            ],
+            'batch_locations.*.storage_location_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('storage_locations', 'id')->where('tenant_id', $tenantId),
+            ],
             'name' => ['sometimes', 'string', 'max:255'],
             'generic_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'sku' => ['sometimes', 'string', 'max:64', Rule::unique('products', 'sku')->where('tenant_id', $tenantId)->ignore($product->getKey())],

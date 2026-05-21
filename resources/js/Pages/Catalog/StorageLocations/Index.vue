@@ -1,0 +1,64 @@
+<template>
+    <TenantShellLayout :page-title="t('catalog.storage_locations_title')">
+        <Head :title="t('catalog.storage_locations_title')" />
+        <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
+        <div class="d-flex justify-content-between mb-3">
+            <h1 class="h4 mb-0 d-lg-none">{{ t('catalog.storage_locations_title') }}</h1>
+            <Link href="/storage-locations/create" class="btn btn-primary btn-sm">{{ t('catalog.new_storage_location') }}</Link>
+        </div>
+        <div class="card border-0 shadow-sm table-responsive">
+            <table class="table table-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>{{ t('catalog.storage_location_name') }}</th>
+                        <th>{{ t('catalog.storage_location_code') }}</th>
+                        <th class="text-end">{{ t('catalog.storage_location_products') }}</th>
+                        <th>{{ t('common.status') }}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="loc in locations.data" :key="loc.id">
+                        <td>{{ loc.name }}</td>
+                        <td><code v-if="loc.code">{{ loc.code }}</code><span v-else class="text-muted">—</span></td>
+                        <td class="text-end">{{ loc.products_count }}</td>
+                        <td>
+                            <span class="badge" :class="loc.is_active ? 'text-bg-success' : 'text-bg-secondary'">
+                                {{ loc.is_active ? t('common.active') : t('common.inactive') }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <Link :href="`/storage-locations/${loc.id}/edit`" class="btn btn-sm btn-outline-secondary me-1">
+                                {{ t('common.edit') }}
+                            </Link>
+                            <button type="button" class="btn btn-sm btn-outline-danger" @click="remove(loc)">
+                                {{ t('common.delete') }}
+                            </button>
+                        </td>
+                    </tr>
+                    <tr v-if="!locations.data?.length">
+                        <td colspan="5" class="text-muted text-center py-3">{{ t('catalog.storage_locations_empty') }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </TenantShellLayout>
+</template>
+
+<script setup>
+import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useLocale } from '@/composables/useLocale';
+import { Head, Link, router } from '@inertiajs/vue3';
+
+defineProps({ locations: { type: Object, required: true } });
+
+const { t } = useLocale();
+
+function remove(location) {
+    if (!window.confirm(t('catalog.storage_location_delete_confirm', { name: location.name }))) {
+        return;
+    }
+
+    router.delete(`/storage-locations/${location.id}`);
+}
+</script>

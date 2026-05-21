@@ -19,6 +19,7 @@ return [
     'categories' => 'ক্যাটাগরি',
     'product_types' => 'পণ্যের ধরন',
     'manufacturers' => 'প্রস্তুতকারক',
+    'storage_locations' => 'শেলফ / র‍্যাক',
     'bulk_import' => 'বাল্ক ইমপোর্ট',
     'inventory' => 'ইনভেন্টরি',
     'employees' => 'কর্মচারী',

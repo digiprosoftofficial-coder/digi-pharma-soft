@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Catalog;
 
+use App\Support\Catalog\EffectiveStorageLocation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,6 +24,13 @@ class ProductBatchResource extends JsonResource
             'pack_conversion_factor' => $this->pack_conversion_factor !== null
                 ? (string) $this->pack_conversion_factor
                 : null,
+            'storage_location_id' => $this->storage_location_id,
+            'storage_location' => $this->whenLoaded('storageLocation', fn () => $this->storageLocation ? [
+                'id' => $this->storageLocation->id,
+                'name' => $this->storageLocation->name,
+                'code' => $this->storageLocation->code,
+            ] : null),
+            'effective_storage_location' => EffectiveStorageLocation::forBatch($this->resource),
         ];
     }
 }

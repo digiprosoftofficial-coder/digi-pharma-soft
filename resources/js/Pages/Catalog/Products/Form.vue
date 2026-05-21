@@ -142,6 +142,15 @@
                         <option v-for="m in manufacturers" :key="m.id" :value="m.id">{{ m.name }}</option>
                     </select>
                 </div>
+                <div class="col-md-6">
+                    <label class="form-label">{{ t('catalog.default_storage_location') }}</label>
+                    <select v-model="form.storage_location_id" class="form-select">
+                        <option :value="null">{{ t('catalog.storage_location_none') }}</option>
+                        <option v-for="loc in storageLocations" :key="loc.id" :value="loc.id">
+                            {{ locationLabel(loc) }}
+                        </option>
+                    </select>
+                </div>
             </div>
 
             <div v-if="!existing" class="mt-4 card border-primary border-2">
@@ -180,6 +189,15 @@
                             <label class="form-label">Expiry date</label>
                             <input v-model="form.opening_expiry_date" type="date" class="form-control" />
                         </div>
+                        <div v-if="storageLocations.length" class="col-md-4">
+                            <label class="form-label">{{ t('catalog.opening_storage_location') }}</label>
+                            <select v-model="form.opening_storage_location_id" class="form-select">
+                                <option :value="null">{{ t('catalog.storage_location_use_default') }}</option>
+                                <option v-for="loc in storageLocations" :key="loc.id" :value="loc.id">
+                                    {{ locationLabel(loc) }}
+                                </option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -207,6 +225,7 @@
                                     <th>Batch</th>
                                     <th>Expiry</th>
                                     <th class="text-end">On hand</th>
+                                    <th>{{ t('catalog.storage_location_shelf') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -214,6 +233,17 @@
                                     <td>{{ b.batch_no }}</td>
                                     <td>{{ b.expiry_date || '—' }}</td>
                                     <td class="text-end">{{ formatQty(b.quantity_on_hand) }}</td>
+                                    <td>
+                                        <select
+                                            v-model="batchLocationEdits[b.id]"
+                                            class="form-select form-select-sm"
+                                        >
+                                            <option :value="null">{{ t('catalog.storage_location_use_default') }}</option>
+                                            <option v-for="loc in storageLocations" :key="loc.id" :value="loc.id">
+                                                {{ locationLabel(loc) }}
+                                            </option>
+                                        </select>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -365,8 +395,11 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useLocale } from '@/composables/useLocale';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+
+const { t } = useLocale();
 
 const page = usePage();
 const wholesaleEnabled = computed(() => page.props.features?.wholesale_pricing ?? false);
@@ -379,6 +412,7 @@ const props = defineProps({
     },
     categories: { type: Array, default: () => [] },
     manufacturers: { type: Array, default: () => [] },
+    storageLocations: { type: Array, default: () => [] },
 });
 
 /** Unwrap JsonResource { data: ... } if present */
@@ -473,6 +507,16 @@ function initialBoxesPerCarton(units) {
 
 const existing = productData();
 
+const batchLocationEdits = reactive({});
+
+function locationLabel(loc) {
+    if (!loc) {
+        return '';
+    }
+
+    return loc.code ? `${loc.name} (${loc.code})` : loc.name;
+}
+
 const batches = computed(() => {
     const raw = existing?.batches;
     if (!raw) {
@@ -483,6 +527,18 @@ const batches = computed(() => {
     }
     return raw.data ?? [];
 });
+
+watch(
+    batches,
+    (list) => {
+        list.forEach((b) => {
+            if (!(b.id in batchLocationEdits)) {
+                batchLocationEdits[b.id] = b.storage_location_id ?? null;
+            }
+        });
+    },
+    { immediate: true },
+);
 
 const totalStock = computed(() =>
     batches.value.reduce((sum, b) => sum + Number(b.quantity_on_hand ?? 0), 0),
@@ -559,6 +615,8 @@ const form = useForm({
     remove_image: false,
     category_id: existing?.category?.id ?? null,
     manufacturer_id: existing?.manufacturer?.id ?? null,
+    storage_location_id: existing?.storage_location_id ?? existing?.storage_location?.id ?? null,
+    opening_storage_location_id: null,
     product_type: existing?.product_type ?? 'tablet',
     base_unit: existing?.base_unit ?? 'strip',
     pieces_per_strip:
@@ -937,6 +995,11 @@ function buildPayload() {
         delete payload.opening_batch_no;
         delete payload.opening_expiry_date;
         delete payload.opening_quantity;
+        delete payload.opening_storage_location_id;
+        payload.batch_locations = batches.value.map((b) => ({
+            id: b.id,
+            storage_location_id: batchLocationEdits[b.id] ?? null,
+        }));
         if (payload.stock_adjustment === null || payload.stock_adjustment === '') {
             delete payload.stock_adjustment;
             delete payload.stock_adjust_batch_id;

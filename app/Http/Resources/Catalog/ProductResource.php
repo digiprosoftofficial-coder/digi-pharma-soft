@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Catalog;
 
+use App\Support\Catalog\EffectiveStorageLocation;
 use App\Support\Catalog\ProductImageStorage;
 use App\Support\Catalog\ProductStockCalculator;
 use Illuminate\Http\Request;
@@ -50,6 +51,13 @@ class ProductResource extends JsonResource
             ])->values()->all()),
             'category' => $this->whenLoaded('category', fn () => ['id' => $this->category->id, 'name' => $this->category->name]),
             'manufacturer' => $this->whenLoaded('manufacturer', fn () => ['id' => $this->manufacturer->id, 'name' => $this->manufacturer->name]),
+            'storage_location_id' => $this->storage_location_id,
+            'storage_location' => $this->whenLoaded('storageLocation', fn () => $this->storageLocation ? [
+                'id' => $this->storageLocation->id,
+                'name' => $this->storageLocation->name,
+                'code' => $this->storageLocation->code,
+            ] : null),
+            'effective_storage_location' => EffectiveStorageLocation::forProduct($this->resource),
             'batches' => $this->whenLoaded('batches', fn () => ProductBatchResource::collection($this->batches)),
         ];
     }

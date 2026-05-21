@@ -35,6 +35,11 @@ class StorePurchaseRequest extends FormRequest
             'lines.*.sell_unit' => ['required', ProductCatalogOptions::sellUnitRule()],
             'lines.*.conversion_factor' => ['nullable', 'numeric', 'min:0.0001'],
             'lines.*.unit_cost' => ['required', 'numeric', 'min:0'],
+            'lines.*.storage_location_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('storage_locations', 'id')->where('tenant_id', $tenantId),
+            ],
         ];
     }
 }

@@ -26,6 +26,7 @@ final class TenantRoleProvisioner
             'categories.view', 'categories.manage',
             'product_types.view', 'product_types.manage',
             'manufacturers.view', 'manufacturers.manage',
+            'storage_locations.view', 'storage_locations.manage',
             'inventory.view', 'inventory.manage',
             'customers.view', 'reports.view', 'sales.view', 'returns.manage',
             'stock_transfers.view', 'suppliers.view', 'purchases.view',

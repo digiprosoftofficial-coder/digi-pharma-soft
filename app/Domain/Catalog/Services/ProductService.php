@@ -49,6 +49,7 @@ final class ProductService
             $product = $this->products->store([
                 'category_id' => $data['category_id'] ?? null,
                 'manufacturer_id' => $data['manufacturer_id'] ?? null,
+                'storage_location_id' => $data['storage_location_id'] ?? null,
                 'name' => $data['name'],
                 'generic_name' => $this->normalizeOptionalString($data['generic_name'] ?? null),
                 'sku' => $sku,
@@ -94,12 +95,17 @@ final class ProductService
             ? (string) $data['opening_batch_no']
             : 'OPEN-'.strtoupper($product->sku);
 
+        $storageLocationId = $data['opening_storage_location_id']
+            ?? $data['storage_location_id']
+            ?? null;
+
         ProductBatch::query()->create([
             'product_id' => $product->getKey(),
             'batch_no' => $batchNo,
             'expiry_date' => $data['opening_expiry_date'] ?? null,
             'quantity_on_hand' => $quantity,
             'purchase_unit_cost' => $defaultUnit['purchase_price'] ?? 0,
+            'storage_location_id' => $storageLocationId,
         ]);
     }
 
@@ -159,6 +165,9 @@ final class ProductService
             $this->products->update($product, [
                 'category_id' => $data['category_id'] ?? $product->category_id,
                 'manufacturer_id' => $data['manufacturer_id'] ?? $product->manufacturer_id,
+                'storage_location_id' => array_key_exists('storage_location_id', $data)
+                    ? ($data['storage_location_id'] ?: null)
+                    : $product->storage_location_id,
                 'name' => $data['name'] ?? $product->name,
                 'generic_name' => array_key_exists('generic_name', $data)
                     ? $this->normalizeOptionalString($data['generic_name'])
@@ -198,8 +207,9 @@ final class ProductService
             }
 
             $this->applyStockAdjustmentIfProvided($product->fresh(['units', 'batches']), $data);
+            $this->syncBatchLocations($product->fresh(), $data);
 
-            return $product->fresh(['units', 'batches']);
+            return $product->fresh(['units', 'batches', 'batches.storageLocation', 'storageLocation']);
         });
     }
 
@@ -271,6 +281,7 @@ final class ProductService
                 'batch_no' => $batchNo,
                 'quantity_on_hand' => 0,
                 'purchase_unit_cost' => $defaultUnit?->purchase_price ?? $product->purchase_price,
+                'storage_location_id' => $product->storage_location_id,
             ]);
         }
 
@@ -292,6 +303,30 @@ final class ProductService
             'quantity_delta' => (string) $delta,
             'meta' => ['source' => 'product_form'],
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function syncBatchLocations(Product $product, array $data): void
+    {
+        if (! array_key_exists('batch_locations', $data)) {
+            return;
+        }
+
+        foreach ($data['batch_locations'] as $row) {
+            $batchId = (int) ($row['id'] ?? 0);
+            if ($batchId <= 0) {
+                continue;
+            }
+
+            ProductBatch::query()
+                ->where('product_id', $product->getKey())
+                ->whereKey($batchId)
+                ->update([
+                    'storage_location_id' => $row['storage_location_id'] ?? null,
+                ]);
+        }
     }
 
     /**

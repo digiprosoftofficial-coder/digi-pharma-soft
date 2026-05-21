@@ -88,6 +88,13 @@ final class PurchaseService
                 $batch->quantity_on_hand = (string) ((float) $batch->quantity_on_hand + $quantityBase);
                 $batch->purchase_unit_cost = $line['unit_cost'];
 
+                $locationId = $line['storage_location_id'] ?? null;
+                if ($locationId !== null) {
+                    $batch->storage_location_id = $locationId;
+                } elseif ($batch->storage_location_id === null && $product->storage_location_id !== null) {
+                    $batch->storage_location_id = $product->storage_location_id;
+                }
+
                 $baseUnit = $product->base_unit ?? 'strip';
                 if ($sellUnit !== $baseUnit) {
                     $batch->pack_sell_unit = $sellUnit;

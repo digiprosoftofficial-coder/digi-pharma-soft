@@ -22,6 +22,7 @@ class RolePermissionSeeder extends Seeder
             'categories.view', 'categories.manage',
             'product_types.view', 'product_types.manage',
             'manufacturers.view', 'manufacturers.manage',
+            'storage_locations.view', 'storage_locations.manage',
             'purchases.view', 'purchases.manage',
             'sales.view',
             'returns.manage',

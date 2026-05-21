@@ -113,6 +113,8 @@
                             <dd class="col-sm-8">{{ product.category?.name || '—' }}</dd>
                             <dt class="col-sm-4">Manufacturer</dt>
                             <dd class="col-sm-8">{{ product.manufacturer?.name || '—' }}</dd>
+                            <dt class="col-sm-4">{{ t('catalog.default_storage_location') }}</dt>
+                            <dd class="col-sm-8">{{ defaultShelfLabel }}</dd>
                             <dt class="col-sm-4">Base unit</dt>
                             <dd class="col-sm-8 text-capitalize">{{ unitLabel(product.base_unit) }}</dd>
                             <template v-if="product.pieces_per_strip">
@@ -176,6 +178,7 @@
                         <tr>
                             <th>Batch no</th>
                             <th>Expiry</th>
+                            <th>{{ t('catalog.storage_location_shelf') }}</th>
                             <th class="text-end">On hand ({{ unitLabel(product.base_unit) }})</th>
                             <th class="text-end">Unit cost</th>
                         </tr>
@@ -184,16 +187,17 @@
                         <tr v-for="b in batches" :key="b.id">
                             <td>{{ b.batch_no }}</td>
                             <td>{{ b.expiry_date || '—' }}</td>
+                            <td class="small">{{ batchShelfLabel(b) }}</td>
                             <td class="text-end fw-semibold">{{ formatQty(b.quantity_on_hand) }}</td>
                             <td class="text-end">{{ formatMoney(b.purchase_unit_cost) }}</td>
                         </tr>
                         <tr v-if="!batches.length">
-                            <td colspan="4" class="text-muted text-center py-4">No batches in stock yet.</td>
+                            <td colspan="5" class="text-muted text-center py-4">No batches in stock yet.</td>
                         </tr>
                     </tbody>
                     <tfoot v-if="batches.length" class="table-light">
                         <tr>
-                            <th colspan="2">Total</th>
+                            <th colspan="3">Total</th>
                             <th class="text-end">{{ formatQty(stockBase) }}</th>
                             <th></th>
                         </tr>
@@ -206,6 +210,7 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { unitLabel, unitPurchasePrice, unitSalePrice } from '@/composables/useProductUnits';
 import { usePermissions } from '@/composables/usePermissions';
@@ -223,8 +228,25 @@ const props = defineProps({
 const page = usePage();
 const wholesaleEnabled = computed(() => page.props.features?.wholesale_pricing ?? false);
 
+const { t } = useLocale();
 const { formatMoney } = useMoney();
 const { can } = usePermissions();
+
+function formatLocation(loc) {
+    if (!loc) {
+        return '—';
+    }
+
+    return loc.code ? `${loc.name} (${loc.code})` : loc.name;
+}
+
+const defaultShelfLabel = computed(() =>
+    formatLocation(props.product.storage_location ?? props.product.effective_storage_location),
+);
+
+function batchShelfLabel(batch) {
+    return formatLocation(batch.effective_storage_location ?? batch.storage_location);
+}
 
 const batches = computed(() => {
     const raw = props.product.batches;

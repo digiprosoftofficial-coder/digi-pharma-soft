@@ -12,6 +12,7 @@
                                 <tr>
                                     <th>Product</th>
                                     <th>Batch</th>
+                                    <th>Shelf</th>
                                     <th class="text-end">Qty</th>
                                 </tr>
                             </thead>
@@ -19,10 +20,11 @@
                                 <tr v-for="b in lowStockBatches" :key="b.id">
                                     <td>{{ b.product?.name }}</td>
                                     <td>{{ b.batch_no }}</td>
+                                    <td class="small">{{ shelfLabel(b) }}</td>
                                     <td class="text-end">{{ b.quantity_on_hand }}</td>
                                 </tr>
                                 <tr v-if="!lowStockBatches.length">
-                                    <td colspan="3" class="text-muted small">No batches below min stock.</td>
+                                    <td colspan="4" class="text-muted small">No batches below min stock.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -60,6 +62,7 @@
                     <tr>
                         <th>Product</th>
                         <th>Batch</th>
+                        <th>Shelf</th>
                         <th>Expiry</th>
                         <th class="text-end">On hand</th>
                     </tr>
@@ -68,6 +71,7 @@
                     <tr v-for="b in batches.data" :key="b.id">
                         <td>{{ b.product?.name }}</td>
                         <td>{{ b.batch_no }}</td>
+                        <td class="small">{{ shelfLabel(b) }}</td>
                         <td>{{ b.expiry_date }}</td>
                         <td class="text-end">{{ b.quantity_on_hand }}</td>
                     </tr>
@@ -86,4 +90,14 @@ defineProps({
     recentMovements: { type: Array, required: true },
     batches: { type: Object, required: true },
 });
+
+function shelfLabel(batch) {
+    const loc = batch.effective_storage_location;
+
+    if (!loc) {
+        return '—';
+    }
+
+    return loc.code ? `${loc.name} (${loc.code})` : loc.name;
+}
 </script>
