@@ -82,4 +82,7 @@ return [
     'storage_location_shelf' => 'শেলফ / র‍্যাক',
     'storage_location_all' => 'সব শেলফ',
     'opening_storage_location' => 'ওপেনিং স্টকের শেলফ',
+    'products_per_page' => 'প্রতি পেজে',
+    'products_showing_none' => 'কোনো পণ্য নেই।',
+    'products_showing_range' => ':total টির মধ্যে :from–:to দেখানো হচ্ছে',
 ];

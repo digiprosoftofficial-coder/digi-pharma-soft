@@ -9,9 +9,9 @@ use Illuminate\Database\Eloquent\Collection;
 final class ProductRepository
 {
     /**
-     * @param  array{q?:string,product_type?:string,is_active?:string,storage_location_id?:string}  $filters
+     * @param  array{q?:string,product_type?:string,is_active?:string,storage_location_id?:string,per_page?:int}  $filters
      */
-    public function paginateForTenant(array $filters = [], int $perPage = 15): LengthAwarePaginator
+    public function paginateForTenant(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
         $query = Product::query()
             ->with(['category', 'manufacturer', 'storageLocation', 'units'])

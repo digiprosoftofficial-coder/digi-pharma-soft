@@ -42,6 +42,21 @@
                 </div>
             </div>
         </form>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+            <p class="small text-muted mb-0">{{ resultsSummary }}</p>
+            <div class="d-flex align-items-center gap-2">
+                <label class="small text-muted mb-0" for="per-page">{{ t('catalog.products_per_page') }}</label>
+                <select
+                    id="per-page"
+                    v-model.number="filterForm.per_page"
+                    class="form-select form-select-sm"
+                    style="width: auto"
+                    @change="applyFilters"
+                >
+                    <option v-for="n in perPageOptions" :key="n" :value="n">{{ n }}</option>
+                </select>
+            </div>
+        </div>
         <div class="table-responsive card border-0 shadow-sm">
             <table class="table table-striped mb-0">
                 <thead>
@@ -121,13 +136,14 @@ import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { usePermissions } from '@/composables/usePermissions';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { reactive } from 'vue';
+import { computed, reactive } from 'vue';
 
 const props = defineProps({
     products: { type: Object, required: true },
     filters: { type: Object, default: () => ({}) },
     productTypes: { type: Array, default: () => [] },
     storageLocations: { type: Array, default: () => [] },
+    perPageOptions: { type: Array, default: () => [15, 25, 50, 100] },
 });
 
 const { t } = useLocale();
@@ -164,6 +180,19 @@ const filterForm = reactive({
     product_type: props.filters.product_type ?? '',
     is_active: props.filters.is_active ?? '',
     storage_location_id: props.filters.storage_location_id ?? '',
+    per_page: Number(props.filters.per_page) || 25,
+});
+
+const resultsSummary = computed(() => {
+    const total = props.products.total ?? 0;
+    if (total === 0) {
+        return t('catalog.products_showing_none');
+    }
+
+    const from = props.products.from ?? 0;
+    const to = props.products.to ?? 0;
+
+    return t('catalog.products_showing_range', { from, to, total });
 });
 
 function applyFilters() {
@@ -175,6 +204,7 @@ function clearFilters() {
     filterForm.product_type = '';
     filterForm.is_active = '';
     filterForm.storage_location_id = '';
+    filterForm.per_page = 25;
     applyFilters();
 }
 

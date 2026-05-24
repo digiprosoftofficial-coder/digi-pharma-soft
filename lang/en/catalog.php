@@ -82,4 +82,7 @@ return [
     'storage_location_shelf' => 'Shelf / rack',
     'storage_location_all' => 'All shelves',
     'opening_storage_location' => 'Opening stock shelf',
+    'products_per_page' => 'Per page',
+    'products_showing_none' => 'No products found.',
+    'products_showing_range' => 'Showing :from–:to of :total products',
 ];

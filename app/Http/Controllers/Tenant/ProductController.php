@@ -13,6 +13,7 @@ use App\Http\Requests\Catalog\StoreProductRequest;
 use App\Http\Requests\Catalog\UpdateProductRequest;
 use App\Http\Resources\Catalog\ProductResource;
 use App\Support\Catalog\ProductCatalogOptions;
+use App\Support\Catalog\ProductListPagination;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -29,15 +30,23 @@ final class ProductController extends Controller
 
     public function index(Request $request): Response
     {
-        $filters = $request->only(['q', 'product_type', 'is_active', 'storage_location_id']);
+        $perPage = ProductListPagination::resolve(
+            $request->has('per_page') ? $request->integer('per_page') : null,
+        );
+
+        $filters = array_merge(
+            $request->only(['q', 'product_type', 'is_active', 'storage_location_id']),
+            ['per_page' => $perPage],
+        );
 
         return Inertia::render('Catalog/Products/Index', [
-            'products' => $this->products->paginateForTenant($filters)->through(
+            'products' => $this->products->paginateForTenant($filters, $perPage)->through(
                 fn (Product $p) => (new ProductResource($p))->resolve($request),
             ),
             'filters' => $filters,
             'productTypes' => ProductCatalogOptions::productTypes(),
             'storageLocations' => $this->storageLocationOptions(),
+            'perPageOptions' => ProductListPagination::options(),
         ]);
     }
 
