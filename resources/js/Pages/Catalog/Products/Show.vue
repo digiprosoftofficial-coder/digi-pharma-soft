@@ -108,7 +108,14 @@
                     <div class="card-body">
                         <dl class="row mb-0 small">
                             <dt class="col-sm-4">Type</dt>
-                            <dd class="col-sm-8 text-capitalize">{{ product.product_type || '—' }}</dd>
+                            <dd class="col-sm-8">
+                                <ProductTypeLabel
+                                    v-if="product.product_type"
+                                    :type="product.product_type"
+                                    :icon-url="product.product_type_icon_url"
+                                />
+                                <span v-else class="text-muted">—</span>
+                            </dd>
                             <dt class="col-sm-4">Category</dt>
                             <dd class="col-sm-8">{{ product.category?.name || '—' }}</dd>
                             <dt class="col-sm-4">Manufacturer</dt>
@@ -209,6 +216,7 @@
 </template>
 
 <script setup>
+import ProductTypeLabel from '@/Components/Catalog/ProductTypeLabel.vue';
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';

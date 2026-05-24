@@ -144,12 +144,13 @@ final class ProductController extends Controller
     }
 
     /**
-     * @return array{productTypes: list<string>, sellUnits: list<string>}
+     * @return array{productTypes: list<string>, productTypeOptions: list<array{slug: string, name: string, icon_url: string|null}>, sellUnits: list<string>}
      */
     private function catalogOptions(): array
     {
         return [
             'productTypes' => ProductCatalogOptions::productTypes(),
+            'productTypeOptions' => ProductCatalogOptions::productTypeOptions(),
             'sellUnits' => ProductCatalogOptions::sellUnits(),
         ];
     }

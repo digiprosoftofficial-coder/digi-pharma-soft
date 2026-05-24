@@ -19,7 +19,9 @@
                 </thead>
                 <tbody>
                     <tr v-for="t in productTypes.data" :key="t.id">
-                        <td>{{ t.name }}</td>
+                        <td>
+                            <ProductTypeLabel :type="t.slug" :label="t.name" :icon-url="t.icon_url" size="sm" />
+                        </td>
                         <td><code>{{ t.slug }}</code></td>
                         <td class="text-end">{{ t.sort_order }}</td>
                         <td class="text-end">{{ t.products_count }}</td>
@@ -38,6 +40,7 @@
 </template>
 
 <script setup>
+import ProductTypeLabel from '@/Components/Catalog/ProductTypeLabel.vue';
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 

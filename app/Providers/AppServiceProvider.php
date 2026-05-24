@@ -6,6 +6,7 @@ use App\Domain\Accounting\Models\LedgerAccount;
 use App\Domain\Billing\Models\PlatformInvoice;
 use App\Domain\Billing\Models\SubscriptionPlan;
 use App\Domain\Platform\Models\CatalogTemplate;
+use App\Domain\Platform\Models\PlatformProductType;
 use App\Domain\Platform\Models\PlatformAnnouncement;
 use App\Domain\Platform\Models\PlatformSetting;
 use App\Domain\Platform\Models\Reseller;
@@ -39,6 +40,7 @@ use App\Policies\SaleReturnPolicy;
 use App\Policies\StockTransferPolicy;
 use App\Policies\SupplierPolicy;
 use App\Policies\Platform\CatalogTemplatePolicy;
+use App\Policies\Platform\PlatformProductTypePolicy;
 use App\Policies\Platform\PlatformAnnouncementPolicy;
 use App\Policies\Platform\PlatformInvoicePolicy;
 use App\Policies\Platform\PlatformSettingPolicy;
@@ -105,6 +107,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(PlatformInvoice::class, PlatformInvoicePolicy::class);
         Gate::policy(Reseller::class, ResellerPolicy::class);
         Gate::policy(CatalogTemplate::class, CatalogTemplatePolicy::class);
+        Gate::policy(PlatformProductType::class, PlatformProductTypePolicy::class);
         Gate::policy(PlatformAnnouncement::class, PlatformAnnouncementPolicy::class);
 
         Event::listen(Login::class, function (Login $event): void {

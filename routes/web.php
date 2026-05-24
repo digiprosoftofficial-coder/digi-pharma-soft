@@ -7,6 +7,7 @@ use App\Http\Controllers\Central\PlatformAuditController;
 use App\Http\Controllers\Central\PlatformAnnouncementController;
 use App\Http\Controllers\Central\PlatformBillingController;
 use App\Http\Controllers\Central\PlatformCatalogTemplateController;
+use App\Http\Controllers\Central\PlatformProductTypeController;
 use App\Http\Controllers\Central\PlatformResellerController;
 use App\Http\Controllers\Central\PlatformDashboardController;
 use App\Http\Controllers\Central\PlatformHealthController;
@@ -170,6 +171,7 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
         Route::get('/settings', [PlatformSettingsController::class, 'edit'])->name('settings.edit');
         Route::put('/settings', [PlatformSettingsController::class, 'update'])->name('settings.update');
         Route::resource('resellers', PlatformResellerController::class)->except(['show']);
+        Route::resource('product-types', PlatformProductTypeController::class)->except(['show']);
         Route::resource('catalog-templates', PlatformCatalogTemplateController::class);
         Route::post('catalog-templates/{catalog_template}/items', [PlatformCatalogTemplateController::class, 'storeItem'])
             ->name('catalog-templates.items.store');

@@ -22,7 +22,19 @@ final class TranslationLoader
             /** @var array<string, string> $chunk */
             $chunk = require $path;
             foreach ($chunk as $key => $value) {
-                $out["{$file}.{$key}"] = $value;
+                if (is_array($value)) {
+                    foreach ($value as $subKey => $subValue) {
+                        if (is_string($subValue)) {
+                            $out["{$file}.{$key}.{$subKey}"] = $subValue;
+                        }
+                    }
+
+                    continue;
+                }
+
+                if (is_string($value)) {
+                    $out["{$file}.{$key}"] = $value;
+                }
             }
         }
 

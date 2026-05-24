@@ -4,29 +4,33 @@ namespace App\Domain\Catalog\Services;
 
 use App\Domain\Catalog\Models\CatalogProductType;
 use App\Domain\Catalog\Models\Product;
+use App\Support\Catalog\ProductTypeIconStorage;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 final class ProductTypeService
 {
     /**
-     * @param  array{name:string,slug?:string|null,sort_order?:int}  $data
+     * @param  array{name:string,slug?:string|null,sort_order?:int,remove_icon?:bool}  $data
      */
-    public function create(array $data): CatalogProductType
+    public function create(array $data, ?UploadedFile $icon = null): CatalogProductType
     {
         $slug = $this->resolveSlug($data['name'], $data['slug'] ?? null);
+        $iconPath = $icon ? ProductTypeIconStorage::store($icon, tenant_id(), $slug) : null;
 
         return CatalogProductType::query()->create([
             'name' => $data['name'],
             'slug' => $slug,
             'sort_order' => $data['sort_order'] ?? 0,
+            'icon_path' => $iconPath,
         ]);
     }
 
     /**
-     * @param  array{name?:string,slug?:string|null,sort_order?:int}  $data
+     * @param  array{name?:string,slug?:string|null,sort_order?:int,remove_icon?:bool}  $data
      */
-    public function update(CatalogProductType $type, array $data): CatalogProductType
+    public function update(CatalogProductType $type, array $data, ?UploadedFile $icon = null): CatalogProductType
     {
         $name = $data['name'] ?? $type->name;
         $oldSlug = $type->slug;
@@ -34,10 +38,21 @@ final class ProductTypeService
             ? $this->resolveSlug($name, $data['slug'] ?? $type->slug, $type->getKey())
             : $type->slug;
 
+        $iconPath = $type->icon_path;
+        if (! empty($data['remove_icon'])) {
+            ProductTypeIconStorage::delete($iconPath);
+            $iconPath = null;
+        }
+        if ($icon) {
+            ProductTypeIconStorage::delete($iconPath);
+            $iconPath = ProductTypeIconStorage::store($icon, (int) $type->tenant_id, $slug);
+        }
+
         $type->update([
             'name' => $name,
             'slug' => $slug,
             'sort_order' => $data['sort_order'] ?? $type->sort_order,
+            'icon_path' => $iconPath,
         ]);
 
         if ($slug !== $oldSlug) {
@@ -55,6 +70,7 @@ final class ProductTypeService
             ]);
         }
 
+        ProductTypeIconStorage::delete($type->icon_path);
         $type->delete();
     }
 

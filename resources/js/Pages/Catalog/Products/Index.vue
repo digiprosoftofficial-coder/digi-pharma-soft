@@ -16,7 +16,7 @@
                     <label class="form-label small mb-0">Type</label>
                     <select v-model="filterForm.product_type" class="form-select form-select-sm">
                         <option value="">All types</option>
-                        <option v-for="t in productTypes" :key="t" :value="t">{{ t }}</option>
+                        <option v-for="pt in productTypes" :key="pt" :value="pt">{{ labelForType(pt) }}</option>
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -79,7 +79,15 @@
                         <td>
                             <Link :href="`/products/${p.id}`" class="text-decoration-none fw-medium">{{ p.name }}</Link>
                         </td>
-                        <td class="text-capitalize">{{ p.product_type || '—' }}</td>
+                        <td>
+                            <ProductTypeLabel
+                                v-if="p.product_type"
+                                :type="p.product_type"
+                                :icon-url="p.product_type_icon_url"
+                                size="sm"
+                            />
+                            <span v-else class="text-muted">—</span>
+                        </td>
                         <td>{{ p.category?.name || '—' }}</td>
                         <td class="small">{{ shelfLabel(p) }}</td>
                         <td>{{ p.sku }}</td>
@@ -131,7 +139,9 @@
 </template>
 
 <script setup>
+import ProductTypeLabel from '@/Components/Catalog/ProductTypeLabel.vue';
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { productTypeLabel } from '@/composables/useProductType';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { usePermissions } from '@/composables/usePermissions';
@@ -149,6 +159,10 @@ const props = defineProps({
 const { t } = useLocale();
 const { formatMoney, currencyCode } = useMoney();
 const { can } = usePermissions();
+
+function labelForType(slug) {
+    return productTypeLabel(slug, t);
+}
 
 function formatQty(value) {
     const n = Number(value ?? 0);

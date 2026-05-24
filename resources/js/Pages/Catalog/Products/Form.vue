@@ -61,11 +61,23 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Product type</label>
-                    <select v-model="form.product_type" class="form-select" required>
-                        <option v-for="t in catalogOptions.productTypes" :key="t" :value="t">
-                            {{ typeLabel(t) }}
-                        </option>
-                    </select>
+                    <div class="d-flex align-items-center gap-2">
+                        <img
+                            v-if="selectedTypeIconUrl"
+                            :src="selectedTypeIconUrl"
+                            alt=""
+                            width="30"
+                            height="30"
+                            class="flex-shrink-0"
+                            style="object-fit: contain"
+                        />
+                        <ProductTypeIcon v-else :type="form.product_type" size="lg" class="flex-shrink-0" />
+                        <select v-model="form.product_type" class="form-select" required>
+                            <option v-for="pt in catalogOptions.productTypes" :key="pt" :value="pt">
+                                {{ labelForType(pt) }}
+                            </option>
+                        </select>
+                    </div>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Base stock unit</label>
@@ -394,7 +406,9 @@
 </template>
 
 <script setup>
+import ProductTypeIcon from '@/Components/Catalog/ProductTypeIcon.vue';
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { productTypeLabel } from '@/composables/useProductType';
 import { useLocale } from '@/composables/useLocale';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
@@ -408,7 +422,7 @@ const props = defineProps({
     product: { type: Object, default: null },
     catalogOptions: {
         type: Object,
-        default: () => ({ productTypes: ['other'], sellUnits: ['piece', 'strip', 'box', 'carton'] }),
+        default: () => ({ productTypes: ['other'], productTypeOptions: [], sellUnits: ['piece', 'strip', 'box', 'carton'] }),
     },
     categories: { type: Array, default: () => [] },
     manufacturers: { type: Array, default: () => [] },
@@ -423,9 +437,16 @@ function productData() {
     return props.product.data ?? props.product;
 }
 
-function typeLabel(t) {
-    return t.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+function labelForType(slug) {
+    return productTypeLabel(slug, t);
 }
+
+const selectedTypeIconUrl = computed(() => {
+    const options = props.catalogOptions.productTypeOptions ?? [];
+    const match = options.find((o) => o.slug === form.product_type);
+
+    return match?.icon_url ?? null;
+});
 
 function unitLabel(u) {
     return u.charAt(0).toUpperCase() + u.slice(1);

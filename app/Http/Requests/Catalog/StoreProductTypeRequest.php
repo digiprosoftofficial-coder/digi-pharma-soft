@@ -29,6 +29,7 @@ class StoreProductTypeRequest extends FormRequest
                 Rule::unique('product_types', 'slug')->where('tenant_id', $tenantId),
             ],
             'sort_order' => ['nullable', 'integer', 'min:0'],
+            'icon' => ['nullable', 'image', 'mimes:jpeg,png,webp', 'max:512'],
         ];
     }
 }

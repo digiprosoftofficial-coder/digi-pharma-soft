@@ -68,6 +68,7 @@ const navItems = computed(() => [
     { href: '/platform/plans', label: t('platform.nav_plans') },
     { href: '/platform/resellers', label: t('platform.nav_resellers') },
     { href: '/platform/catalog-templates', label: t('platform.nav_catalog') },
+    { href: '/platform/product-types', label: t('platform.nav_product_types') },
     { href: '/platform/announcements', label: t('platform.nav_announcements') },
     { href: '/platform/billing', label: t('platform.nav_billing') },
     { href: '/platform/admins', label: t('platform.nav_admins') },

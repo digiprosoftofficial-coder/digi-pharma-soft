@@ -5,6 +5,7 @@ namespace App\Http\Resources\Catalog;
 use App\Support\Catalog\EffectiveStorageLocation;
 use App\Support\Catalog\ProductImageStorage;
 use App\Support\Catalog\ProductStockCalculator;
+use App\Support\Catalog\ProductTypeIconResolver;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,6 +24,7 @@ class ProductResource extends JsonResource
             'sku' => $this->sku,
             'barcode' => $this->barcode,
             'product_type' => $this->product_type ?? 'other',
+            'product_type_icon_url' => ProductTypeIconResolver::urlForSlug($this->product_type ?? 'other'),
             'base_unit' => $this->base_unit ?? 'strip',
             'pieces_per_strip' => $this->pieces_per_strip !== null ? (string) $this->pieces_per_strip : null,
             'strips_per_box' => $this->strips_per_box !== null ? (string) $this->strips_per_box : null,

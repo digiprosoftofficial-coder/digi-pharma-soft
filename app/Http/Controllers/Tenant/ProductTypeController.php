@@ -36,19 +36,21 @@ final class ProductTypeController extends Controller
 
     public function store(StoreProductTypeRequest $request): RedirectResponse
     {
-        $this->productTypes->create($request->validated());
+        $this->productTypes->create($request->validated(), $request->file('icon'));
 
         return redirect()->route('tenant.product-types.index')->with('success', __('Product type created.'));
     }
 
     public function edit(CatalogProductType $productType): Response
     {
-        return Inertia::render('Catalog/ProductTypes/Form', ['productType' => $productType]);
+        return Inertia::render('Catalog/ProductTypes/Form', [
+            'productType' => $productType->only(['id', 'name', 'slug', 'sort_order', 'icon_url', 'uses_custom_icon']),
+        ]);
     }
 
     public function update(UpdateProductTypeRequest $request, CatalogProductType $productType): RedirectResponse
     {
-        $this->productTypes->update($productType, $request->validated());
+        $this->productTypes->update($productType, $request->validated(), $request->file('icon'));
 
         return redirect()->route('tenant.product-types.index')->with('success', __('Product type updated.'));
     }

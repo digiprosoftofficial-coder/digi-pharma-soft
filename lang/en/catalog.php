@@ -85,4 +85,8 @@ return [
     'products_per_page' => 'Per page',
     'products_showing_none' => 'No products found.',
     'products_showing_range' => 'Showing :from–:to of :total products',
+    'product_type_icon' => 'Icon image',
+    'product_type_icon_hint' => 'Optional. Overrides the platform default for this pharmacy only.',
+    'product_type_using_platform_default' => 'Using platform default icon.',
+    'product_type_reset_icon' => 'Remove custom icon (use platform default)',
 ];
