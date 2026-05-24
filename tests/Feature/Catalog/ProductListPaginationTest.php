@@ -38,6 +38,37 @@ class ProductListPaginationTest extends TestCase
             ->assertInertia(fn ($page) => $page->where('filters.per_page', 50));
     }
 
+    public function test_product_index_search_matches_generic_name(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $owner = User::query()->where('email', 'owner@example.com')->firstOrFail();
+
+        $this->actingAs($owner)->post('/products', [
+            'name' => 'Napa Extend',
+            'generic_name' => 'Paracetamol',
+            'product_type' => 'tablet',
+            'base_unit' => 'piece',
+            'units' => [
+                ['sell_unit' => 'piece', 'conversion_factor' => 1, 'purchase_price' => 1, 'sale_price' => 2, 'is_default' => true],
+            ],
+            'min_stock' => 0,
+            'is_active' => true,
+        ])->assertRedirect();
+
+        $this->actingAs($owner)
+            ->get(route('tenant.products.index', ['q' => 'Paracetamol']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('products.data')
+                ->where('products.data', fn ($rows) => collect($rows)->contains('name', 'Napa Extend')));
+
+        $this->actingAs($owner)
+            ->get(route('tenant.products.index', ['q' => 'Ibuprofen']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->has('products.data', 0));
+    }
+
     public function test_invalid_per_page_falls_back_to_default(): void
     {
         $this->seed(DatabaseSeeder::class);

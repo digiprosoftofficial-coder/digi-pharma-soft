@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Domain\Catalog\Actions\ImportProductsFromCsvAction;
 use App\Domain\Catalog\Models\Product;
 use App\Http\Controllers\Controller;
+use App\Support\Catalog\ProductImportCsv;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -21,6 +22,7 @@ final class ProductImportController extends Controller
 
         return Inertia::render('Catalog/Import/Index', [
             'preview' => session('import_preview'),
+            'csvColumns' => ProductImportCsv::HEADERS,
         ]);
     }
 
@@ -28,15 +30,12 @@ final class ProductImportController extends Controller
     {
         $this->authorize('create', Product::class);
 
-        $headers = [
-            'name', 'sku', 'barcode', 'product_type', 'base_unit',
-            'category_slug', 'manufacturer_name', 'purchase_price', 'sale_price', 'min_stock', 'is_active',
-        ];
-
-        return response()->streamDownload(function () use ($headers) {
+        return response()->streamDownload(function () {
             $out = fopen('php://output', 'w');
-            fputcsv($out, $headers);
-            fputcsv($out, ['Paracetamol 500mg', 'PAR-500', '8801234567890', 'tablet', 'strip', 'general', 'Demo Labs', '20', '35', '10', '1']);
+            fputcsv($out, ProductImportCsv::HEADERS);
+            foreach (ProductImportCsv::sampleRows() as $row) {
+                fputcsv($out, $row);
+            }
             fclose($out);
         }, 'product-import-sample.csv', ['Content-Type' => 'text/csv']);
     }

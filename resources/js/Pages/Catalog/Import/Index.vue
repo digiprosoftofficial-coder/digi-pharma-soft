@@ -3,9 +3,13 @@
         <Head title="Bulk import" />
         <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
         <h1 class="h4 mb-3">Import products from CSV</h1>
-        <p class="text-muted small">
-            Upload a CSV with columns: name, sku, barcode, product_type, base_unit, category_slug, manufacturer_name,
-            purchase_price, sale_price, min_stock, is_active.
+        <p class="text-muted small mb-1">
+            Upload a CSV with the columns below. <code>name</code> is required; <code>sku</code> is optional (auto-generated if empty).
+            Use existing <code>category_slug</code> and <code>storage_location_code</code> values from your catalog.
+        </p>
+        <p class="small text-muted mb-3">
+            <span class="d-block fw-semibold text-body">Columns:</span>
+            {{ columnList }}
         </p>
         <a href="/catalog/import/sample" class="btn btn-sm btn-outline-secondary mb-3">Download sample CSV</a>
 
@@ -78,7 +82,14 @@ import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
-const props = defineProps({ preview: { type: Object, default: null } });
+const props = defineProps({
+    preview: { type: Object, default: null },
+    csvColumns: { type: Array, default: () => [] },
+});
+
+const columnList = computed(() =>
+    (props.csvColumns.length ? props.csvColumns : []).join(', '),
+);
 
 const previewLimit = 50;
 

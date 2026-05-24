@@ -23,6 +23,7 @@ final class ProductRepository
             $term = $filters['q'];
             $query->where(function ($w) use ($term) {
                 $w->where('name', 'like', '%'.$term.'%')
+                    ->orWhere('generic_name', 'like', '%'.$term.'%')
                     ->orWhere('sku', 'like', '%'.$term.'%')
                     ->orWhere('barcode', 'like', '%'.$term.'%');
             });
@@ -58,6 +59,7 @@ final class ProductRepository
 
         $q->where(function ($w) use ($term) {
             $w->where('name', 'like', '%'.$term.'%')
+                ->orWhere('generic_name', 'like', '%'.$term.'%')
                 ->orWhere('sku', 'like', '%'.$term.'%')
                 ->orWhere('barcode', $term);
         });

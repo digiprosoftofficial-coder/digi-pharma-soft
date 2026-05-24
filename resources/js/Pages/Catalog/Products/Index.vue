@@ -10,7 +10,7 @@
             <div class="row g-2 align-items-end">
                 <div class="col-md-4">
                     <label class="form-label small mb-0">Search</label>
-                    <input v-model="filterForm.q" type="search" class="form-control form-control-sm" placeholder="Name, SKU, barcode" />
+                    <input v-model="filterForm.q" type="search" class="form-control form-control-sm" placeholder="Name, generic name, SKU, barcode" />
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small mb-0">Type</label>
@@ -62,6 +62,7 @@
                 <thead>
                     <tr>
                         <th>Name</th>
+                        <th>Generic name</th>
                         <th>Type</th>
                         <th>Category</th>
                         <th>{{ t('catalog.storage_location_shelf') }}</th>
@@ -79,6 +80,7 @@
                         <td>
                             <Link :href="`/products/${p.id}`" class="text-decoration-none fw-medium">{{ p.name }}</Link>
                         </td>
+                        <td class="text-muted small">{{ p.generic_name || '—' }}</td>
                         <td>
                             <ProductTypeLabel
                                 v-if="p.product_type"
@@ -122,7 +124,7 @@
                         </td>
                     </tr>
                     <tr v-if="!products.data?.length">
-                        <td colspan="11" class="text-muted text-center py-4">No products found.</td>
+                        <td colspan="12" class="text-muted text-center py-4">No products found.</td>
                     </tr>
                 </tbody>
             </table>
