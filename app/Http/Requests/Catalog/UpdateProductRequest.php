@@ -21,7 +21,7 @@ class UpdateProductRequest extends FormRequest
         if ($this->has('boxes_per_carton') && $this->input('boxes_per_carton') === '') {
             $this->merge(['boxes_per_carton' => null]);
         }
-        foreach (['generic_name', 'short_description', 'wholesale_price', 'vat_percent', 'storage_location_id'] as $field) {
+        foreach (['generic_name', 'strength', 'short_description', 'wholesale_price', 'vat_percent', 'storage_location_id'] as $field) {
             if ($this->has($field) && $this->input($field) === '') {
                 $this->merge([$field => null]);
             }
@@ -68,6 +68,7 @@ class UpdateProductRequest extends FormRequest
             ],
             'name' => ['sometimes', 'string', 'max:255'],
             'generic_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'strength' => ['sometimes', 'nullable', 'string', 'max:64'],
             'sku' => ['sometimes', 'string', 'max:64', Rule::unique('products', 'sku')->where('tenant_id', $tenantId)->ignore($product->getKey())],
             'barcode' => ['nullable', 'string', 'max:64', Rule::unique('products', 'barcode')->where('tenant_id', $tenantId)->ignore($product->getKey())],
             'wholesale_price' => TenantFeatures::wholesalePricingEnabled(tenant())

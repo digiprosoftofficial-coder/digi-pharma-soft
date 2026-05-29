@@ -89,4 +89,7 @@ return [
     'product_type_icon_hint' => 'ঐচ্ছিক। শুধু এই ফার্মেসির জন্য প্ল্যাটফর্ম ডিফল্ট বদলাবে।',
     'product_type_using_platform_default' => 'প্ল্যাটফর্ম ডিফল্ট আইকন ব্যবহার হচ্ছে।',
     'product_type_reset_icon' => 'কাস্টম আইকন সরান (প্ল্যাটফর্ম ডিফল্ট)',
+    'strength' => 'শক্তি / পাওয়ার',
+    'strength_placeholder' => 'যেমন 500 mg',
+    'products_search_placeholder' => 'নাম, জেনেরিক, শক্তি, SKU, বারকোড',
 ];

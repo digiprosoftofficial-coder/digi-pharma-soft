@@ -9,10 +9,15 @@
                     <input v-model="form.name" type="text" class="form-control" required />
                     <div v-if="form.errors.name" class="text-danger small">{{ form.errors.name }}</div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label">Generic name <span class="text-muted fw-normal">(optional)</span></label>
                     <input v-model="form.generic_name" type="text" class="form-control" placeholder="e.g. Paracetamol" />
                     <div v-if="form.errors.generic_name" class="text-danger small">{{ form.errors.generic_name }}</div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">{{ t('catalog.strength') }} <span class="text-muted fw-normal">(optional)</span></label>
+                    <input v-model="form.strength" type="text" class="form-control" :placeholder="t('catalog.strength_placeholder')" />
+                    <div v-if="form.errors.strength" class="text-danger small">{{ form.errors.strength }}</div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">SKU</label>
@@ -626,6 +631,7 @@ const imagePreviewUrl = ref(null);
 const form = useForm({
     name: existing?.name ?? '',
     generic_name: existing?.generic_name ?? '',
+    strength: existing?.strength ?? '',
     sku: existing?.sku ?? '',
     barcode: existing?.barcode ?? '',
     wholesale_price:
@@ -997,6 +1003,7 @@ function buildPayload() {
             : null,
         vat_percent: normalizeOptionalNumberForSubmit(form.vat_percent),
         generic_name: form.generic_name?.trim() || null,
+        strength: form.strength?.trim() || null,
         short_description: form.short_description?.trim() || null,
         units: form.units.map((row) => ({
             sell_unit: row.sell_unit,

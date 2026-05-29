@@ -89,4 +89,7 @@ return [
     'product_type_icon_hint' => 'Optional. Overrides the platform default for this pharmacy only.',
     'product_type_using_platform_default' => 'Using platform default icon.',
     'product_type_reset_icon' => 'Remove custom icon (use platform default)',
+    'strength' => 'Strength',
+    'strength_placeholder' => 'e.g. 500 mg',
+    'products_search_placeholder' => 'Name, generic name, strength, SKU, barcode',
 ];

@@ -7,7 +7,11 @@
             <div>
                 <Link href="/products" class="small text-decoration-none">← Products</Link>
                 <h1 class="h4 mb-1">{{ product.name }}</h1>
-                <p v-if="product.generic_name" class="text-muted small mb-1">{{ product.generic_name }}</p>
+                <p v-if="product.generic_name || product.strength" class="text-muted small mb-1">
+                    <span v-if="product.generic_name">{{ product.generic_name }}</span>
+                    <span v-if="product.generic_name && product.strength"> · </span>
+                    <span v-if="product.strength">{{ product.strength }}</span>
+                </p>
                 <p class="text-muted small mb-0">
                     SKU <strong>{{ product.sku }}</strong>
                     <span v-if="product.barcode" class="ms-2">· Barcode {{ product.barcode }}</span>
@@ -107,6 +111,8 @@
                     <div class="card-header bg-white fw-semibold">Product details</div>
                     <div class="card-body">
                         <dl class="row mb-0 small">
+                            <dt class="col-sm-4">{{ t('catalog.strength') }}</dt>
+                            <dd class="col-sm-8">{{ product.strength || '—' }}</dd>
                             <dt class="col-sm-4">Type</dt>
                             <dd class="col-sm-8">
                                 <ProductTypeLabel

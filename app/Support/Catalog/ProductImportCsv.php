@@ -11,6 +11,7 @@ final class ProductImportCsv
     public const HEADERS = [
         'name',
         'generic_name',
+        'strength',
         'sku',
         'barcode',
         'product_type',
@@ -40,8 +41,9 @@ final class ProductImportCsv
     {
         return [
             [
-                'Napa Extend 500mg',
+                'Napa Extend',
                 'Paracetamol',
+                '500 mg',
                 'NAPA-500',
                 '8801234567890',
                 'tablet',
@@ -66,6 +68,7 @@ final class ProductImportCsv
             [
                 'Tusca Syrup 100ml',
                 'Ambroxol',
+                '15 mg/5 ml',
                 'TUS-100',
                 '',
                 'syrup',

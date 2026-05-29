@@ -34,7 +34,7 @@ class ProductImportTest extends TestCase
         $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
 
         $csv = $this->csvHeaderLine()."\n";
-        $csv .= 'Vitamin C 500mg,Ascorbic acid,VIT-C-500,,tablet,strip,10,,,general,Demo Labs,,10,18,,,Immune support,5,,,,1'."\n";
+        $csv .= 'Vitamin C 500mg,Ascorbic acid,500 mg,VIT-C-500,,tablet,strip,10,,,general,Demo Labs,,10,18,,,Immune support,5,,,,1'."\n";
 
         $file = UploadedFile::fake()->createWithContent('products.csv', $csv);
 
@@ -54,7 +54,7 @@ class ProductImportTest extends TestCase
         $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
 
         $csv = $this->csvHeaderLine()."\n";
-        $csv .= 'Vitamin C 500mg,Ascorbic acid,VIT-C-500,,tablet,strip,10,,,general,Demo Labs,,10,18,,,Immune support,5,,,,1'."\n";
+        $csv .= 'Vitamin C 500mg,Ascorbic acid,500 mg,VIT-C-500,,tablet,strip,10,,,general,Demo Labs,,10,18,,,Immune support,5,,,,1'."\n";
 
         $file = UploadedFile::fake()->createWithContent('products.csv', $csv);
 
@@ -65,6 +65,7 @@ class ProductImportTest extends TestCase
         $this->assertDatabaseHas('products', [
             'sku' => 'VIT-C-500',
             'generic_name' => 'Ascorbic acid',
+            'strength' => '500 mg',
         ]);
         $this->assertSame(1, Product::query()->where('sku', 'VIT-C-500')->count());
     }

@@ -162,6 +162,7 @@ final class ImportProductsFromCsvAction
         $data = [
             'name' => $row['name'] ?? '',
             'generic_name' => filled($row['generic_name'] ?? null) ? $row['generic_name'] : null,
+            'strength' => filled($row['strength'] ?? null) ? $row['strength'] : null,
             'sku' => $sku,
             'barcode' => filled($row['barcode'] ?? null) ? $row['barcode'] : null,
             'product_type' => strtolower($row['product_type'] ?? 'other'),

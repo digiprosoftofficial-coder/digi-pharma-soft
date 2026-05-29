@@ -52,6 +52,7 @@ final class ProductService
                 'storage_location_id' => $data['storage_location_id'] ?? null,
                 'name' => $data['name'],
                 'generic_name' => $this->normalizeOptionalString($data['generic_name'] ?? null),
+                'strength' => $this->normalizeOptionalString($data['strength'] ?? null),
                 'sku' => $sku,
                 'barcode' => $barcode,
                 'product_type' => $data['product_type'] ?? 'other',
@@ -172,6 +173,9 @@ final class ProductService
                 'generic_name' => array_key_exists('generic_name', $data)
                     ? $this->normalizeOptionalString($data['generic_name'])
                     : $product->generic_name,
+                'strength' => array_key_exists('strength', $data)
+                    ? $this->normalizeOptionalString($data['strength'])
+                    : $product->strength,
                 'sku' => $data['sku'] ?? $product->sku,
                 'barcode' => array_key_exists('barcode', $data) ? $data['barcode'] : $product->barcode,
                 'product_type' => $data['product_type'] ?? $product->product_type,
