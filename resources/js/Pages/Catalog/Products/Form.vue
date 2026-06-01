@@ -142,6 +142,30 @@
                     </p>
                 </div>
                 <div class="col-md-4">
+                    <label class="form-label">{{ t('catalog.default_markup_percent') }}</label>
+                    <input
+                        v-model="form.default_markup_percent"
+                        type="number"
+                        min="0"
+                        max="1000"
+                        step="0.01"
+                        class="form-control"
+                        :placeholder="t('catalog.default_markup_placeholder')"
+                    />
+                    <p class="form-text small mb-2">{{ t('catalog.default_markup_hint') }}</p>
+                    <div class="alert alert-info small py-2 mb-0">
+                        <div class="fw-semibold mb-1">{{ t('catalog.markup_pricing_help_title') }}</div>
+                        <ul class="mb-0 ps-3">
+                            <li>{{ t('catalog.default_markup_blank_means') }}</li>
+                            <li>{{ t('catalog.default_markup_set_means') }}</li>
+                            <li>{{ t('catalog.default_markup_example') }}</li>
+                        </ul>
+                    </div>
+                    <div v-if="form.errors.default_markup_percent" class="text-danger small mt-1">
+                        {{ form.errors.default_markup_percent }}
+                    </div>
+                </div>
+                <div class="col-md-4">
                     <label class="form-label">Min stock alert</label>
                     <input v-model="form.min_stock" type="number" min="0" class="form-control" />
                 </div>
@@ -657,6 +681,10 @@ const form = useForm({
     wholesale_price:
         existing?.wholesale_price != null && existing.wholesale_price !== '' ? existing.wholesale_price : '',
     vat_percent: existing?.vat_percent != null && existing.vat_percent !== '' ? existing.vat_percent : '',
+    default_markup_percent:
+        existing?.default_markup_percent != null && existing.default_markup_percent !== ''
+            ? existing.default_markup_percent
+            : '',
     short_description: existing?.short_description ?? '',
     image: null,
     remove_image: false,

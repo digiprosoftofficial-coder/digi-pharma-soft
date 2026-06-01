@@ -54,6 +54,9 @@
                                         </select>
                                     </div>
                                     <div v-else class="small text-muted">{{ lineBatchLabel(line) }}</div>
+                                    <div v-if="linePriceSourceHint(line)" class="small" :class="line.uses_markup_pricing ? 'text-primary' : 'text-muted'">
+                                        {{ linePriceSourceHint(line) }}
+                                    </div>
                                 </td>
                                 <td>
                                     <select v-model="line.sell_unit" class="form-select form-select-sm" @change="onUnitChange(line)">
@@ -62,7 +65,16 @@
                                         </option>
                                     </select>
                                 </td>
-                                <td><input v-model.number="line.quantity" type="number" min="0.0001" step="0.0001" class="form-control form-control-sm" /></td>
+                                <td>
+                                    <input
+                                        v-model.number="line.quantity"
+                                        type="number"
+                                        min="1"
+                                        step="1"
+                                        class="form-control form-control-sm"
+                                        @change="normalizeLineQuantity(line)"
+                                    />
+                                </td>
                                 <td><input v-model.number="line.unit_price" type="number" min="0" step="0.0001" class="form-control form-control-sm" /></td>
                                 <td class="text-end">{{ formatMoney(Number(line.quantity || 0) * Number(line.unit_price || 0)) }}</td>
                                 <td><button type="button" class="btn btn-sm btn-outline-danger" @click="cart.splice(idx, 1)">×</button></td>
@@ -99,7 +111,8 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
-import { batchesWithStock, formatBatchLabel, onBatchChange } from '@/composables/usePosBatches';
+import { resolveMarkupPercent, suggestedUnitPrice, unitCostInSellUnit } from '@/composables/useBatchPricing';
+import { batchesWithStock, formatBatchLabel, onBatchChange as syncBatchFields } from '@/composables/usePosBatches';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { defaultSellUnit, unitSalePrice } from '@/composables/useProductUnits';
@@ -135,6 +148,11 @@ async function runSearch() {
     results.value = data.data;
 }
 
+function normalizeLineQuantity(line) {
+    const n = Math.round(Number(line.quantity) || 1);
+    line.quantity = Math.max(1, n);
+}
+
 function searchBatchHint(item) {
     const batches = batchesWithStock(item);
     if (!batches.length) {
@@ -156,11 +174,48 @@ function lineBatchLabel(line) {
     return formatBatchLabel(line.batches?.find((b) => b.id === line.product_batch_id));
 }
 
+function selectedBatch(line) {
+    return line.batches?.find((b) => b.id === line.product_batch_id);
+}
+
+function refreshLinePricing(line) {
+    const batch = selectedBatch(line);
+    if (!batch) {
+        return;
+    }
+    const product = { default_markup_percent: line.default_markup_percent };
+    const suggested = suggestedUnitPrice(batch, product, line.sell_unit, line.unit_options);
+    line.uses_markup_pricing = suggested !== null;
+    line.unit_price =
+        suggested ??
+        unitSalePrice({ units: line.unit_options, sale_price: line.fallback_sale_price }, line.sell_unit);
+}
+
+function linePriceSourceHint(line) {
+    const batch = selectedBatch(line);
+    if (!batch) {
+        return '';
+    }
+    if (line.uses_markup_pricing) {
+        const markup = resolveMarkupPercent(batch, { default_markup_percent: line.default_markup_percent });
+
+        return t('catalog.pos_price_from_markup', {
+            cost: formatMoney(unitCostInSellUnit(batch, line.sell_unit, line.unit_options)),
+            markup: markup ?? 0,
+            price: formatMoney(line.unit_price),
+        });
+    }
+
+    return t('catalog.pos_price_from_catalog');
+}
+
+function onBatchChange(line) {
+    syncBatchFields(line);
+    refreshLinePricing(line);
+}
+
 function onUnitChange(line) {
-    line.unit_price = unitSalePrice(
-        { units: line.unit_options, sale_price: line.fallback_sale_price },
-        line.sell_unit,
-    );
+    refreshLinePricing(line);
 }
 
 function addLine(item) {
@@ -171,28 +226,32 @@ function addLine(item) {
         return;
     }
     const sellUnit = defaultSellUnit(item);
-    cart.value.push({
+    const line = {
         product_batch_id: batch.id,
         batch_no: batch.batch_no,
         expiry_date: batch.expiry_date,
         batches,
+        default_markup_percent: item.default_markup_percent,
         name: item.name,
         sell_unit: sellUnit,
         unit_options: item.units?.length ? item.units : [{ sell_unit: sellUnit, sale_price: item.sale_price }],
         fallback_sale_price: item.sale_price,
         quantity: 1,
-        unit_price: unitSalePrice(item, sellUnit),
-    });
+        unit_price: 0,
+    };
+    refreshLinePricing(line);
+    cart.value.push(line);
 }
 
 function submitSale() {
+    cart.value.forEach(normalizeLineQuantity);
     submitting.value = true;
     router.post(
         '/pos/sales',
         {
             lines: cart.value.map((l) => ({
                 product_batch_id: l.product_batch_id,
-                quantity: l.quantity,
+                quantity: Math.max(1, Math.round(Number(l.quantity) || 1)),
                 sell_unit: l.sell_unit,
                 unit_price: l.unit_price,
             })),

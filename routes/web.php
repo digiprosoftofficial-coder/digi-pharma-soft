@@ -28,6 +28,7 @@ use App\Http\Controllers\Tenant\PosController;
 use App\Http\Controllers\Tenant\CategoryController;
 use App\Http\Controllers\Tenant\StorageLocationController;
 use App\Http\Controllers\Tenant\ManufacturerController;
+use App\Http\Controllers\Tenant\ProductBatchController;
 use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\ProductImportController;
 use App\Http\Controllers\Tenant\ProductTypeController;
@@ -80,6 +81,8 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
             Route::post('/accounts/{ledger_account}/entries', [LedgerEntryController::class, 'store'])->name('accounts.entries.store');
 
             Route::resource('products', ProductController::class);
+            Route::patch('/products/{product}/batches/{batch}/markup', [ProductBatchController::class, 'updateMarkup'])
+                ->name('products.batches.markup');
             Route::resource('categories', CategoryController::class)->except(['show']);
             Route::resource('product-types', ProductTypeController::class)->except(['show']);
             Route::resource('manufacturers', ManufacturerController::class)->except(['show']);

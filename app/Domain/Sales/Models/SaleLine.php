@@ -12,7 +12,7 @@ class SaleLine extends TenantModel
     protected $fillable = [
         'tenant_id', 'sale_id', 'product_id', 'product_batch_id',
         'quantity', 'sell_unit', 'conversion_factor', 'quantity_base',
-        'unit_price', 'line_total',
+        'unit_price', 'unit_cost_at_sale', 'line_total',
     ];
 
     protected function casts(): array
@@ -22,6 +22,7 @@ class SaleLine extends TenantModel
             'conversion_factor' => 'decimal:4',
             'quantity_base' => 'decimal:4',
             'unit_price' => 'decimal:4',
+            'unit_cost_at_sale' => 'decimal:4',
             'line_total' => 'decimal:4',
         ];
     }

@@ -26,7 +26,7 @@ class StorePosSaleRequest extends FormRequest
             'tax' => ['nullable', 'numeric', 'min:0'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.product_batch_id' => ['required', 'integer', Rule::exists('product_batches', 'id')->where('tenant_id', $tenantId)],
-            'lines.*.quantity' => ['required', 'numeric', 'min:0.0001'],
+            'lines.*.quantity' => ['required', 'integer', 'min:1'],
             'lines.*.sell_unit' => ['required', ProductCatalogOptions::sellUnitRule()],
             'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
             'payments' => ['required', 'array', 'min:1'],

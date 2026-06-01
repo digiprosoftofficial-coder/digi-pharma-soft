@@ -22,7 +22,15 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small">Qty</label>
-                    <input v-model.number="line.quantity" type="number" min="0.0001" step="0.0001" class="form-control form-control-sm" required />
+                    <input
+                        v-model.number="line.quantity"
+                        type="number"
+                        min="1"
+                        step="1"
+                        class="form-control form-control-sm"
+                        required
+                        @change="normalizeLineQuantity(line)"
+                    />
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small">Refund unit price ({{ currencyCode() }})</label>
@@ -63,7 +71,13 @@ function addLine() {
     form.lines.push({ product_batch_id: null, quantity: 1, unit_price: 0 });
 }
 
+function normalizeLineQuantity(line) {
+    const n = Math.round(Number(line.quantity) || 1);
+    line.quantity = Math.max(1, n);
+}
+
 function submit() {
+    form.lines.forEach(normalizeLineQuantity);
     form.post('/sales/returns');
 }
 </script>

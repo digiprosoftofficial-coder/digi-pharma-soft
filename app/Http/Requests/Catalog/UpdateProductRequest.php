@@ -22,7 +22,7 @@ class UpdateProductRequest extends FormRequest
         if ($this->has('boxes_per_carton') && $this->input('boxes_per_carton') === '') {
             $this->merge(['boxes_per_carton' => null]);
         }
-        foreach (['generic_name', 'strength', 'short_description', 'wholesale_price', 'vat_percent', 'storage_location_id'] as $field) {
+        foreach (['generic_name', 'strength', 'short_description', 'wholesale_price', 'vat_percent', 'default_markup_percent', 'storage_location_id'] as $field) {
             if ($this->has($field) && $this->input($field) === '') {
                 $this->merge([$field => null]);
             }
@@ -121,6 +121,7 @@ class UpdateProductRequest extends FormRequest
                 ? ['sometimes', 'nullable', 'numeric', 'min:0']
                 : ['prohibited'],
             'vat_percent' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
+            'default_markup_percent' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:1000'],
             'short_description' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'image' => ['nullable', 'image', 'max:5120'],
             'remove_image' => ['sometimes', 'boolean'],

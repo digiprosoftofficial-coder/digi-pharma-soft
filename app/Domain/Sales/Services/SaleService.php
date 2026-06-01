@@ -3,6 +3,7 @@
 namespace App\Domain\Sales\Services;
 
 use App\Domain\Catalog\Models\ProductBatch;
+use App\Support\Catalog\BatchSalePricing;
 use App\Support\Catalog\FefoBatchAllocator;
 use App\Support\Catalog\ProductUnitResolver;
 use InvalidArgumentException;
@@ -95,6 +96,7 @@ final class SaleService
                     'conversion_factor' => $line['conversion_factor'] ?? null,
                     'quantity_base' => $quantityBase,
                     'unit_price' => $line['unit_price'],
+                    'unit_cost_at_sale' => $line['unit_cost_at_sale'] ?? null,
                     'line_total' => $lineTotal,
                 ]);
 
@@ -134,7 +136,7 @@ final class SaleService
 
     /**
      * @param  array<int, array{product_batch_id:int,quantity:float,sell_unit:string,unit_price:float}>  $lines
-     * @return array<int, array{product_batch_id:int,quantity:float,sell_unit:string,conversion_factor:float,quantity_base:float,unit_price:float}>
+     * @return array<int, array{product_batch_id:int,quantity:float,sell_unit:string,conversion_factor:float,quantity_base:float,unit_price:float,unit_cost_at_sale:float}>
      */
     private function allocateCheckoutLines(array $lines): array
     {
@@ -187,6 +189,7 @@ final class SaleService
                 );
                 $chunkBase = (float) $chunk['quantity_base'];
                 $sellQuantity = $chunkBase / $chunkFactor;
+                $unitCostAtSale = BatchSalePricing::unitCostInSellUnit($batch, $product, $sellUnit);
 
                 $expanded[] = [
                     'product_batch_id' => (int) $batch->getKey(),
@@ -195,6 +198,7 @@ final class SaleService
                     'conversion_factor' => $chunkFactor,
                     'quantity_base' => $chunkBase,
                     'unit_price' => $unitPrice,
+                    'unit_cost_at_sale' => $unitCostAtSale,
                 ];
             }
         }

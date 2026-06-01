@@ -37,6 +37,9 @@ class ProductResource extends JsonResource
             ),
             'purchase_price' => (string) $this->purchase_price,
             'sale_price' => (string) $this->sale_price,
+            'default_markup_percent' => $this->default_markup_percent !== null
+                ? (string) $this->default_markup_percent
+                : null,
             'wholesale_price' => $this->wholesale_price !== null ? (string) $this->wholesale_price : null,
             'vat_percent' => $this->vat_percent !== null ? (string) $this->vat_percent : null,
             'short_description' => $this->short_description,

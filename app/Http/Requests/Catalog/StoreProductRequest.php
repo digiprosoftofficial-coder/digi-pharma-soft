@@ -23,7 +23,7 @@ class StoreProductRequest extends FormRequest
         if ($this->has('boxes_per_carton') && $this->input('boxes_per_carton') === '') {
             $this->merge(['boxes_per_carton' => null]);
         }
-        foreach (['generic_name', 'strength', 'short_description', 'wholesale_price', 'vat_percent', 'sku', 'storage_location_id', 'opening_storage_location_id'] as $field) {
+        foreach (['generic_name', 'strength', 'short_description', 'wholesale_price', 'vat_percent', 'default_markup_percent', 'sku', 'storage_location_id', 'opening_storage_location_id'] as $field) {
             if ($this->has($field) && $this->input($field) === '') {
                 $this->merge([$field => null]);
             }
@@ -86,6 +86,7 @@ class StoreProductRequest extends FormRequest
                 ? ['nullable', 'numeric', 'min:0']
                 : ['prohibited'],
             'vat_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'default_markup_percent' => ['nullable', 'numeric', 'min:0', 'max:1000'],
             'short_description' => ['nullable', 'string', 'max:2000'],
             'image' => ['nullable', 'image', 'max:5120'],
             'product_type' => ['required', ProductCatalogOptions::productTypeRule()],

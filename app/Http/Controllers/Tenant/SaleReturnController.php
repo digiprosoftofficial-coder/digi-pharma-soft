@@ -49,7 +49,7 @@ final class SaleReturnController extends Controller
             'notes' => ['nullable', 'string', 'max:2000'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.product_batch_id' => ['required', 'integer', Rule::exists('product_batches', 'id')->where('tenant_id', $tid)],
-            'lines.*.quantity' => ['required', 'numeric', 'min:0.0001'],
+            'lines.*.quantity' => ['required', 'integer', 'min:1'],
             'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
         ]);
 

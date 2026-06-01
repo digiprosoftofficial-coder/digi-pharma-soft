@@ -15,6 +15,9 @@
                 <p class="text-muted small mb-0">
                     SKU <strong>{{ product.sku }}</strong>
                     <span v-if="product.barcode" class="ms-2">· Barcode {{ product.barcode }}</span>
+                    <span v-if="product.default_markup_percent" class="ms-2">
+                        · {{ t('catalog.default_markup_percent') }} {{ product.default_markup_percent }}%
+                    </span>
                 </p>
             </div>
             <div class="d-flex flex-wrap gap-2">
@@ -49,7 +52,7 @@
             <div class="col-md-4">
                 <div class="card border-0 shadow-sm h-100 border-start border-success border-4">
                     <div class="card-body">
-                        <p class="text-muted small mb-1">Total purchased</p>
+                        <p class="text-muted small mb-1">Purchased (base units)</p>
                         <p class="h4 mb-0">
                             {{ formatQty(purchasedQuantity) }}
                             <span class="fs-6 text-muted text-capitalize">{{ unitLabel(product.base_unit) }}</span>
@@ -60,123 +63,54 @@
             <div class="col-md-4">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body">
-                        <p class="text-muted small mb-1">Status</p>
-                        <span class="badge fs-6" :class="product.is_active ? 'text-bg-success' : 'text-bg-secondary'">
-                            {{ product.is_active ? 'Active' : 'Inactive' }}
-                        </span>
-                        <p class="small text-muted mb-0 mt-2">Min stock alert: {{ product.min_stock ?? 0 }}</p>
+                        <p class="text-muted small mb-2">Stock by sell unit</p>
+                        <ul class="list-unstyled small mb-0">
+                            <li v-for="row in stockByUnit" :key="row.sell_unit" class="d-flex justify-content-between">
+                                <span>{{ unitLabel(row.sell_unit) }}</span>
+                                <strong>{{ formatQty(row.quantity_on_hand) }}</strong>
+                            </li>
+                        </ul>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white fw-semibold">Stock by sell unit</div>
-            <p class="small text-muted px-3 pt-2 mb-0">
-                Current on-hand quantity shown in each configured unit (after sales, purchases, and adjustments).
-            </p>
-            <div class="table-responsive">
-                <table class="table table-sm mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Unit</th>
-                            <th class="text-end">Per {{ unitLabel(product.base_unit) }}</th>
-                            <th class="text-end">On hand</th>
-                            <th class="text-end">Sale price</th>
-                            <th class="text-end">Purchase price</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="row in stockByUnit" :key="row.sell_unit">
-                            <td class="text-capitalize">
-                                {{ unitLabel(row.sell_unit) }}
-                                <span v-if="row.is_default" class="badge text-bg-primary ms-1">Default</span>
-                            </td>
-                            <td class="text-end">{{ formatQty(row.conversion_factor) }}</td>
-                            <td class="text-end fw-semibold">{{ formatQty(row.quantity_on_hand) }}</td>
-                            <td class="text-end">{{ formatMoney(unitSalePrice(product, row.sell_unit)) }}</td>
-                            <td class="text-end">{{ formatMoney(unitPurchasePrice(product, row.sell_unit)) }}</td>
-                        </tr>
-                        <tr v-if="!stockByUnit.length">
-                            <td colspan="5" class="text-muted text-center py-3">No sell units configured.</td>
-                        </tr>
-                    </tbody>
-                </table>
             </div>
         </div>
 
         <div class="row g-3 mb-4">
-            <div class="col-lg-6">
+            <div class="col-lg-8">
                 <div class="card border-0 shadow-sm h-100">
-                    <div class="card-header bg-white fw-semibold">Product details</div>
-                    <div class="card-body">
-                        <dl class="row mb-0 small">
-                            <dt class="col-sm-4">{{ t('catalog.strength') }}</dt>
-                            <dd class="col-sm-8">{{ product.strength || '—' }}</dd>
+                    <div class="card-header bg-white fw-semibold">Details</div>
+                    <div class="card-body small">
+                        <dl class="row mb-0">
                             <dt class="col-sm-4">Type</dt>
-                            <dd class="col-sm-8">
-                                <ProductTypeLabel
-                                    v-if="product.product_type"
-                                    :type="product.product_type"
-                                    :icon-url="product.product_type_icon_url"
-                                />
-                                <span v-else class="text-muted">—</span>
-                            </dd>
-                            <dt class="col-sm-4">Category</dt>
-                            <dd class="col-sm-8">{{ product.category?.name || '—' }}</dd>
-                            <dt class="col-sm-4">Manufacturer</dt>
-                            <dd class="col-sm-8">{{ product.manufacturer?.name || '—' }}</dd>
-                            <dt class="col-sm-4">{{ t('catalog.default_storage_location') }}</dt>
+                            <dd class="col-sm-8"><ProductTypeLabel :type="product.product_type" /></dd>
+                            <dt class="col-sm-4">Default shelf</dt>
                             <dd class="col-sm-8">{{ defaultShelfLabel }}</dd>
-                            <dt class="col-sm-4">Base unit</dt>
-                            <dd class="col-sm-8 text-capitalize">{{ unitLabel(product.base_unit) }}</dd>
-                            <template v-if="product.pieces_per_strip">
-                                <dt class="col-sm-4">Pieces per strip</dt>
-                                <dd class="col-sm-8">{{ formatQty(product.pieces_per_strip) }}</dd>
-                            </template>
-                            <template v-if="product.strips_per_box">
-                                <dt class="col-sm-4">Strips per box</dt>
-                                <dd class="col-sm-8">{{ formatQty(product.strips_per_box) }}</dd>
-                            </template>
-                            <template v-if="product.boxes_per_carton">
-                                <dt class="col-sm-4">Boxes per carton</dt>
-                                <dd class="col-sm-8">{{ formatQty(product.boxes_per_carton) }}</dd>
-                            </template>
-                            <template v-if="wholesaleEnabled">
-                                <dt class="col-sm-4">Wholesale</dt>
-                                <dd class="col-sm-8">{{ product.wholesale_price ? formatMoney(product.wholesale_price) : '—' }}</dd>
-                            </template>
-                            <dt class="col-sm-4">VAT / tax</dt>
-                            <dd class="col-sm-8">{{ product.vat_percent ? `${formatQty(product.vat_percent)}%` : '—' }}</dd>
-                            <dt class="col-sm-4">Default sale</dt>
-                            <dd class="col-sm-8">{{ formatMoney(product.sale_price) }}</dd>
-                            <template v-if="product.short_description">
-                                <dt class="col-sm-4">Description</dt>
-                                <dd class="col-sm-8">{{ product.short_description }}</dd>
-                            </template>
+                            <dt class="col-sm-4">Sell units</dt>
+                            <dd class="col-sm-8">
+                                <span v-for="u in product.units" :key="u.sell_unit" class="me-2">
+                                    {{ unitLabel(u.sell_unit) }}: {{ formatMoney(u.sale_price) }}
+                                    <span v-if="u.is_default" class="text-muted">(default)</span>
+                                </span>
+                            </dd>
+                            <dt v-if="wholesaleEnabled && product.wholesale_price" class="col-sm-4">Wholesale</dt>
+                            <dd v-if="wholesaleEnabled && product.wholesale_price" class="col-sm-8">
+                                {{ formatMoney(product.wholesale_price) }}
+                            </dd>
                         </dl>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3">
+            <div class="col-lg-4">
                 <div class="card border-0 shadow-sm h-100">
-                    <div class="card-header bg-white fw-semibold">Image</div>
                     <div class="card-body text-center">
                         <img
                             v-if="product.image_url"
                             :src="product.image_url"
                             :alt="product.name"
-                            class="img-fluid rounded border"
+                            class="img-fluid rounded border mb-2"
                             style="max-height: 160px"
                         />
-                        <p v-else class="text-muted small mb-0">No image.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3">
-                <div class="card border-0 shadow-sm h-100 text-center">
-                    <div class="card-header bg-white fw-semibold">Barcode label</div>
-                    <div class="card-body">
+                        <p v-else class="text-muted small mb-2">No image</p>
                         <img :src="`/barcodes/${product.id}`" alt="Barcode" class="border rounded bg-white p-2" style="max-height: 80px" />
                     </div>
                 </div>
@@ -184,7 +118,10 @@
         </div>
 
         <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white fw-semibold">Batches</div>
+            <div class="card-header bg-white">
+                <div class="fw-semibold">Batches</div>
+                <p class="small text-muted mb-0 mt-1">{{ t('catalog.batch_markup_help') }}</p>
+            </div>
             <div class="table-responsive">
                 <table class="table table-sm table-striped mb-0">
                     <thead class="table-light">
@@ -194,6 +131,8 @@
                             <th>{{ t('catalog.storage_location_shelf') }}</th>
                             <th class="text-end">On hand ({{ unitLabel(product.base_unit) }})</th>
                             <th class="text-end">Unit cost</th>
+                            <th class="text-end">{{ t('catalog.batch_markup_percent') }}</th>
+                            <th class="text-end">{{ t('catalog.batch_suggested_price') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -203,16 +142,37 @@
                             <td class="small">{{ batchShelfLabel(b) }}</td>
                             <td class="text-end fw-semibold">{{ formatQty(b.quantity_on_hand) }}</td>
                             <td class="text-end">{{ formatMoney(b.purchase_unit_cost) }}</td>
+                            <td class="text-end">
+                                <form
+                                    v-if="can('products.manage')"
+                                    class="d-inline-flex gap-1 justify-content-end align-items-center"
+                                    @submit.prevent="saveBatchMarkup(b)"
+                                >
+                                    <input
+                                        v-model="batchMarkups[b.id]"
+                                        type="number"
+                                        min="0"
+                                        max="1000"
+                                        step="0.01"
+                                        class="form-control form-control-sm text-end"
+                                        style="width: 4.5rem"
+                                        :placeholder="product.default_markup_percent ?? '—'"
+                                    />
+                                    <button type="submit" class="btn btn-sm btn-outline-primary py-0">✓</button>
+                                </form>
+                                <span v-else>{{ displayMarkup(b) }}</span>
+                            </td>
+                            <td class="text-end text-muted">{{ batchSuggestedLabel(b) }}</td>
                         </tr>
                         <tr v-if="!batches.length">
-                            <td colspan="5" class="text-muted text-center py-4">No batches in stock yet.</td>
+                            <td colspan="7" class="text-muted text-center py-4">No batches in stock yet.</td>
                         </tr>
                     </tbody>
                     <tfoot v-if="batches.length" class="table-light">
                         <tr>
                             <th colspan="3">Total</th>
                             <th class="text-end">{{ formatQty(stockBase) }}</th>
-                            <th></th>
+                            <th colspan="3"></th>
                         </tr>
                     </tfoot>
                 </table>
@@ -224,12 +184,13 @@
 <script setup>
 import ProductTypeLabel from '@/Components/Catalog/ProductTypeLabel.vue';
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { suggestedUnitPrice } from '@/composables/useBatchPricing';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
-import { unitLabel, unitPurchasePrice, unitSalePrice } from '@/composables/useProductUnits';
+import { defaultSellUnit, unitLabel, unitSalePrice } from '@/composables/useProductUnits';
 import { usePermissions } from '@/composables/usePermissions';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, reactive, watch } from 'vue';
 
 const props = defineProps({
     product: { type: Object, required: true },
@@ -245,6 +206,28 @@ const wholesaleEnabled = computed(() => page.props.features?.wholesale_pricing ?
 const { t } = useLocale();
 const { formatMoney } = useMoney();
 const { can } = usePermissions();
+
+const batchMarkups = reactive({});
+
+const batches = computed(() => {
+    const raw = props.product.batches;
+    if (!raw) {
+        return [];
+    }
+    return Array.isArray(raw) ? raw : raw.data ?? [];
+});
+
+watch(
+    batches,
+    (list) => {
+        for (const b of list) {
+            if (batchMarkups[b.id] === undefined) {
+                batchMarkups[b.id] = b.markup_percent ?? '';
+            }
+        }
+    },
+    { immediate: true },
+);
 
 function formatLocation(loc) {
     if (!loc) {
@@ -262,20 +245,36 @@ function batchShelfLabel(batch) {
     return formatLocation(batch.effective_storage_location ?? batch.storage_location);
 }
 
-const batches = computed(() => {
-    const raw = props.product.batches;
-    if (!raw) {
-        return [];
-    }
-    return Array.isArray(raw) ? raw : raw.data ?? [];
-});
-
 function formatQty(value) {
     const n = Number(value ?? 0);
     if (Number.isNaN(n)) {
         return '0';
     }
     return n % 1 === 0 ? String(n) : n.toFixed(2);
+}
+
+function displayMarkup(batch) {
+    const value = batch.markup_percent ?? props.product.default_markup_percent;
+    return value != null && value !== '' ? `${value}%` : '—';
+}
+
+function batchSuggestedLabel(batch) {
+    const sellUnit = defaultSellUnit(props.product);
+    const suggested = suggestedUnitPrice(batch, props.product, sellUnit, props.product.units);
+    if (suggested !== null) {
+        return formatMoney(suggested);
+    }
+
+    return formatMoney(unitSalePrice(props.product, sellUnit));
+}
+
+function saveBatchMarkup(batch) {
+    const value = batchMarkups[batch.id];
+    router.patch(
+        `/products/${props.product.id}/batches/${batch.id}/markup`,
+        { markup_percent: value === '' || value === null ? null : value },
+        { preserveScroll: true },
+    );
 }
 
 function confirmDelete() {

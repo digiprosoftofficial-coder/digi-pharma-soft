@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Catalog;
 
+use App\Support\Catalog\BatchSalePricing;
 use App\Support\Catalog\EffectiveStorageLocation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -20,6 +21,8 @@ class ProductBatchResource extends JsonResource
             'expiry_date' => $this->expiry_date?->toDateString(),
             'quantity_on_hand' => (string) $this->quantity_on_hand,
             'purchase_unit_cost' => (string) $this->purchase_unit_cost,
+            'markup_percent' => $this->markup_percent !== null ? (string) $this->markup_percent : null,
+            'cost_per_base_unit' => (string) BatchSalePricing::costPerBaseUnit($this->resource),
             'pack_sell_unit' => $this->pack_sell_unit,
             'pack_conversion_factor' => $this->pack_conversion_factor !== null
                 ? (string) $this->pack_conversion_factor

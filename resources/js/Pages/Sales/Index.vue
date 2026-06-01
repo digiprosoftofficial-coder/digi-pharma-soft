@@ -44,7 +44,16 @@
                                                 · {{ batchLineLabel(line.batch) }}
                                             </template>
                                         </span>
-                                        <span class="float-end">{{ formatMoney(line.line_total) }}</span>
+                                        <span class="float-end text-end">
+                                            <span>{{ formatMoney(line.line_total) }}</span>
+                                            <span
+                                                v-if="line.unit_cost_at_sale != null"
+                                                class="d-block text-muted"
+                                                style="font-size: 0.85em"
+                                            >
+                                                {{ lineCostProfitLabel(line) }}
+                                            </span>
+                                        </span>
                                     </li>
                                 </ul>
                             </td>
@@ -58,6 +67,7 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { lineMarginAmount } from '@/composables/useBatchPricing';
 import { formatBatchLabel } from '@/composables/usePosBatches';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
@@ -81,5 +91,12 @@ function batchLineLabel(batch) {
     }
 
     return label;
+}
+
+function lineCostProfitLabel(line) {
+    const cost = Number(line.unit_cost_at_sale ?? 0);
+    const profit = lineMarginAmount(line.quantity, line.unit_price, cost);
+
+    return `${t('catalog.sale_line_cost', { cost: formatMoney(cost) })} · ${t('catalog.sale_line_profit', { amount: formatMoney(profit) })}`;
 }
 </script>
