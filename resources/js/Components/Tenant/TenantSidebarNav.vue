@@ -107,6 +107,7 @@ const { can } = usePermissions();
 const page = usePage();
 
 const usesPlatform = computed(() => page.props.auth?.user?.uses_platform_dashboard === true);
+const bulkImportEnabled = computed(() => page.props.features?.bulk_import ?? true);
 
 const url = computed(() => page.url || '');
 function pathNow() {
@@ -172,7 +173,7 @@ const sectionsConfig = computed(() => [
             { href: '/product-types', icon: 'tag', label: t('tenant_nav.product_types'), show: can('product_types.view'), match: 'prefix' },
             { href: '/manufacturers', icon: 'factory', label: t('tenant_nav.manufacturers'), show: can('manufacturers.view'), match: 'prefix' },
             { href: '/storage-locations', icon: 'inventory', label: t('tenant_nav.storage_locations'), show: can('storage_locations.view'), match: 'prefix' },
-            { href: '/catalog/import', icon: 'upload', label: t('tenant_nav.bulk_import'), show: can('products.manage'), match: 'prefix' },
+            { href: '/catalog/import', icon: 'upload', label: t('tenant_nav.bulk_import'), show: can('products.manage') && bulkImportEnabled.value, match: 'prefix' },
         ],
     },
     {

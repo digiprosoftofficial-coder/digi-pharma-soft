@@ -204,6 +204,8 @@ final class PlatformTenantController extends Controller
             'internal_notes' => ['nullable', 'string', 'max:5000'],
             'reseller_id' => ['nullable', 'integer', 'exists:resellers,id'],
             'wholesale_pricing_override' => ['nullable', 'string', Rule::in(['inherit', 'on', 'off'])],
+            'max_products_override' => ['nullable'],
+            'max_import_rows_override' => ['nullable'],
         ]);
 
         $tenant->name = $validated['name'];
@@ -227,6 +229,26 @@ final class PlatformTenantController extends Controller
                 unset($settings['features']);
             } else {
                 $settings['features'] = $features;
+            }
+
+            $tenant->settings = $settings;
+        }
+
+        if (array_key_exists('max_products_override', $validated) || array_key_exists('max_import_rows_override', $validated)) {
+            $settings = $tenant->settings ?? [];
+            $limits = $settings['limits'] ?? [];
+
+            if (array_key_exists('max_products_override', $validated)) {
+                $limits = $this->applyLimitOverride($limits, 'max_products', $validated['max_products_override']);
+            }
+            if (array_key_exists('max_import_rows_override', $validated)) {
+                $limits = $this->applyLimitOverride($limits, 'max_import_rows', $validated['max_import_rows_override']);
+            }
+
+            if ($limits === []) {
+                unset($settings['limits']);
+            } else {
+                $settings['limits'] = $limits;
             }
 
             $tenant->settings = $settings;
@@ -358,5 +380,21 @@ final class PlatformTenantController extends Controller
             ['value' => TenantStatus::SUSPENDED, 'label' => __('platform.status_suspended')],
             ['value' => TenantStatus::INACTIVE, 'label' => __('platform.status_inactive')],
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $limits
+     * @return array<string, mixed>
+     */
+    private function applyLimitOverride(array $limits, string $key, mixed $value): array
+    {
+        if ($value === null || $value === '' || $value === 'inherit') {
+            unset($limits[$key]);
+        } else {
+            $int = (int) $value;
+            $limits[$key] = $int > 0 ? $int : null;
+        }
+
+        return $limits;
     }
 }

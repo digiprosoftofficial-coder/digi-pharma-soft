@@ -4,6 +4,8 @@ namespace App\Http\Requests\Catalog;
 
 use App\Support\Catalog\ProductCatalogOptions;
 use App\Support\Tenant\TenantFeatures;
+use App\Support\Tenant\TenantLimits;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -29,11 +31,28 @@ class StoreProductRequest extends FormRequest
         if (! TenantFeatures::wholesalePricingEnabled(tenant())) {
             $this->offsetUnset('wholesale_price');
         }
+
+        if (! TenantFeatures::advancedCatalogEnabled(tenant())) {
+            foreach (TenantFeatures::ADVANCED_CATALOG_FIELDS as $field) {
+                $this->offsetUnset($field);
+            }
+        }
     }
 
     public function authorize(): bool
     {
         return $this->user()?->can('create', \App\Domain\Catalog\Models\Product::class) ?? false;
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            if (TenantLimits::productLimitReached(tenant())) {
+                $validator->errors()->add('name', __('catalog.product_limit_reached', [
+                    'max' => TenantLimits::maxProducts(tenant()),
+                ]));
+            }
+        });
     }
 
     /**

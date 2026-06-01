@@ -30,6 +30,12 @@ class UpdateProductRequest extends FormRequest
         if (! TenantFeatures::wholesalePricingEnabled(tenant())) {
             $this->offsetUnset('wholesale_price');
         }
+
+        if (! TenantFeatures::advancedCatalogEnabled(tenant())) {
+            foreach (TenantFeatures::ADVANCED_CATALOG_FIELDS as $field) {
+                $this->offsetUnset($field);
+            }
+        }
     }
 
     public function authorize(): bool

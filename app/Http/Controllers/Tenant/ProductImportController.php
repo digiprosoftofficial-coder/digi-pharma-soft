@@ -6,6 +6,8 @@ use App\Domain\Catalog\Actions\ImportProductsFromCsvAction;
 use App\Domain\Catalog\Models\Product;
 use App\Http\Controllers\Controller;
 use App\Support\Catalog\ProductImportCsv;
+use App\Support\Tenant\TenantFeatures;
+use App\Support\Tenant\TenantLimits;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -18,22 +20,27 @@ final class ProductImportController extends Controller
 
     public function index(): Response
     {
-        $this->authorize('create', Product::class);
+        $this->authorizeImport();
 
         return Inertia::render('Catalog/Import/Index', [
             'preview' => session('import_preview'),
-            'csvColumns' => ProductImportCsv::HEADERS,
+            'csvColumns' => $this->columns(),
+            'importPreset' => TenantFeatures::importPreset(tenant()),
+            'maxImportRows' => TenantLimits::maxImportRows(tenant()),
+            'remainingProducts' => TenantLimits::remainingProducts(tenant()),
         ]);
     }
 
     public function sample(): StreamedResponse
     {
-        $this->authorize('create', Product::class);
+        $this->authorizeImport();
 
-        return response()->streamDownload(function () {
+        $headers = $this->columns();
+
+        return response()->streamDownload(function () use ($headers) {
             $out = fopen('php://output', 'w');
-            fputcsv($out, ProductImportCsv::HEADERS);
-            foreach (ProductImportCsv::sampleRows() as $row) {
+            fputcsv($out, $headers);
+            foreach (ProductImportCsv::sampleRowsFor($headers) as $row) {
                 fputcsv($out, $row);
             }
             fclose($out);
@@ -42,7 +49,7 @@ final class ProductImportController extends Controller
 
     public function preview(Request $request): RedirectResponse
     {
-        $this->authorize('create', Product::class);
+        $this->authorizeImport();
 
         $request->validate([
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
@@ -55,15 +62,27 @@ final class ProductImportController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $this->authorize('create', Product::class);
+        $this->authorizeImport();
 
         $request->validate([
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
             'skip_duplicates' => ['sometimes', 'boolean'],
         ]);
 
+        $file = $request->file('file');
+
+        $maxRows = TenantLimits::maxImportRows(tenant());
+        if ($maxRows !== null) {
+            $rowCount = $this->import->dataRowCount($file);
+            if ($rowCount > $maxRows) {
+                return back()->withErrors([
+                    'file' => __('catalog.import_rows_limit', ['max' => $maxRows, 'rows' => $rowCount]),
+                ]);
+            }
+        }
+
         $result = $this->import->execute(
-            $request->file('file'),
+            $file,
             $request->boolean('skip_duplicates', true),
         );
 
@@ -74,5 +93,25 @@ final class ProductImportController extends Controller
                 'skipped' => $result['skipped'],
                 'errors' => count($result['errors']),
             ]));
+    }
+
+    private function authorizeImport(): void
+    {
+        $this->authorize('create', Product::class);
+
+        abort_unless(TenantFeatures::bulkImportEnabled(tenant()), 403);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function columns(): array
+    {
+        return ProductImportCsv::columnsForPreset(
+            TenantFeatures::importPreset(tenant()),
+            TenantFeatures::advancedCatalogEnabled(tenant()),
+            TenantFeatures::wholesalePricingEnabled(tenant()),
+            TenantFeatures::importColumns(tenant()),
+        );
     }
 }

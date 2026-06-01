@@ -7,10 +7,17 @@
             Upload a CSV with the columns below. <code>name</code> is required; <code>sku</code> is optional (auto-generated if empty).
             Use existing <code>category_slug</code> and <code>storage_location_code</code> values from your catalog.
         </p>
-        <p class="small text-muted mb-3">
-            <span class="d-block fw-semibold text-body">Columns:</span>
-            {{ columnList }}
-        </p>
+        <div class="small text-muted mb-3">
+            <span class="d-block fw-semibold text-body">
+                Your plan: <span class="badge text-bg-primary">{{ presetLabel }}</span>
+                <span class="text-muted fw-normal ms-2">({{ csvColumns.length }} columns)</span>
+            </span>
+            <span class="d-block mt-1">{{ columnList }}</span>
+        </div>
+        <ul v-if="maxImportRows !== null || remainingProducts !== null" class="small text-muted mb-3 ps-3">
+            <li v-if="maxImportRows !== null">Your plan allows up to <strong>{{ maxImportRows }}</strong> rows per upload.</li>
+            <li v-if="remainingProducts !== null">You can still add <strong>{{ remainingProducts }}</strong> more products on your plan.</li>
+        </ul>
         <a href="/catalog/import/sample" class="btn btn-sm btn-outline-secondary mb-3">Download sample CSV</a>
 
         <form class="card border-0 shadow-sm card-body mb-3" @submit.prevent="runPreview">
@@ -22,6 +29,7 @@
         </form>
 
         <form v-if="selectedFile" class="card border-0 shadow-sm card-body mb-3" @submit.prevent="runImport">
+            <div v-if="importForm.errors.file" class="alert alert-danger small py-2">{{ importForm.errors.file }}</div>
             <div class="form-check mb-2">
                 <input id="skip" v-model="importForm.skip_duplicates" type="checkbox" class="form-check-input" />
                 <label class="form-check-label" for="skip">Skip duplicate SKUs</label>
@@ -85,7 +93,19 @@ import { computed, ref } from 'vue';
 const props = defineProps({
     preview: { type: Object, default: null },
     csvColumns: { type: Array, default: () => [] },
+    importPreset: { type: String, default: 'pro' },
+    maxImportRows: { type: Number, default: null },
+    remainingProducts: { type: Number, default: null },
 });
+
+const presetLabels = {
+    basic: 'Basic',
+    standard: 'Standard',
+    pro: 'Pro',
+    custom: 'Custom',
+};
+
+const presetLabel = computed(() => presetLabels[props.importPreset] || 'Pro');
 
 const columnList = computed(() =>
     (props.csvColumns.length ? props.csvColumns : []).join(', '),

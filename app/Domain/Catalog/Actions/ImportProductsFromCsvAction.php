@@ -9,6 +9,7 @@ use App\Domain\Catalog\Models\StorageLocation;
 use App\Domain\Catalog\Services\ProductService;
 use App\Support\Catalog\ProductCatalogOptions;
 use App\Support\Tenant\TenantFeatures;
+use App\Support\Tenant\TenantLimits;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -27,10 +28,21 @@ final class ImportProductsFromCsvAction
         $skipped = 0;
         $errors = [];
 
-        DB::transaction(function () use ($preview, $skipDuplicates, &$created, &$skipped, &$errors) {
+        $maxProducts = TenantLimits::maxProducts(tenant());
+        $currentCount = Product::query()->count();
+
+        DB::transaction(function () use ($preview, $skipDuplicates, $maxProducts, $currentCount, &$created, &$skipped, &$errors) {
             foreach ($preview['rows'] as $entry) {
                 if (! empty($entry['errors'])) {
                     $errors[] = ['row' => $entry['row'], 'messages' => $entry['errors']];
+
+                    continue;
+                }
+
+                if ($maxProducts !== null && ($currentCount + $created) >= $maxProducts) {
+                    $errors[] = ['row' => $entry['row'], 'messages' => [
+                        __('catalog.product_limit_reached', ['max' => $maxProducts]),
+                    ]];
 
                     continue;
                 }
@@ -72,6 +84,30 @@ final class ImportProductsFromCsvAction
             ->log('Products imported from CSV');
 
         return compact('created', 'skipped', 'errors');
+    }
+
+    /**
+     * Count data rows (excluding the header) in the uploaded CSV.
+     */
+    public function dataRowCount(UploadedFile $file): int
+    {
+        $handle = fopen($file->getRealPath(), 'r');
+        if ($handle === false) {
+            return 0;
+        }
+
+        fgetcsv($handle);
+        $count = 0;
+        while (($line = fgetcsv($handle)) !== false) {
+            if ($line === [null] || $line === []) {
+                continue;
+            }
+            $count++;
+        }
+
+        fclose($handle);
+
+        return $count;
     }
 
     /**
@@ -158,11 +194,12 @@ final class ImportProductsFromCsvAction
         }
 
         $sku = filled($row['sku'] ?? null) ? strtoupper($row['sku']) : null;
+        $advancedCatalog = TenantFeatures::advancedCatalogEnabled(tenant());
 
         $data = [
             'name' => $row['name'] ?? '',
-            'generic_name' => filled($row['generic_name'] ?? null) ? $row['generic_name'] : null,
-            'strength' => filled($row['strength'] ?? null) ? $row['strength'] : null,
+            'generic_name' => $advancedCatalog && filled($row['generic_name'] ?? null) ? $row['generic_name'] : null,
+            'strength' => $advancedCatalog && filled($row['strength'] ?? null) ? $row['strength'] : null,
             'sku' => $sku,
             'barcode' => filled($row['barcode'] ?? null) ? $row['barcode'] : null,
             'product_type' => strtolower($row['product_type'] ?? 'other'),
@@ -192,10 +229,10 @@ final class ImportProductsFromCsvAction
         if (filled($row['boxes_per_carton'] ?? null)) {
             $data['boxes_per_carton'] = (float) $row['boxes_per_carton'];
         }
-        if (filled($row['short_description'] ?? null)) {
+        if ($advancedCatalog && filled($row['short_description'] ?? null)) {
             $data['short_description'] = $row['short_description'];
         }
-        if (filled($row['vat_percent'] ?? null)) {
+        if ($advancedCatalog && filled($row['vat_percent'] ?? null)) {
             $data['vat_percent'] = (float) $row['vat_percent'];
         }
         if (TenantFeatures::wholesalePricingEnabled(tenant()) && filled($row['wholesale_price'] ?? null)) {

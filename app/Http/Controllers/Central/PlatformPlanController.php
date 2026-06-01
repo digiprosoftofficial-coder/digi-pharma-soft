@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Central;
 
 use App\Domain\Billing\Models\SubscriptionPlan;
 use App\Http\Controllers\Controller;
+use App\Support\Catalog\ProductImportCsv;
 use App\Support\Platform\PlatformSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,6 +31,8 @@ final class PlatformPlanController extends Controller
         return Inertia::render('Platform/Plans/Form', [
             'plan' => null,
             'currency' => PlatformSettings::defaultCurrency(),
+            'importPresets' => ProductImportCsv::PRESETS,
+            'importColumns' => ProductImportCsv::HEADERS,
         ]);
     }
 
@@ -51,6 +54,8 @@ final class PlatformPlanController extends Controller
         return Inertia::render('Platform/Plans/Form', [
             'plan' => $plan,
             'currency' => PlatformSettings::defaultCurrency(),
+            'importPresets' => ProductImportCsv::PRESETS,
+            'importColumns' => ProductImportCsv::HEADERS,
         ]);
     }
 
@@ -89,14 +94,47 @@ final class PlatformPlanController extends Controller
             'features.pos' => ['boolean'],
             'features.reports' => ['boolean'],
             'features.wholesale_pricing' => ['boolean'],
+            'features.bulk_import' => ['boolean'],
+            'features.advanced_catalog' => ['boolean'],
+            'features.import_preset' => ['nullable', 'string', Rule::in(ProductImportCsv::PRESETS)],
+            'features.import_columns' => ['nullable', 'array'],
+            'features.import_columns.*' => ['string', Rule::in(ProductImportCsv::HEADERS)],
+            'limits' => ['nullable', 'array'],
+            'limits.max_products' => ['nullable', 'integer', 'min:0', 'max:1000000'],
+            'limits.max_import_rows' => ['nullable', 'integer', 'min:0', 'max:100000'],
         ]);
+
+        $importPreset = $request->input('features.import_preset', ProductImportCsv::PRESET_PRO);
+        $importColumns = $importPreset === ProductImportCsv::PRESET_CUSTOM
+            ? array_values(array_filter((array) $request->input('features.import_columns', [])))
+            : null;
 
         $validated['features'] = [
             'pos' => $request->boolean('features.pos', true),
             'reports' => $request->boolean('features.reports', true),
             'wholesale_pricing' => $request->boolean('features.wholesale_pricing', false),
+            'bulk_import' => $request->boolean('features.bulk_import', true),
+            'advanced_catalog' => $request->boolean('features.advanced_catalog', true),
+            'import_preset' => $importPreset,
+            'import_columns' => $importColumns,
+        ];
+
+        $validated['limits'] = [
+            'max_products' => self::nullableLimit($request->input('limits.max_products')),
+            'max_import_rows' => self::nullableLimit($request->input('limits.max_import_rows')),
         ];
 
         return $validated;
+    }
+
+    private static function nullableLimit(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $int = (int) $value;
+
+        return $int > 0 ? $int : null;
     }
 }

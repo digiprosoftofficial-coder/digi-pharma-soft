@@ -74,6 +74,32 @@
                     }}
                 </p>
             </div>
+            <div class="row g-2 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">{{ t('platform.limit_max_products_override') }}</label>
+                    <input
+                        v-model="form.max_products_override"
+                        type="text"
+                        class="form-control"
+                        :placeholder="t('platform.limit_override_inherit_placeholder')"
+                    />
+                    <p class="form-text small mb-0">
+                        {{ t('platform.limit_override_help', { plan: formatLimit(tenant.plan_max_products), effective: formatLimit(tenant.max_products_effective) }) }}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{{ t('platform.limit_max_import_rows_override') }}</label>
+                    <input
+                        v-model="form.max_import_rows_override"
+                        type="text"
+                        class="form-control"
+                        :placeholder="t('platform.limit_override_inherit_placeholder')"
+                    />
+                    <p class="form-text small mb-0">
+                        {{ t('platform.limit_override_help', { plan: formatLimit(tenant.plan_max_import_rows), effective: formatLimit(tenant.max_import_rows_effective) }) }}
+                    </p>
+                </div>
+            </div>
             <div class="mb-3">
                 <label class="form-label">{{ t('platform.internal_notes') }}</label>
                 <textarea
@@ -107,6 +133,20 @@ const { t } = useLocale();
 
 const initialSubscriptionEnds = isoToDateInput(props.tenant.subscription_ends_at);
 
+function initLimitOverride(val) {
+    if (val === 'inherit' || val === null || val === undefined) {
+        return '';
+    }
+    return String(val);
+}
+
+function formatLimit(val) {
+    if (val === null || val === undefined) {
+        return t('platform.limit_unlimited_placeholder');
+    }
+    return String(val);
+}
+
 const form = useForm({
     name: props.tenant.name,
     is_active: props.tenant.is_active,
@@ -116,6 +156,8 @@ const form = useForm({
     internal_notes: props.tenant.internal_notes ?? '',
     reseller_id: props.tenant.reseller_id ?? null,
     wholesale_pricing_override: props.tenant.wholesale_pricing_override ?? 'inherit',
+    max_products_override: initLimitOverride(props.tenant.max_products_override),
+    max_import_rows_override: initLimitOverride(props.tenant.max_import_rows_override),
 });
 
 const { subscriptionInputKey, onSubscriptionEndsChange, committedSubscriptionEnds } = useSubscriptionEndsConfirm(

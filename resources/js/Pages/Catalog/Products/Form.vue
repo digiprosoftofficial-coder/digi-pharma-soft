@@ -9,12 +9,12 @@
                     <input v-model="form.name" type="text" class="form-control" required />
                     <div v-if="form.errors.name" class="text-danger small">{{ form.errors.name }}</div>
                 </div>
-                <div class="col-md-4">
+                <div v-if="advancedCatalogEnabled" class="col-md-4">
                     <label class="form-label">Generic name <span class="text-muted fw-normal">(optional)</span></label>
                     <input v-model="form.generic_name" type="text" class="form-control" placeholder="e.g. Paracetamol" />
                     <div v-if="form.errors.generic_name" class="text-danger small">{{ form.errors.generic_name }}</div>
                 </div>
-                <div class="col-md-2">
+                <div v-if="advancedCatalogEnabled" class="col-md-2">
                     <label class="form-label">{{ t('catalog.strength') }} <span class="text-muted fw-normal">(optional)</span></label>
                     <input v-model="form.strength" type="text" class="form-control" :placeholder="t('catalog.strength_placeholder')" />
                     <div v-if="form.errors.strength" class="text-danger small">{{ form.errors.strength }}</div>
@@ -39,7 +39,7 @@
                     <input v-model="form.wholesale_price" type="number" min="0" step="0.01" class="form-control" />
                     <div v-if="form.errors.wholesale_price" class="text-danger small">{{ form.errors.wholesale_price }}</div>
                 </div>
-                <div class="col-md-4">
+                <div v-if="advancedCatalogEnabled" class="col-md-4">
                     <label class="form-label">VAT / tax % <span class="text-muted fw-normal">(optional)</span></label>
                     <input v-model="form.vat_percent" type="number" min="0" max="100" step="0.01" class="form-control" placeholder="e.g. 5" />
                     <div v-if="form.errors.vat_percent" class="text-danger small">{{ form.errors.vat_percent }}</div>
@@ -59,7 +59,7 @@
                         <label class="form-check-label small" for="remove_image">Remove current image</label>
                     </div>
                 </div>
-                <div class="col-12">
+                <div v-if="advancedCatalogEnabled" class="col-12">
                     <label class="form-label">Short description <span class="text-muted fw-normal">(optional)</span></label>
                     <textarea v-model="form.short_description" class="form-control" rows="2" maxlength="2000" />
                     <div v-if="form.errors.short_description" class="text-danger small">{{ form.errors.short_description }}</div>
@@ -422,6 +422,7 @@ const { t } = useLocale();
 
 const page = usePage();
 const wholesaleEnabled = computed(() => page.props.features?.wholesale_pricing ?? false);
+const advancedCatalogEnabled = computed(() => page.props.features?.advanced_catalog ?? true);
 
 const props = defineProps({
     product: { type: Object, default: null },
@@ -1001,10 +1002,10 @@ function buildPayload() {
         wholesale_price: wholesaleEnabled.value
             ? normalizeOptionalNumberForSubmit(form.wholesale_price)
             : null,
-        vat_percent: normalizeOptionalNumberForSubmit(form.vat_percent),
-        generic_name: form.generic_name?.trim() || null,
-        strength: form.strength?.trim() || null,
-        short_description: form.short_description?.trim() || null,
+        vat_percent: advancedCatalogEnabled.value ? normalizeOptionalNumberForSubmit(form.vat_percent) : null,
+        generic_name: advancedCatalogEnabled.value ? form.generic_name?.trim() || null : null,
+        strength: advancedCatalogEnabled.value ? form.strength?.trim() || null : null,
+        short_description: advancedCatalogEnabled.value ? form.short_description?.trim() || null : null,
         units: form.units.map((row) => ({
             sell_unit: row.sell_unit,
             conversion_factor:

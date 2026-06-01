@@ -7,12 +7,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SubscriptionPlan extends Model
 {
-    protected $fillable = ['name', 'slug', 'price_cents', 'trial_days', 'features'];
+    protected $fillable = ['name', 'slug', 'price_cents', 'trial_days', 'features', 'limits'];
 
     protected function casts(): array
     {
         return [
             'features' => 'array',
+            'limits' => 'array',
         ];
     }
 

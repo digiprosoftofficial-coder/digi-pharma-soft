@@ -40,6 +40,12 @@ final class TenantPresenter
             'wholesale_pricing_override' => TenantFeatures::wholesalePricingOverrideMode($tenant),
             'wholesale_pricing_enabled' => TenantFeatures::wholesalePricingEnabled($tenant),
             'plan_wholesale_pricing' => TenantFeatures::fromPlan($tenant, TenantFeatures::WHOLESALE_PRICING),
+            'max_products_override' => TenantLimits::maxProductsOverrideMode($tenant),
+            'max_products_effective' => TenantLimits::maxProducts($tenant),
+            'plan_max_products' => TenantLimits::fromPlanLimit($tenant, TenantLimits::MAX_PRODUCTS),
+            'max_import_rows_override' => TenantLimits::maxImportRowsOverrideMode($tenant),
+            'max_import_rows_effective' => TenantLimits::maxImportRows($tenant),
+            'plan_max_import_rows' => TenantLimits::fromPlanLimit($tenant, TenantLimits::MAX_IMPORT_ROWS),
             'internal_notes' => $tenant->internal_notes,
             'users' => $tenant->relationLoaded('users')
                 ? $tenant->users->map(fn ($u) => [
