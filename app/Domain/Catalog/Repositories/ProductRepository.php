@@ -55,7 +55,11 @@ final class ProductRepository
         $q = Product::query()->with([
             'units',
             'storageLocation',
-            'batches' => fn ($b) => $b->with('storageLocation')->orderBy('expiry_date'),
+            'batches' => fn ($b) => $b->with('storageLocation')
+                ->where('quantity_on_hand', '>', 0)
+                ->orderByRaw('expiry_date IS NULL')
+                ->orderBy('expiry_date')
+                ->orderBy('id'),
         ]);
 
         $q->where(function ($w) use ($term) {

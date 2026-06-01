@@ -3,6 +3,7 @@
 namespace App\Domain\Sales\Services;
 
 use App\Domain\Catalog\Models\ProductBatch;
+use App\Support\Catalog\FefoBatchAllocator;
 use App\Support\Catalog\ProductUnitResolver;
 use InvalidArgumentException;
 use App\Domain\Inventory\Models\StockMovement;
@@ -17,46 +18,10 @@ use RuntimeException;
 
 final class SaleService
 {
+    public function __construct(private readonly FefoBatchAllocator $fefo) {}
+
     /**
      * @param  array<int, array{product_batch_id:int,quantity:float,sell_unit:string,unit_price:float}>  $lines
-     * @return array<int, array{product_batch_id:int,quantity:float,sell_unit:string,conversion_factor:float,quantity_base:float,unit_price:float}>
-     */
-    public function resolveCheckoutLines(array $lines): array
-    {
-        return collect($lines)->map(function (array $line) {
-            $batch = ProductBatch::query()->with('product.units')->findOrFail($line['product_batch_id']);
-            $sellUnit = (string) $line['sell_unit'];
-
-            try {
-                $unit = ProductUnitResolver::forProduct($batch->product, $sellUnit);
-            } catch (InvalidArgumentException $e) {
-                $default = $batch->product->defaultUnit();
-                if (! $default) {
-                    throw $e;
-                }
-                $unit = $default;
-                $sellUnit = $unit->sell_unit;
-            }
-
-            $factor = ProductUnitResolver::conversionFactorForBatch(
-                $batch->product,
-                $batch,
-                $sellUnit,
-            );
-
-            return [
-                'product_batch_id' => $line['product_batch_id'],
-                'quantity' => $line['quantity'],
-                'sell_unit' => $sellUnit,
-                'conversion_factor' => $factor,
-                'quantity_base' => (float) ProductUnitResolver::quantityBase($line['quantity'], $factor),
-                'unit_price' => $line['unit_price'],
-            ];
-        })->all();
-    }
-
-    /**
-     * @param  array<int, array{product_batch_id:int,quantity:float,unit_price:float,sell_unit?:string,conversion_factor?:float,quantity_base?:float}>  $lines
      * @param  array<int, array{method:string,amount:float}>  $payments
      */
     public function checkout(
@@ -68,6 +33,8 @@ final class SaleService
         ?string $couponCode = null,
     ): Sale {
         return DB::transaction(function () use ($customerId, $lines, $payments, $discount, $tax, $couponCode) {
+            $lines = $this->allocateCheckoutLines($lines);
+
             $subtotal = collect($lines)->sum(fn (array $l) => $l['quantity'] * $l['unit_price']);
             $couponDiscount = 0.0;
             if ($couponCode) {
@@ -161,8 +128,78 @@ final class SaleService
                 }
             }
 
-            return $sale->load(['lines', 'payments']);
+            return $sale->load(['lines.batch', 'lines.product', 'payments']);
         });
+    }
+
+    /**
+     * @param  array<int, array{product_batch_id:int,quantity:float,sell_unit:string,unit_price:float}>  $lines
+     * @return array<int, array{product_batch_id:int,quantity:float,sell_unit:string,conversion_factor:float,quantity_base:float,unit_price:float}>
+     */
+    private function allocateCheckoutLines(array $lines): array
+    {
+        $expanded = [];
+
+        foreach ($lines as $line) {
+            $preferredBatch = ProductBatch::query()
+                ->with('product.units')
+                ->lockForUpdate()
+                ->findOrFail($line['product_batch_id']);
+
+            $sellUnit = (string) $line['sell_unit'];
+            $product = $preferredBatch->product;
+
+            try {
+                ProductUnitResolver::forProduct($product, $sellUnit);
+            } catch (InvalidArgumentException $e) {
+                $default = $product->defaultUnit();
+                if (! $default) {
+                    throw $e;
+                }
+                $sellUnit = $default->sell_unit;
+            }
+
+            $factor = ProductUnitResolver::conversionFactorForBatch(
+                $product,
+                $preferredBatch,
+                $sellUnit,
+            );
+
+            $quantityBase = (float) ProductUnitResolver::quantityBase($line['quantity'], $factor);
+            $unitPrice = (float) $line['unit_price'];
+
+            $chunks = $this->fefo->allocateForProduct(
+                (int) $product->getKey(),
+                $quantityBase,
+                (int) $preferredBatch->getKey(),
+            );
+
+            foreach ($chunks as $chunk) {
+                $batch = ProductBatch::query()
+                    ->with('product.units')
+                    ->lockForUpdate()
+                    ->findOrFail($chunk['product_batch_id']);
+
+                $chunkFactor = ProductUnitResolver::conversionFactorForBatch(
+                    $batch->product,
+                    $batch,
+                    $sellUnit,
+                );
+                $chunkBase = (float) $chunk['quantity_base'];
+                $sellQuantity = $chunkBase / $chunkFactor;
+
+                $expanded[] = [
+                    'product_batch_id' => (int) $batch->getKey(),
+                    'quantity' => $sellQuantity,
+                    'sell_unit' => $sellUnit,
+                    'conversion_factor' => $chunkFactor,
+                    'quantity_base' => $chunkBase,
+                    'unit_price' => $unitPrice,
+                ];
+            }
+        }
+
+        return $expanded;
     }
 
     private function nextInvoiceNo(): string

@@ -14,7 +14,11 @@ final class SaleController extends Controller
         abort_unless(auth()->user()?->can('sales.view'), 403);
 
         $sales = Sale::query()
-            ->with('customer')
+            ->with([
+                'customer',
+                'lines.product',
+                'lines.batch',
+            ])
             ->orderByDesc('sold_at')
             ->paginate(20);
 

@@ -17,6 +17,7 @@
                             <div>
                                 <span>{{ item.name }}</span>
                                 <small v-if="shelfHint(item)" class="text-muted d-block">{{ shelfHint(item) }}</small>
+                                <small v-if="searchBatchHint(item)" class="text-muted d-block">{{ searchBatchHint(item) }}</small>
                             </div>
                             <span class="text-muted">{{ item.sku }}</span>
                         </li>
@@ -42,7 +43,20 @@
                             <tr v-for="(line, idx) in cart" :key="idx">
                                 <td>
                                     <div>{{ line.name }}</div>
+                                    <div v-if="line.batches?.length > 1" class="mt-1">
+                                        <select
+                                            v-model.number="line.product_batch_id"
+                                            class="form-select form-select-sm"
+                                            @change="onBatchChange(line)"
+                                        >
+                                            <option v-for="b in line.batches" :key="b.id" :value="b.id">
+                                                {{ formatBatchLabel(b) }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div v-else class="small text-muted">{{ lineBatchLabel(line) }}</div>
                                     <div class="small text-muted">{{ lineStockHint(line) }}</div>
+                                    <div v-if="lineMaySplit(line)" class="small text-warning">{{ t('catalog.pos_may_split_batches') }}</div>
                                 </td>
                                 <td>
                                     <select v-model="line.sell_unit" class="form-select form-select-sm" @change="onUnitChange(line)">
@@ -88,11 +102,14 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { batchesWithStock, formatBatchLabel, onBatchChange, totalBaseStock } from '@/composables/usePosBatches';
 import { useMoney } from '@/composables/useMoney';
 import { defaultSellUnit, stockInSellUnit, unitLabel, unitSalePrice } from '@/composables/useProductUnits';
 import { Head, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import { useLocale } from '@/composables/useLocale';
 
+const { t } = useLocale();
 const { formatMoney, currencyCode } = useMoney();
 
 const q = ref('');
@@ -122,7 +139,7 @@ async function runSearch() {
 }
 
 function shelfHint(item) {
-    const batch = item.batches?.[0];
+    const batch = batchesWithStock(item)[0];
     const loc = batch?.effective_storage_location ?? item.effective_storage_location ?? item.storage_location;
 
     if (!loc) {
@@ -130,6 +147,19 @@ function shelfHint(item) {
     }
 
     return loc.code ? `${loc.name} (${loc.code})` : loc.name;
+}
+
+function searchBatchHint(item) {
+    const batches = batchesWithStock(item);
+    if (!batches.length) {
+        return t('catalog.pos_no_stock');
+    }
+    const first = formatBatchLabel(batches[0]);
+    if (batches.length === 1) {
+        return first;
+    }
+
+    return t('catalog.pos_fefo_batch_hint', { batch: first, count: batches.length });
 }
 
 function formatQty(value) {
@@ -147,16 +177,34 @@ function onUnitChange(line) {
     );
 }
 
+function lineBatchLabel(line) {
+    if (line.batch_no) {
+        return formatBatchLabel({ batch_no: line.batch_no, expiry_date: line.expiry_date });
+    }
+
+    return formatBatchLabel(line.batches?.find((b) => b.id === line.product_batch_id));
+}
+
 function lineStockHint(line) {
-    const avail = stockInSellUnit({
+    const batchAvail = stockInSellUnit({
         baseStock: line.batch_stock,
         baseUnit: line.base_unit,
         sellUnit: line.sell_unit,
         units: line.unit_options,
         piecesPerStrip: line.pieces_per_strip,
     });
+    const totalAvail = stockInSellUnit({
+        baseStock: line.product_stock_base,
+        baseUnit: line.base_unit,
+        sellUnit: line.sell_unit,
+        units: line.unit_options,
+        piecesPerStrip: line.pieces_per_strip,
+    });
     const unit = unitLabel(line.sell_unit);
-    let hint = `In stock: ${formatQty(avail)} ${unit}`;
+    let hint = `${t('catalog.pos_batch_stock', { qty: formatQty(batchAvail), unit })}`;
+    if (line.batches?.length > 1 && totalAvail > batchAvail) {
+        hint += ` · ${t('catalog.pos_total_stock', { qty: formatQty(totalAvail), unit })}`;
+    }
     if (line.sell_unit !== 'piece' && line.pieces_per_strip && line.base_unit === 'strip') {
         const pieces = Number(line.batch_stock) * Number(line.pieces_per_strip);
         hint += ` (${formatQty(pieces)} pieces)`;
@@ -164,19 +212,39 @@ function lineStockHint(line) {
     return hint;
 }
 
+function lineMaySplit(line) {
+    const qtyBase = Number(line.quantity || 0) * conversionToBase(line);
+    const batchBase = Number(line.batch_stock ?? 0);
+
+    return (line.batches?.length ?? 0) > 1 && qtyBase > batchBase + 0.0001;
+}
+
+function conversionToBase(line) {
+    const u = line.unit_options?.find((x) => x.sell_unit === line.sell_unit);
+    const factor = Number(u?.conversion_factor ?? 1);
+
+    return factor > 0 ? factor : 1;
+}
+
 function addLine(item) {
-    const batch = item.batches?.[0];
+    const batches = batchesWithStock(item);
+    const batch = batches[0];
     if (!batch) {
-        alert('No stock batch for this product.');
+        alert(t('catalog.pos_no_stock'));
         return;
     }
     const sellUnit = defaultSellUnit(item);
     cart.value.push({
+        product_id: item.id,
         product_batch_id: batch.id,
+        batch_no: batch.batch_no,
+        expiry_date: batch.expiry_date,
+        batches,
         name: item.name,
         base_unit: item.base_unit ?? 'strip',
         pieces_per_strip: item.pieces_per_strip ? Number(item.pieces_per_strip) : null,
         batch_stock: Number(batch.quantity_on_hand ?? 0),
+        product_stock_base: totalBaseStock(batches),
         sell_unit: sellUnit,
         unit_options: item.units?.length ? item.units : [{ sell_unit: sellUnit, sale_price: item.sale_price }],
         fallback_sale_price: item.sale_price,
