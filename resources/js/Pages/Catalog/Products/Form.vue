@@ -87,7 +87,7 @@
                 <div class="col-md-4">
                     <label class="form-label">Base stock unit</label>
                     <select v-model="form.base_unit" class="form-select" required @change="onBaseUnitChange">
-                        <option v-for="u in catalogOptions.sellUnits" :key="u" :value="u">{{ unitLabel(u) }}</option>
+                        <option v-for="u in availableSellUnits" :key="u" :value="u">{{ unitLabel(u) }}</option>
                     </select>
                     <p class="form-text small mb-0">Inventory is tracked in this unit.</p>
                 </div>
@@ -332,7 +332,7 @@
                                         class="form-select form-select-sm"
                                         :disabled="row.sell_unit === form.base_unit"
                                     >
-                                        <option v-for="u in catalogOptions.sellUnits" :key="u" :value="u">{{ unitLabel(u) }}</option>
+                                        <option v-for="u in availableSellUnits" :key="u" :value="u">{{ unitLabel(u) }}</option>
                                     </select>
                                 </td>
                                 <td>
@@ -414,6 +414,11 @@
 import ProductTypeIcon from '@/Components/Catalog/ProductTypeIcon.vue';
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { productTypeLabel } from '@/composables/useProductType';
+import {
+    defaultBaseUnitForProductType,
+    sellUnitsForProductType,
+    usesStripProductType,
+} from '@/composables/useProductTypeUnits';
 import { useLocale } from '@/composables/useLocale';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
@@ -428,7 +433,12 @@ const props = defineProps({
     product: { type: Object, default: null },
     catalogOptions: {
         type: Object,
-        default: () => ({ productTypes: ['other'], productTypeOptions: [], sellUnits: ['piece', 'strip', 'box', 'carton'] }),
+        default: () => ({
+            productTypes: ['other'],
+            productTypeOptions: [],
+            sellUnits: ['piece', 'strip', 'box', 'carton'],
+            stripProductTypes: ['tablet', 'capsule'],
+        }),
     },
     categories: { type: Array, default: () => [] },
     manufacturers: { type: Array, default: () => [] },
@@ -534,6 +544,9 @@ function initialBoxesPerCarton(units) {
 
 const existing = productData();
 
+const stripProductTypes = computed(() => props.catalogOptions.stripProductTypes ?? ['tablet', 'capsule']);
+const allSellUnits = computed(() => props.catalogOptions.sellUnits ?? ['piece', 'strip', 'box', 'carton']);
+
 const batchLocationEdits = reactive({});
 
 function locationLabel(loc) {
@@ -572,6 +585,9 @@ const totalStock = computed(() =>
 );
 
 const showPiecesPerStrip = computed(() => {
+    if (!usesStripForType.value) {
+        return false;
+    }
     const units = form.units.map((r) => r.sell_unit);
     return units.includes('piece') || units.includes('strip') || form.base_unit === 'piece' || form.base_unit === 'strip';
 });
@@ -582,6 +598,9 @@ const conversionColumnLabel = computed(() => {
 });
 
 const showStripsPerBox = computed(() => {
+    if (!usesStripForType.value) {
+        return false;
+    }
     const units = form.units.map((r) => r.sell_unit);
     return form.base_unit === 'strip' && units.includes('strip') && units.includes('box');
 });
@@ -663,6 +682,23 @@ const form = useForm({
     stock_adjust_batch_id: null,
     stock_adjust_batch_no: '',
 });
+
+const availableSellUnits = computed(() =>
+    sellUnitsForProductType(
+        form.product_type,
+        allSellUnits.value,
+        [form.base_unit, ...form.units.map((r) => r.sell_unit)],
+        stripProductTypes.value,
+    ),
+);
+
+const usesStripForType = computed(() => usesStripProductType(form.product_type, stripProductTypes.value));
+
+function clearStripConversionFields() {
+    form.pieces_per_strip = '';
+    form.strips_per_box = '';
+    form.boxes_per_carton = '';
+}
 
 function ensureBaseUnitRow() {
     if (!form.units.some((r) => r.sell_unit === form.base_unit)) {
@@ -889,6 +925,27 @@ watch(
     },
 );
 
+watch(
+    () => form.product_type,
+    (type) => {
+        if (!usesStripProductType(type, stripProductTypes.value) && form.base_unit === 'strip') {
+            form.base_unit = defaultBaseUnitForProductType(type, stripProductTypes.value);
+            form.units = buildDefaultUnits(form.base_unit);
+            clearStripConversionFields();
+            applyBaseUnitAsDefault();
+            return;
+        }
+
+        const defaultBase = defaultBaseUnitForProductType(type, stripProductTypes.value);
+        if (!availableSellUnits.value.includes(form.base_unit)) {
+            form.base_unit = defaultBase;
+            form.units = buildDefaultUnits(defaultBase);
+            clearStripConversionFields();
+            applyBaseUnitAsDefault();
+        }
+    },
+);
+
 onMounted(() => {
     applyBaseUnitAsDefault();
 });
@@ -908,7 +965,7 @@ function setDefault(idx) {
 
 function addUnitRow() {
     const used = form.units.map((r) => r.sell_unit);
-    const next = props.catalogOptions.sellUnits.find((u) => !used.includes(u)) ?? 'piece';
+    const next = availableSellUnits.value.find((u) => !used.includes(u)) ?? 'piece';
     form.units.push({
         sell_unit: next,
         conversion_factor: next === form.base_unit ? 1 : 1,

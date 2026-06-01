@@ -152,6 +152,7 @@ final class ProductController extends Controller
             'productTypes' => ProductCatalogOptions::productTypes(),
             'productTypeOptions' => ProductCatalogOptions::productTypeOptions(),
             'sellUnits' => ProductCatalogOptions::sellUnits(),
+            'stripProductTypes' => ProductCatalogOptions::stripProductTypes(),
         ];
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Catalog;
 
 use App\Support\Catalog\ProductCatalogOptions;
+use App\Support\Catalog\ProductTypeUnitRules;
 use App\Support\Tenant\TenantFeatures;
 use App\Support\Tenant\TenantLimits;
 use Illuminate\Contracts\Validation\Validator;
@@ -37,6 +38,14 @@ class StoreProductRequest extends FormRequest
                 $this->offsetUnset($field);
             }
         }
+
+        $productType = (string) $this->input('product_type', 'other');
+        if (! ProductTypeUnitRules::usesStripUnit($productType)) {
+            $this->merge([
+                'pieces_per_strip' => null,
+                'strips_per_box' => null,
+            ]);
+        }
     }
 
     public function authorize(): bool
@@ -61,6 +70,7 @@ class StoreProductRequest extends FormRequest
     public function rules(): array
     {
         $tenantId = tenant_id();
+        $productType = (string) $this->input('product_type', 'other');
 
         return [
             'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('tenant_id', $tenantId)],
@@ -79,12 +89,12 @@ class StoreProductRequest extends FormRequest
             'short_description' => ['nullable', 'string', 'max:2000'],
             'image' => ['nullable', 'image', 'max:5120'],
             'product_type' => ['required', ProductCatalogOptions::productTypeRule()],
-            'base_unit' => ['required', ProductCatalogOptions::sellUnitRule()],
+            'base_unit' => ['required', ProductCatalogOptions::sellUnitRuleForProductType($productType)],
             'pieces_per_strip' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
             'strips_per_box' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
             'boxes_per_carton' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
             'units' => ['required', 'array', 'min:1'],
-            'units.*.sell_unit' => ['required', ProductCatalogOptions::sellUnitRule()],
+            'units.*.sell_unit' => ['required', ProductCatalogOptions::sellUnitRuleForProductType($productType)],
             'units.*.conversion_factor' => ['nullable', 'numeric', 'min:0.0001'],
             'units.*.purchase_price' => ['required', 'numeric', 'min:0'],
             'units.*.sale_price' => ['required', 'numeric', 'min:0'],

@@ -60,4 +60,17 @@ final class ProductCatalogOptions
     {
         return Rule::in(self::sellUnits());
     }
+
+    public static function sellUnitRuleForProductType(string $productType, ?array $includeUnits = null): \Illuminate\Validation\Rules\In
+    {
+        return Rule::in(ProductTypeUnitRules::sellUnitsFor($productType, $includeUnits));
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function stripProductTypes(): array
+    {
+        return ProductTypeUnitRules::STRIP_PRODUCT_TYPES;
+    }
 }

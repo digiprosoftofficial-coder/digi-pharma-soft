@@ -41,6 +41,8 @@ return [
     'import_preset_standard' => 'Standard',
     'import_preset_pro' => 'Pro',
     'import_preset_custom' => 'Custom',
+    'base_unit_not_allowed_for_type' => 'This base unit is not available for the selected product type.',
+    'sell_unit_not_allowed_for_type' => 'This sell unit is not available for the selected product type.',
     'opening_stock' => 'Opening stock',
     'opening_stock_hint' => 'Optional initial quantity in base unit. Leave blank if you will receive stock via purchase.',
     'current_stock' => 'Current stock',

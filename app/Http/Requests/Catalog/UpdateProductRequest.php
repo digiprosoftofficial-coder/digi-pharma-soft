@@ -4,6 +4,7 @@ namespace App\Http\Requests\Catalog;
 
 use App\Domain\Catalog\Models\Product;
 use App\Support\Catalog\ProductCatalogOptions;
+use App\Support\Catalog\ProductTypeUnitRules;
 use App\Support\Tenant\TenantFeatures;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -36,6 +37,14 @@ class UpdateProductRequest extends FormRequest
                 $this->offsetUnset($field);
             }
         }
+
+        $productType = (string) ($this->input('product_type') ?? $this->route('product')?->product_type ?? 'other');
+        if (! ProductTypeUnitRules::usesStripUnit($productType)) {
+            $this->merge([
+                'pieces_per_strip' => null,
+                'strips_per_box' => null,
+            ]);
+        }
     }
 
     public function authorize(): bool
@@ -46,6 +55,35 @@ class UpdateProductRequest extends FormRequest
         return $product && $this->user()?->can('update', $product);
     }
 
+    public function withValidator(\Illuminate\Contracts\Validation\Validator $validator): void
+    {
+        $validator->after(function (\Illuminate\Contracts\Validation\Validator $validator) {
+            /** @var Product $product */
+            $product = $this->route('product');
+            $product->loadMissing('units');
+            $productType = (string) ($this->input('product_type') ?? $product->product_type ?? 'other');
+            $allowed = ProductTypeUnitRules::sellUnitsFor($productType);
+
+            if ($this->filled('base_unit')) {
+                $base = (string) $this->input('base_unit');
+                if (! in_array($base, $allowed, true) && $base !== $product->base_unit) {
+                    $validator->errors()->add('base_unit', __('catalog.base_unit_not_allowed_for_type'));
+                }
+            }
+
+            foreach ($this->input('units', []) as $index => $row) {
+                $sellUnit = $row['sell_unit'] ?? null;
+                if (! $sellUnit || in_array($sellUnit, $allowed, true)) {
+                    continue;
+                }
+                $existing = $product->units->firstWhere('sell_unit', $sellUnit);
+                if ($existing === null) {
+                    $validator->errors()->add("units.{$index}.sell_unit", __('catalog.sell_unit_not_allowed_for_type'));
+                }
+            }
+        });
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -54,6 +92,8 @@ class UpdateProductRequest extends FormRequest
         $tenantId = tenant_id();
         /** @var Product $product */
         $product = $this->route('product');
+
+        $productType = (string) ($this->input('product_type') ?? $product->product_type ?? 'other');
 
         return [
             'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('tenant_id', $tenantId)],
@@ -85,12 +125,12 @@ class UpdateProductRequest extends FormRequest
             'image' => ['nullable', 'image', 'max:5120'],
             'remove_image' => ['sometimes', 'boolean'],
             'product_type' => ['sometimes', ProductCatalogOptions::productTypeRule()],
-            'base_unit' => ['sometimes', ProductCatalogOptions::sellUnitRule()],
+            'base_unit' => ['sometimes', ProductCatalogOptions::sellUnitRuleForProductType($productType)],
             'pieces_per_strip' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
             'strips_per_box' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
             'boxes_per_carton' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
             'units' => ['sometimes', 'array', 'min:1'],
-            'units.*.sell_unit' => ['required_with:units', ProductCatalogOptions::sellUnitRule()],
+            'units.*.sell_unit' => ['required_with:units', ProductCatalogOptions::sellUnitRuleForProductType($productType)],
             'units.*.conversion_factor' => ['nullable', 'numeric', 'min:0.0001'],
             'units.*.purchase_price' => ['required_with:units', 'numeric', 'min:0'],
             'units.*.sale_price' => ['required_with:units', 'numeric', 'min:0'],

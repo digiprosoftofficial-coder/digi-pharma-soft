@@ -41,6 +41,8 @@ return [
     'import_preset_standard' => 'স্ট্যান্ডার্ড',
     'import_preset_pro' => 'প্রো',
     'import_preset_custom' => 'কাস্টম',
+    'base_unit_not_allowed_for_type' => 'নির্বাচিত পণ্যের ধরনের জন্য এই বেস ইউনিট ব্যবহার করা যায় না।',
+    'sell_unit_not_allowed_for_type' => 'নির্বাচিত পণ্যের ধরনের জন্য এই বিক্রয় ইউনিট ব্যবহার করা যায় না।',
     'opening_stock' => 'প্রারম্ভিক স্টক',
     'opening_stock_hint' => 'ঐচ্ছিক। খালি রাখলে পরে ক্রয়ের মাধ্যমে স্টক যোগ করুন।',
     'current_stock' => 'বর্তমান স্টক',
