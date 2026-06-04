@@ -88,6 +88,8 @@ return [
     'batch_markup_help' => 'Override markup for one batch only. Empty = use product default above.',
     'pos_price_from_markup' => 'Price from cost: :cost + :markup% → :price',
     'pos_price_from_catalog' => 'Price from catalog sale price (no markup set on this product).',
+    'pos_batch_expired' => 'This batch is expired and cannot be sold.',
+    'pos_no_sellable_batch' => 'No sellable batch (check expiry and stock).',
     'batch_markup_percent' => 'Markup %',
     'batch_markup_updated' => 'Batch markup updated.',
     'batch_suggested_price' => 'Suggested sell',

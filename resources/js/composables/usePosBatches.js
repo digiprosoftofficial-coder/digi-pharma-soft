@@ -1,5 +1,7 @@
 export function batchesWithStock(item) {
-    return (item?.batches ?? []).filter((b) => Number(b.quantity_on_hand ?? 0) > 0);
+    return (item?.batches ?? []).filter(
+        (b) => Number(b.quantity_on_hand ?? 0) > 0 && !b.is_expired,
+    );
 }
 
 export function formatBatchLabel(batch) {

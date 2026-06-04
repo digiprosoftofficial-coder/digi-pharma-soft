@@ -37,6 +37,7 @@ use App\Http\Controllers\Tenant\PurchaseController;
 use App\Http\Controllers\Tenant\ReportController;
 use App\Http\Controllers\Tenant\ReportsHubController;
 use App\Http\Controllers\Tenant\SaleController;
+use App\Http\Controllers\Tenant\SaleInvoiceController;
 use App\Http\Controllers\Tenant\SaleReturnController;
 use App\Http\Controllers\Tenant\SmsController;
 use App\Http\Controllers\Tenant\StockTransferController;
@@ -61,6 +62,8 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
             Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
             Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
+            Route::get('/sales/{sale}/print', [SaleInvoiceController::class, 'print'])->name('sales.print');
+            Route::post('/sales/{sale}/void', [SaleController::class, 'void'])->name('sales.void');
             Route::get('/sales/package', [PackageSaleController::class, 'index'])->name('sales.package');
             Route::get('/sales/returns', [SaleReturnController::class, 'index'])->name('sales.returns.index');
             Route::get('/sales/returns/create', [SaleReturnController::class, 'create'])->name('sales.returns.create');

@@ -16,7 +16,7 @@ namespace App\Support;
  * - UI may label the flow “package”; pricing is still per batch line (bundle presets are a future enhancement).
  *
  * **Discounts & coupons**
- * - Flat cart discount and tax are passed from POS.
+ * - Cart discount is a percent of line subtotal from POS; tax is a flat amount.
  * - `DiscountCoupon` applies an additional percent off the line subtotal before tax; see `SaleService`.
  * - Fixed-amount coupons, stackable coupons, and category-scoped discounts are not implemented yet.
  *

@@ -57,6 +57,10 @@ final class ProductRepository
             'storageLocation',
             'batches' => fn ($b) => $b->with('storageLocation')
                 ->where('quantity_on_hand', '>', 0)
+                ->where(function ($q) {
+                    $q->whereNull('expiry_date')
+                        ->orWhere('expiry_date', '>=', now()->toDateString());
+                })
                 ->orderByRaw('expiry_date IS NULL')
                 ->orderBy('expiry_date')
                 ->orderBy('id'),

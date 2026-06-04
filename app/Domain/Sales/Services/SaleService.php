@@ -3,6 +3,7 @@
 namespace App\Domain\Sales\Services;
 
 use App\Domain\Catalog\Models\ProductBatch;
+use App\Support\Catalog\BatchExpiry;
 use App\Support\Catalog\BatchSalePricing;
 use App\Support\Catalog\FefoBatchAllocator;
 use App\Support\Catalog\ProductUnitResolver;
@@ -29,14 +30,15 @@ final class SaleService
         ?int $customerId,
         array $lines,
         array $payments,
-        float $discount = 0,
+        float $discountPercent = 0,
         float $tax = 0,
         ?string $couponCode = null,
     ): Sale {
-        return DB::transaction(function () use ($customerId, $lines, $payments, $discount, $tax, $couponCode) {
+        return DB::transaction(function () use ($customerId, $lines, $payments, $discountPercent, $tax, $couponCode) {
             $lines = $this->allocateCheckoutLines($lines);
 
             $subtotal = collect($lines)->sum(fn (array $l) => $l['quantity'] * $l['unit_price']);
+            $cartDiscount = round($subtotal * (min(100, max(0, $discountPercent)) / 100), 4);
             $couponDiscount = 0.0;
             if ($couponCode) {
                 $coupon = DiscountCoupon::query()
@@ -50,15 +52,24 @@ final class SaleService
                     $couponDiscount = round($subtotal * ((float) $coupon->percent_off / 100), 4);
                 }
             }
-            $discount = round($discount + $couponDiscount, 4);
-            $total = max(0, $subtotal - $discount + $tax);
-            if (count($payments) === 1 && (float) $payments[0]['amount'] >= $subtotal - 0.0001) {
+            $discount = round($cartDiscount + $couponDiscount, 4);
+            $total = round(max(0, $subtotal - $discount + $tax), 4);
+
+            $tendered = round((float) collect($payments)->sum(fn (array $p) => (float) $p['amount']), 4);
+            $paid = round(min($tendered, $total), 4);
+            $change = round(max(0, $tendered - $total), 4);
+            $due = round(max(0, $total - $paid), 4);
+
+            if ($due > 0.0001 && ! $customerId) {
+                throw new RuntimeException(__('sales.due_requires_customer'));
+            }
+
+            // Record only the amount applied to the bill; change is handed back at the counter.
+            if (count($payments) === 1) {
                 $payments = [
-                    ['method' => $payments[0]['method'], 'amount' => $total],
+                    ['method' => $payments[0]['method'], 'amount' => $paid],
                 ];
             }
-            $paid = collect($payments)->sum(fn (array $p) => $p['amount']);
-            $due = max(0, $total - $paid);
 
             $sale = Sale::query()->create([
                 'customer_id' => $customerId,
@@ -69,6 +80,8 @@ final class SaleService
                 'tax' => $tax,
                 'total' => $total,
                 'paid' => $paid,
+                'amount_tendered' => $tendered,
+                'change_returned' => $change,
                 'due' => $due,
                 'status' => 'posted',
             ]);
@@ -148,6 +161,10 @@ final class SaleService
                 ->lockForUpdate()
                 ->findOrFail($line['product_batch_id']);
 
+            if (BatchExpiry::isExpired($preferredBatch)) {
+                throw new RuntimeException('Cannot sell expired batch '.$preferredBatch->batch_no);
+            }
+
             $sellUnit = (string) $line['sell_unit'];
             $product = $preferredBatch->product;
 
@@ -182,6 +199,10 @@ final class SaleService
                     ->lockForUpdate()
                     ->findOrFail($chunk['product_batch_id']);
 
+                if (BatchExpiry::isExpired($batch)) {
+                    throw new RuntimeException('Cannot sell expired batch '.$batch->batch_no);
+                }
+
                 $chunkFactor = ProductUnitResolver::conversionFactorForBatch(
                     $batch->product,
                     $batch,
@@ -204,6 +225,55 @@ final class SaleService
         }
 
         return $expanded;
+    }
+
+    public function voidSale(Sale $sale): Sale
+    {
+        if ($sale->status !== 'posted') {
+            throw new RuntimeException('Only posted sales can be voided.');
+        }
+
+        if ($sale->returns()->exists()) {
+            throw new RuntimeException('Cannot void a sale that has returns recorded.');
+        }
+
+        return DB::transaction(function () use ($sale) {
+            $sale = Sale::query()->whereKey($sale->getKey())->lockForUpdate()->firstOrFail();
+            $sale->load(['lines', 'customer']);
+
+            foreach ($sale->lines as $line) {
+                /** @var ProductBatch $batch */
+                $batch = ProductBatch::query()->whereKey($line->product_batch_id)->lockForUpdate()->firstOrFail();
+                $quantityBase = (float) $line->quantity_base;
+
+                $batch->quantity_on_hand = (string) ((float) $batch->quantity_on_hand + $quantityBase);
+                $batch->save();
+
+                StockMovement::query()->create([
+                    'product_batch_id' => $batch->getKey(),
+                    'type' => 'sale_void',
+                    'reference_type' => Sale::class,
+                    'reference_id' => $sale->getKey(),
+                    'quantity_delta' => $quantityBase,
+                    'meta' => [
+                        'sale_line_id' => $line->getKey(),
+                        'quantity_base' => $quantityBase,
+                    ],
+                ]);
+            }
+
+            if ($sale->customer_id && (float) $sale->due > 0) {
+                $customer = Customer::query()->whereKey($sale->customer_id)->lockForUpdate()->first();
+                if ($customer) {
+                    $customer->balance_due = (string) max(0, (float) $customer->balance_due - (float) $sale->due);
+                    $customer->save();
+                }
+            }
+
+            $sale->update(['status' => 'voided']);
+
+            return $sale->fresh(['lines.batch', 'lines.product', 'payments', 'customer']);
+        });
     }
 
     private function nextInvoiceNo(): string

@@ -140,7 +140,7 @@ function debouncedSearch() {
 }
 
 async function runSearch() {
-    if (q.value.length < 2) {
+    if (q.value.length < 1) {
         results.value = [];
         return;
     }
@@ -222,7 +222,7 @@ function addLine(item) {
     const batches = batchesWithStock(item);
     const batch = batches[0];
     if (!batch) {
-        alert(t('catalog.pos_no_stock'));
+        alert(t('catalog.pos_no_sellable_batch'));
         return;
     }
     const sellUnit = defaultSellUnit(item);

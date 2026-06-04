@@ -10,7 +10,7 @@ class Sale extends TenantModel
 {
     protected $fillable = [
         'tenant_id', 'customer_id', 'invoice_no', 'sold_at',
-        'subtotal', 'discount', 'tax', 'total', 'paid', 'due', 'status',
+        'subtotal', 'discount', 'tax', 'total', 'paid', 'amount_tendered', 'change_returned', 'due', 'status',
     ];
 
     protected function casts(): array
@@ -22,6 +22,8 @@ class Sale extends TenantModel
             'tax' => 'decimal:4',
             'total' => 'decimal:4',
             'paid' => 'decimal:4',
+            'amount_tendered' => 'decimal:4',
+            'change_returned' => 'decimal:4',
             'due' => 'decimal:4',
         ];
     }

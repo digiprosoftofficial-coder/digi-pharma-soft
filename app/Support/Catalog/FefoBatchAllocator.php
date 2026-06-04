@@ -65,6 +65,10 @@ final class FefoBatchAllocator
         return ProductBatch::query()
             ->where('product_id', $productId)
             ->where('quantity_on_hand', '>', 0)
+            ->where(function ($q) {
+                $q->whereNull('expiry_date')
+                    ->orWhere('expiry_date', '>=', now()->toDateString());
+            })
             ->orderByRaw('expiry_date IS NULL')
             ->orderBy('expiry_date')
             ->orderBy('id')

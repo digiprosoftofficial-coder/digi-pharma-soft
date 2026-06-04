@@ -2,11 +2,28 @@
     <TenantShellLayout page-title="Point of sale">
         <Head title="POS" />
         <h1 class="h4 mb-3 d-lg-none">Point of sale</h1>
+        <div v-if="$page.props.errors?.checkout" class="alert alert-danger">{{ $page.props.errors.checkout }}</div>
+        <div v-if="lastSaleId" class="alert alert-success d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <span>{{ $page.props.flash?.success || 'Sale completed.' }}</span>
+            <a :href="`/sales/${lastSaleId}/print`" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success">
+                {{ t('sales.pos_print_last') }}
+            </a>
+        </div>
         <div class="row g-3">
             <div class="col-lg-5">
                 <div class="card card-body">
                     <label class="form-label">Search product</label>
-                    <input v-model="q" type="search" class="form-control" placeholder="Name, SKU, or barcode" @input="debouncedSearch" />
+                    <input
+                        ref="searchInput"
+                        v-model="q"
+                        type="search"
+                        class="form-control"
+                        placeholder="Name, SKU, or barcode"
+                        autocomplete="off"
+                        @input="debouncedSearch"
+                        @keydown.enter.prevent="onSearchEnter"
+                    />
+                    <p class="form-text small mb-0">{{ t('sales.pos_scan_hint') }}</p>
                     <ul class="list-group mt-2 small">
                         <li
                             v-for="item in results"
@@ -60,6 +77,9 @@
                                         {{ linePriceSourceHint(line) }}
                                     </div>
                                     <div v-if="linePricingHint(line)" class="small text-muted">{{ linePricingHint(line) }}</div>
+                                    <div v-if="selectedBatch(line)?.is_expired" class="small text-danger">
+                                        {{ t('catalog.pos_batch_expired') }}
+                                    </div>
                                     <div v-if="lineMaySplit(line)" class="small text-warning">{{ t('catalog.pos_may_split_batches') }}</div>
                                 </td>
                                 <td>
@@ -86,13 +106,79 @@
                         </tbody>
                         <tfoot v-if="cart.length" class="fw-semibold">
                             <tr>
+                                <td colspan="4" class="text-end">Subtotal</td>
+                                <td class="text-end">{{ formatMoney(cartSubtotal) }}</td>
+                                <td></td>
+                            </tr>
+                            <tr v-if="cartDiscountAmount > 0">
+                                <td colspan="4" class="text-end text-muted">
+                                    {{ t('sales.pos_discount') }} ({{ cartDiscountPercent }}%)
+                                </td>
+                                <td class="text-end text-danger">−{{ formatMoney(cartDiscountAmount) }}</td>
+                                <td></td>
+                            </tr>
+                            <tr v-if="cartDiscountAmount > 0">
                                 <td colspan="4" class="text-end">Total</td>
-                                <td class="text-end">{{ formatMoney(cartTotal) }}</td>
+                                <td class="text-end">{{ formatMoney(totalAfterDiscount) }}</td>
                                 <td></td>
                             </tr>
                         </tfoot>
                     </table>
                     <form class="mt-3" @submit.prevent="submitSale">
+                        <div class="mb-2">
+                            <label class="form-label">{{ t('sales.pos_customer') }}</label>
+                            <select v-model="customerId" class="form-select form-select-sm">
+                                <option :value="null">— Cash sale (no customer) —</option>
+                                <option v-for="c in customers" :key="c.id" :value="c.id">
+                                    {{ c.name }}{{ c.phone ? ` (${c.phone})` : '' }}
+                                    <template v-if="Number(c.balance_due) > 0"> — due {{ formatMoney(c.balance_due) }}</template>
+                                </option>
+                            </select>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label">{{ t('sales.pos_discount') }}</label>
+                                <div class="input-group input-group-sm">
+                                    <input
+                                        v-model.number="cartDiscountPercent"
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        step="0.01"
+                                        class="form-control"
+                                    />
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <p v-if="cartDiscountAmount > 0" class="form-text small mb-0">
+                                    {{ t('sales.pos_discount_amount', { amount: formatMoney(cartDiscountAmount) }) }}
+                                </p>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">{{ t('sales.pos_amount_tendered') }}</label>
+                                <input
+                                    v-model.number="amountPaid"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    class="form-control form-control-sm"
+                                    @input="onAmountPaidInput"
+                                />
+                            </div>
+                        </div>
+                        <div class="mb-2 d-flex flex-wrap gap-2 align-items-center small">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" @click="setPayFull">
+                                {{ t('sales.pos_pay_full') }}
+                            </button>
+                            <span v-if="changePreview > 0.001" class="text-success fw-semibold">
+                                {{ t('sales.pos_change_preview', { amount: formatMoney(changePreview) }) }}
+                            </span>
+                            <span v-else-if="duePreview > 0.001" class="text-warning">
+                                {{ t('sales.pos_due_preview', { amount: formatMoney(duePreview) }) }}
+                            </span>
+                        </div>
+                        <div v-if="needsCustomerForDue" class="alert alert-warning py-2 small mb-2">
+                            {{ t('sales.due_requires_customer') }}
+                        </div>
                         <div class="mb-2">
                             <label class="form-label">Payment method</label>
                             <select v-model="paymentMethod" class="form-select">
@@ -105,7 +191,7 @@
                             <label class="form-label">Coupon code (optional)</label>
                             <input v-model="couponCode" type="text" class="form-control form-control-sm text-uppercase" placeholder="SAVE10" autocomplete="off" />
                         </div>
-                        <button type="submit" class="btn btn-success" :disabled="!cart.length || submitting">Complete sale</button>
+                        <button type="submit" class="btn btn-success" :disabled="!cart.length || submitting || needsCustomerForDue">Complete sale</button>
                     </form>
                 </div>
             </div>
@@ -126,7 +212,12 @@ import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { defaultSellUnit, stockInSellUnit, unitLabel, unitSalePrice } from '@/composables/useProductUnits';
 import { Head, router } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+
+const props = defineProps({
+    customers: { type: Array, default: () => [] },
+    lastSaleId: { type: Number, default: null },
+});
 
 const { t } = useLocale();
 const { formatMoney, currencyCode } = useMoney();
@@ -134,14 +225,48 @@ const { formatMoney, currencyCode } = useMoney();
 const q = ref('');
 const results = ref([]);
 const cart = ref([]);
+const customerId = ref(null);
+const cartDiscountPercent = ref(0);
+const amountPaid = ref(0);
+const payFullAmount = ref(true);
 const paymentMethod = ref('cash');
 const couponCode = ref('');
 const submitting = ref(false);
+const searchInput = ref(null);
 let timer;
 
-const cartTotal = computed(() =>
+const cartSubtotal = computed(() =>
     cart.value.reduce((s, l) => s + Number(l.quantity || 0) * Number(l.unit_price || 0), 0),
 );
+
+const cartDiscountAmount = computed(() => {
+    const pct = Math.min(100, Math.max(0, Number(cartDiscountPercent.value) || 0));
+
+    return Math.round(((cartSubtotal.value * pct) / 100) * 100) / 100;
+});
+
+const totalAfterDiscount = computed(() => Math.max(0, cartSubtotal.value - cartDiscountAmount.value));
+
+const duePreview = computed(() => Math.max(0, totalAfterDiscount.value - Number(amountPaid.value || 0)));
+
+const changePreview = computed(() => Math.max(0, Number(amountPaid.value || 0) - totalAfterDiscount.value));
+
+const needsCustomerForDue = computed(() => duePreview.value > 0.001 && !customerId.value);
+
+watch([cartSubtotal, cartDiscountPercent], () => {
+    if (payFullAmount.value) {
+        amountPaid.value = totalAfterDiscount.value;
+    }
+});
+
+function setPayFull() {
+    payFullAmount.value = true;
+    amountPaid.value = totalAfterDiscount.value;
+}
+
+function onAmountPaidInput() {
+    payFullAmount.value = false;
+}
 
 function debouncedSearch() {
     clearTimeout(timer);
@@ -149,12 +274,33 @@ function debouncedSearch() {
 }
 
 async function runSearch() {
-    if (q.value.length < 2) {
+    if (q.value.length < 1) {
         results.value = [];
         return;
     }
     const { data } = await window.axios.get('/catalog/product-search', { params: { q: q.value } });
     results.value = data.data;
+}
+
+async function onSearchEnter() {
+    await runSearch();
+    tryAddFromSearch();
+}
+
+function tryAddFromSearch() {
+    const term = q.value.trim();
+    if (!term || !results.value.length) {
+        return;
+    }
+    const exactBarcode = results.value.find((r) => r.barcode === term);
+    const pick = exactBarcode ?? (results.value.length === 1 ? results.value[0] : null);
+    if (!pick) {
+        return;
+    }
+    addLine(pick);
+    q.value = '';
+    results.value = [];
+    searchInput.value?.focus();
 }
 
 function shelfHint(item) {
@@ -312,7 +458,7 @@ function addLine(item) {
     const batches = batchesWithStock(item);
     const batch = batches[0];
     if (!batch) {
-        alert(t('catalog.pos_no_stock'));
+        alert(t('catalog.pos_no_sellable_batch'));
         return;
     }
     const sellUnit = defaultSellUnit(item);
@@ -350,8 +496,9 @@ function submitSale() {
                 sell_unit: l.sell_unit,
                 unit_price: l.unit_price,
             })),
-            payments: [{ method: paymentMethod.value, amount: cartTotal.value }],
-            discount: 0,
+            customer_id: customerId.value || null,
+            payments: [{ method: paymentMethod.value, amount: Number(amountPaid.value || 0) }],
+            discount_percent: Number(cartDiscountPercent.value || 0),
             tax: 0,
             coupon_code: couponCode.value?.trim() || null,
         },

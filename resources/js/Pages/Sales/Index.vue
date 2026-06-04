@@ -9,13 +9,15 @@
                         <th style="width: 2rem"></th>
                         <th>Invoice</th>
                         <th>Date</th>
+                        <th>Status</th>
                         <th class="text-end">Total ({{ currencyCode() }})</th>
                         <th class="text-end">Due ({{ currencyCode() }})</th>
+                        <th class="text-end" style="width: 10rem">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <template v-for="s in sales.data" :key="s.id">
-                        <tr>
+                        <tr :class="{ 'table-secondary': s.status === 'voided' }">
                             <td>
                                 <button
                                     v-if="s.lines?.length"
@@ -29,12 +31,34 @@
                             </td>
                             <td>{{ s.invoice_no }}</td>
                             <td>{{ s.sold_at }}</td>
+                            <td>
+                                <span v-if="s.status === 'voided'" class="badge text-bg-secondary">{{ t('sales.status_voided') }}</span>
+                                <span v-else class="badge text-bg-success">{{ t('sales.status_posted') }}</span>
+                            </td>
                             <td class="text-end">{{ formatMoney(s.total) }}</td>
                             <td class="text-end">{{ formatMoney(s.due) }}</td>
+                            <td class="text-end text-nowrap">
+                                <a
+                                    :href="`/sales/${s.id}/print`"
+                                    target="_blank"
+                                    rel="noopener"
+                                    class="btn btn-sm btn-outline-secondary me-1"
+                                >
+                                    {{ t('sales.print_sale') }}
+                                </a>
+                                <button
+                                    v-if="canVoid && s.status === 'posted'"
+                                    type="button"
+                                    class="btn btn-sm btn-outline-danger"
+                                    @click="confirmVoid(s)"
+                                >
+                                    {{ t('sales.void_sale') }}
+                                </button>
+                            </td>
                         </tr>
                         <tr v-if="expanded === s.id && s.lines?.length" class="table-light">
                             <td></td>
-                            <td colspan="4" class="py-2">
+                            <td colspan="6" class="py-2">
                                 <ul class="list-unstyled small mb-0">
                                     <li v-for="line in s.lines" :key="line.id" class="mb-1">
                                         <span class="fw-medium">{{ line.product?.name ?? 'Product' }}</span>
@@ -71,10 +95,13 @@ import { lineMarginAmount } from '@/composables/useBatchPricing';
 import { formatBatchLabel } from '@/composables/usePosBatches';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
-defineProps({ sales: { type: Object, required: true } });
+defineProps({
+    sales: { type: Object, required: true },
+    canVoid: { type: Boolean, default: false },
+});
 
 const { t } = useLocale();
 const { formatMoney, currencyCode } = useMoney();
@@ -98,5 +125,12 @@ function lineCostProfitLabel(line) {
     const profit = lineMarginAmount(line.quantity, line.unit_price, cost);
 
     return `${t('catalog.sale_line_cost', { cost: formatMoney(cost) })} · ${t('catalog.sale_line_profit', { amount: formatMoney(profit) })}`;
+}
+
+function confirmVoid(sale) {
+    if (!window.confirm(t('sales.void_confirm'))) {
+        return;
+    }
+    router.post(`/sales/${sale.id}/void`, {}, { preserveScroll: true });
 }
 </script>
