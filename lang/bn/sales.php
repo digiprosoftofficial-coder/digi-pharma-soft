@@ -45,4 +45,11 @@ return [
     'rounding_nearest_1' => 'নিকটতম ১ টাকা',
     'pos_rounding_label' => 'ইনভয়েস রাউন্ডিং',
     'pos_rounding_hint' => 'দেয় টাকা পূর্ণ সংখ্যায় রাউন্ড করে। বাংলাদেশে খুচরা বিক্রিতে সাধারণত পয়সা ব্যবহার হয় না।',
+    'pos_customer_search_placeholder' => 'নাম বা ফোন দিয়ে গ্রাহক খুঁজুন...',
+    'pos_add_new_customer' => 'নতুন গ্রাহক যোগ',
+    'pos_new_customer' => 'নতুন গ্রাহক',
+    'pos_customer_optional_hint' => 'ঐচ্ছিক — নগদ বিক্রিতে খালি রাখুন।',
+    'pos_customer_due' => 'বাকি: :amount',
+    'customer_name' => 'নাম',
+    'customer_phone' => 'ফোন (ঐচ্ছিক)',
 ];

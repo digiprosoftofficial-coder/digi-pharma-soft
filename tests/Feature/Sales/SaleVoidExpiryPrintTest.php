@@ -327,6 +327,71 @@ class SaleVoidExpiryPrintTest extends TestCase
         $this->assertSame(0.0, (float) $sale->due);
     }
 
+    public function test_pos_can_create_new_customer_during_sale(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+        $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
+
+        ProductBatch::query()->where('product_id', $product->getKey())->delete();
+
+        $batch = $this->makeBatch($product, [
+            'batch_no' => 'CUST-1',
+            'expiry_date' => now()->addMonths(6)->toDateString(),
+            'quantity_on_hand' => 10,
+        ]);
+
+        $initialCustomerCount = \App\Domain\Sales\Models\Customer::query()->count();
+
+        $this->actingAs($user)->post('/pos/sales', [
+            'lines' => [[
+                'product_batch_id' => $batch->getKey(),
+                'quantity' => 1,
+                'sell_unit' => 'strip',
+                'unit_price' => 50,
+            ]],
+            'payments' => [['method' => 'cash', 'amount' => 50]],
+            'new_customer' => [
+                'name' => 'Test Customer POS',
+                'phone' => '01700000001',
+            ],
+        ])->assertRedirect();
+
+        $this->assertSame($initialCustomerCount + 1, \App\Domain\Sales\Models\Customer::query()->count());
+
+        $customer = \App\Domain\Sales\Models\Customer::query()->where('name', 'Test Customer POS')->firstOrFail();
+        $this->assertSame('01700000001', $customer->phone);
+
+        $sale = Sale::query()->latest('id')->firstOrFail();
+        $this->assertSame($customer->getKey(), $sale->customer_id);
+    }
+
+    public function test_customer_search_returns_matching_results(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+        $tenant = \App\Domain\Tenant\Models\Tenant::query()->firstOrFail();
+
+        \App\Domain\Sales\Models\Customer::query()->create([
+            'tenant_id' => $tenant->getKey(),
+            'name' => 'Karim Ahmed',
+            'phone' => '01711111111',
+            'balance_due' => 0,
+        ]);
+
+        $response = $this->actingAs($user)->getJson('/sales/customer-search?q=karim');
+        $response->assertOk();
+
+        $data = $response->json('data');
+        $this->assertNotEmpty($data);
+        $this->assertSame('Karim Ahmed', $data[0]['name']);
+
+        // Search by phone
+        $response2 = $this->actingAs($user)->getJson('/sales/customer-search?q=01711');
+        $response2->assertOk();
+        $this->assertNotEmpty($response2->json('data'));
+    }
+
     public function test_sale_invoice_print_is_available_to_authorized_user(): void
     {
         $this->seed();

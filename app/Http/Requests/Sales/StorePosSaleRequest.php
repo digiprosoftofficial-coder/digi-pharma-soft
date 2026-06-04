@@ -22,6 +22,9 @@ class StorePosSaleRequest extends FormRequest
 
         return [
             'customer_id' => ['nullable', 'integer', Rule::exists('customers', 'id')->where('tenant_id', $tenantId)],
+            'new_customer' => ['nullable', 'array'],
+            'new_customer.name' => ['required_with:new_customer', 'string', 'max:255'],
+            'new_customer.phone' => ['nullable', 'string', 'max:64'],
             'discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'tax' => ['nullable', 'numeric', 'min:0'],
             'lines' => ['required', 'array', 'min:1'],

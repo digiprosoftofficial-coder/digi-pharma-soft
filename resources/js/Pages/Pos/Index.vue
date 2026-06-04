@@ -141,13 +141,78 @@
                     <form class="mt-3" @submit.prevent="submitSale">
                         <div class="mb-2">
                             <label class="form-label">{{ t('sales.pos_customer') }}</label>
-                            <select v-model="customerId" class="form-select form-select-sm">
-                                <option :value="null">— Cash sale (no customer) —</option>
-                                <option v-for="c in customers" :key="c.id" :value="c.id">
-                                    {{ c.name }}{{ c.phone ? ` (${c.phone})` : '' }}
-                                    <template v-if="Number(c.balance_due) > 0"> — due {{ formatMoney(c.balance_due) }}</template>
-                                </option>
-                            </select>
+
+                            <!-- Selected customer display -->
+                            <div v-if="selectedCustomer" class="d-flex align-items-center gap-2 p-2 bg-light rounded mb-2">
+                                <div class="flex-grow-1">
+                                    <strong>{{ selectedCustomer.name }}</strong>
+                                    <span v-if="selectedCustomer.phone" class="text-muted ms-1">({{ selectedCustomer.phone }})</span>
+                                    <span v-if="Number(selectedCustomer.balance_due) > 0" class="text-warning ms-2">
+                                        {{ t('sales.pos_customer_due', { amount: formatMoney(selectedCustomer.balance_due) }) }}
+                                    </span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" @click="clearCustomer">×</button>
+                            </div>
+
+                            <!-- Customer search (shown when no customer selected and not adding new) -->
+                            <div v-if="!selectedCustomer && !showNewCustomerForm">
+                                <input
+                                    v-model="customerQuery"
+                                    type="search"
+                                    class="form-control form-control-sm"
+                                    :placeholder="t('sales.pos_customer_search_placeholder')"
+                                    autocomplete="off"
+                                    @input="debouncedCustomerSearch"
+                                />
+                                <ul v-if="customerResults.length" class="list-group list-group-flush mt-1 small" style="max-height: 150px; overflow-y: auto">
+                                    <li
+                                        v-for="c in customerResults"
+                                        :key="c.id"
+                                        class="list-group-item list-group-item-action py-1 px-2"
+                                        @click="selectCustomer(c)"
+                                    >
+                                        {{ c.name }}
+                                        <span v-if="c.phone" class="text-muted">({{ c.phone }})</span>
+                                        <span v-if="Number(c.balance_due) > 0" class="text-warning float-end">
+                                            {{ t('sales.due') }}: {{ formatMoney(c.balance_due) }}
+                                        </span>
+                                    </li>
+                                </ul>
+                                <button type="button" class="btn btn-sm btn-link p-0 mt-1" @click="toggleNewCustomerForm">
+                                    + {{ t('sales.pos_add_new_customer') }}
+                                </button>
+                            </div>
+
+                            <!-- New customer form -->
+                            <div v-if="showNewCustomerForm && !selectedCustomer" class="border rounded p-2 bg-light">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small fw-semibold">{{ t('sales.pos_new_customer') }}</span>
+                                    <button type="button" class="btn btn-sm btn-link p-0" @click="toggleNewCustomerForm">{{ t('common.cancel') }}</button>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-7">
+                                        <input
+                                            v-model="newCustomerName"
+                                            type="text"
+                                            class="form-control form-control-sm"
+                                            :placeholder="t('sales.customer_name')"
+                                            required
+                                        />
+                                    </div>
+                                    <div class="col-5">
+                                        <input
+                                            v-model="newCustomerPhone"
+                                            type="text"
+                                            class="form-control form-control-sm"
+                                            :placeholder="t('sales.customer_phone')"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p v-if="!selectedCustomer && !showNewCustomerForm" class="form-text small mb-0">
+                                {{ t('sales.pos_customer_optional_hint') }}
+                            </p>
                         </div>
                         <div class="row g-2 mb-2">
                             <div class="col-6">
@@ -229,7 +294,6 @@ import { Head, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
-    customers: { type: Array, default: () => [] },
     lastSaleId: { type: Number, default: null },
     roundingMode: { type: String, default: 'none' },
 });
@@ -240,7 +304,16 @@ const { formatMoney, currencyCode } = useMoney();
 const q = ref('');
 const results = ref([]);
 const cart = ref([]);
-const customerId = ref(null);
+
+// Customer selection
+const customerQuery = ref('');
+const customerResults = ref([]);
+const selectedCustomer = ref(null);
+const showNewCustomerForm = ref(false);
+const newCustomerName = ref('');
+const newCustomerPhone = ref('');
+let customerTimer;
+
 const cartDiscountPercent = ref(0);
 const amountPaid = ref(0);
 const payFullAmount = ref(true);
@@ -281,7 +354,9 @@ const duePreview = computed(() => Math.max(0, payableAmount.value - Number(amoun
 
 const changePreview = computed(() => Math.max(0, Number(amountPaid.value || 0) - payableAmount.value));
 
-const needsCustomerForDue = computed(() => duePreview.value > 0.001 && !customerId.value);
+const hasCustomer = computed(() => selectedCustomer.value || (showNewCustomerForm.value && newCustomerName.value.trim()));
+
+const needsCustomerForDue = computed(() => duePreview.value > 0.001 && !hasCustomer.value);
 
 watch([cartSubtotal, cartDiscountPercent, payableAmount], () => {
     if (payFullAmount.value) {
@@ -296,6 +371,45 @@ function setPayFull() {
 
 function onAmountPaidInput() {
     payFullAmount.value = false;
+}
+
+// Customer search functions
+function debouncedCustomerSearch() {
+    clearTimeout(customerTimer);
+    customerTimer = setTimeout(runCustomerSearch, 250);
+}
+
+async function runCustomerSearch() {
+    if (customerQuery.value.length < 1) {
+        customerResults.value = [];
+        return;
+    }
+    const { data } = await window.axios.get('/sales/customer-search', { params: { q: customerQuery.value } });
+    customerResults.value = data.data;
+}
+
+function selectCustomer(customer) {
+    selectedCustomer.value = customer;
+    customerQuery.value = '';
+    customerResults.value = [];
+    showNewCustomerForm.value = false;
+    newCustomerName.value = '';
+    newCustomerPhone.value = '';
+}
+
+function clearCustomer() {
+    selectedCustomer.value = null;
+    customerQuery.value = '';
+    customerResults.value = [];
+}
+
+function toggleNewCustomerForm() {
+    showNewCustomerForm.value = !showNewCustomerForm.value;
+    if (showNewCustomerForm.value) {
+        selectedCustomer.value = null;
+        customerQuery.value = '';
+        customerResults.value = [];
+    }
 }
 
 function debouncedSearch() {
@@ -517,26 +631,41 @@ function addLine(item) {
 function submitSale() {
     cart.value.forEach(normalizeLineQuantity);
     submitting.value = true;
+
+    const payload = {
+        lines: cart.value.map((l) => ({
+            product_batch_id: l.product_batch_id,
+            quantity: Math.max(1, Math.round(Number(l.quantity) || 1)),
+            sell_unit: l.sell_unit,
+            unit_price: l.unit_price,
+        })),
+        customer_id: selectedCustomer.value?.id || null,
+        payments: [{ method: paymentMethod.value, amount: Number(amountPaid.value || 0) }],
+        discount_percent: Number(cartDiscountPercent.value || 0),
+        tax: 0,
+        coupon_code: couponCode.value?.trim() || null,
+    };
+
+    // Add new customer if creating on-the-fly
+    if (showNewCustomerForm.value && newCustomerName.value.trim() && !selectedCustomer.value) {
+        payload.new_customer = {
+            name: newCustomerName.value.trim(),
+            phone: newCustomerPhone.value.trim() || null,
+        };
+    }
+
     router.post(
         '/pos/sales',
-        {
-            lines: cart.value.map((l) => ({
-                product_batch_id: l.product_batch_id,
-                quantity: Math.max(1, Math.round(Number(l.quantity) || 1)),
-                sell_unit: l.sell_unit,
-                unit_price: l.unit_price,
-            })),
-            customer_id: customerId.value || null,
-            payments: [{ method: paymentMethod.value, amount: Number(amountPaid.value || 0) }],
-            discount_percent: Number(cartDiscountPercent.value || 0),
-            tax: 0,
-            coupon_code: couponCode.value?.trim() || null,
-        },
+        payload,
         {
             preserveScroll: true,
             onFinish: () => {
                 submitting.value = false;
                 cart.value = [];
+                selectedCustomer.value = null;
+                showNewCustomerForm.value = false;
+                newCustomerName.value = '';
+                newCustomerPhone.value = '';
             },
         },
     );

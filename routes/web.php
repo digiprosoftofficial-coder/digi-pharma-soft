@@ -136,6 +136,7 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
             Route::resource('employees', EmployeeController::class)->except(['show']);
 
             Route::get('/catalog/product-search', ProductSearchController::class)->name('catalog.product-search');
+            Route::get('/sales/customer-search', \App\Http\Controllers\Api\Sales\CustomerSearchController::class)->name('sales.customer-search');
 
             Route::get('/barcodes/{product}', [BarcodePrintController::class, 'show'])->name('barcodes.show');
         });

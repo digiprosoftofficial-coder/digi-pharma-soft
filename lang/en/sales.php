@@ -45,4 +45,11 @@ return [
     'rounding_nearest_1' => 'Nearest 1 Taka',
     'pos_rounding_label' => 'Invoice Rounding',
     'pos_rounding_hint' => 'Round payable amounts to nearest whole number. Bangladesh retail typically does not use paisa/coins.',
+    'pos_customer_search_placeholder' => 'Search customer by name or phone...',
+    'pos_add_new_customer' => 'Add new customer',
+    'pos_new_customer' => 'New customer',
+    'pos_customer_optional_hint' => 'Optional — leave empty for cash sale.',
+    'pos_customer_due' => 'Due: :amount',
+    'customer_name' => 'Name',
+    'customer_phone' => 'Phone (optional)',
 ];

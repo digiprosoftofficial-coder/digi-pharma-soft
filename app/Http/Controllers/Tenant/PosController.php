@@ -24,7 +24,6 @@ final class PosController extends Controller
         session()->forget('last_sale_id');
 
         return Inertia::render('Pos/Index', [
-            'customers' => Customer::query()->orderBy('name')->get(['id', 'name', 'phone', 'balance_due']),
             'lastSaleId' => $lastSaleId,
             'roundingMode' => InvoiceRounding::resolve(tenant()),
         ]);
@@ -32,9 +31,22 @@ final class PosController extends Controller
 
     public function store(StorePosSaleRequest $request): RedirectResponse
     {
+        $customerId = $request->validated('customer_id');
+
+        // Create new customer on-the-fly if provided
+        $newCustomerData = $request->validated('new_customer');
+        if ($newCustomerData && ! $customerId) {
+            $customer = Customer::query()->create([
+                'name' => $newCustomerData['name'],
+                'phone' => $newCustomerData['phone'] ?? null,
+                'balance_due' => 0,
+            ]);
+            $customerId = $customer->getKey();
+        }
+
         try {
             $sale = $this->sales->checkout(
-                $request->validated('customer_id'),
+                $customerId,
                 $request->validated('lines'),
                 $request->validated('payments'),
                 (float) $request->validated('discount_percent', 0),
