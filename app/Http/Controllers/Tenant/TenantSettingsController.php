@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Support\Money\SupportedCurrencies;
 use App\Support\Platform\PlatformSettings;
+use App\Support\Sales\InvoiceRounding;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -28,6 +30,10 @@ final class TenantSettingsController extends Controller
             ],
             'currencies' => SupportedCurrencies::codes(),
             'platformDefaultCurrency' => PlatformSettings::defaultCurrency(),
+            'roundingOptions' => [
+                ['value' => InvoiceRounding::NONE, 'label' => __('sales.rounding_none')],
+                ['value' => InvoiceRounding::NEAREST_1, 'label' => __('sales.rounding_nearest_1')],
+            ],
         ]);
     }
 
@@ -43,6 +49,7 @@ final class TenantSettingsController extends Controller
             'settings.phone' => ['nullable', 'string', 'max:64'],
             'settings.address' => ['nullable', 'string', 'max:500'],
             'settings.currency' => ['nullable', SupportedCurrencies::validationRule()],
+            'settings.invoice_rounding' => ['nullable', Rule::in([InvoiceRounding::NONE, InvoiceRounding::NEAREST_1])],
         ]);
 
         $tenant->name = $validated['name'];

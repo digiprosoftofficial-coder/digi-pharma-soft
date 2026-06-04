@@ -39,4 +39,10 @@ return [
     'return_search' => 'Search product to return',
     'return_add_product' => 'Add to return',
     'status_posted' => 'Posted',
+    'round_adjustment' => 'Round Adjustment',
+    'payable_amount' => 'Payable Amount',
+    'rounding_none' => 'None',
+    'rounding_nearest_1' => 'Nearest 1 Taka',
+    'pos_rounding_label' => 'Invoice Rounding',
+    'pos_rounding_hint' => 'Round payable amounts to nearest whole number. Bangladesh retail typically does not use paisa/coins.',
 ];

@@ -117,9 +117,23 @@
                                 <td class="text-end text-danger">−{{ formatMoney(cartDiscountAmount) }}</td>
                                 <td></td>
                             </tr>
-                            <tr v-if="cartDiscountAmount > 0">
+                            <tr v-if="cartDiscountAmount > 0 || roundAdjustment !== 0">
                                 <td colspan="4" class="text-end">Total</td>
                                 <td class="text-end">{{ formatMoney(totalAfterDiscount) }}</td>
+                                <td></td>
+                            </tr>
+                            <tr v-if="roundAdjustment !== 0">
+                                <td colspan="4" class="text-end text-muted">
+                                    {{ t('sales.round_adjustment') }}
+                                </td>
+                                <td class="text-end" :class="roundAdjustment > 0 ? 'text-success' : 'text-danger'">
+                                    {{ roundAdjustment > 0 ? '+' : '' }}{{ formatMoney(roundAdjustment) }}
+                                </td>
+                                <td></td>
+                            </tr>
+                            <tr v-if="roundAdjustment !== 0" class="table-primary">
+                                <td colspan="4" class="text-end fw-bold">{{ t('sales.payable_amount') }}</td>
+                                <td class="text-end fw-bold">{{ formatMoney(payableAmount) }}</td>
                                 <td></td>
                             </tr>
                         </tfoot>
@@ -217,6 +231,7 @@ import { computed, ref, watch } from 'vue';
 const props = defineProps({
     customers: { type: Array, default: () => [] },
     lastSaleId: { type: Number, default: null },
+    roundingMode: { type: String, default: 'none' },
 });
 
 const { t } = useLocale();
@@ -247,21 +262,36 @@ const cartDiscountAmount = computed(() => {
 
 const totalAfterDiscount = computed(() => Math.max(0, cartSubtotal.value - cartDiscountAmount.value));
 
-const duePreview = computed(() => Math.max(0, totalAfterDiscount.value - Number(amountPaid.value || 0)));
+const roundAdjustment = computed(() => {
+    if (props.roundingMode === 'nearest_1') {
+        const rounded = Math.round(totalAfterDiscount.value);
+        return Math.round((rounded - totalAfterDiscount.value) * 100) / 100;
+    }
+    return 0;
+});
 
-const changePreview = computed(() => Math.max(0, Number(amountPaid.value || 0) - totalAfterDiscount.value));
+const payableAmount = computed(() => {
+    if (props.roundingMode === 'nearest_1') {
+        return Math.round(totalAfterDiscount.value);
+    }
+    return totalAfterDiscount.value;
+});
+
+const duePreview = computed(() => Math.max(0, payableAmount.value - Number(amountPaid.value || 0)));
+
+const changePreview = computed(() => Math.max(0, Number(amountPaid.value || 0) - payableAmount.value));
 
 const needsCustomerForDue = computed(() => duePreview.value > 0.001 && !customerId.value);
 
-watch([cartSubtotal, cartDiscountPercent], () => {
+watch([cartSubtotal, cartDiscountPercent, payableAmount], () => {
     if (payFullAmount.value) {
-        amountPaid.value = totalAfterDiscount.value;
+        amountPaid.value = payableAmount.value;
     }
 });
 
 function setPayFull() {
     payFullAmount.value = true;
-    amountPaid.value = totalAfterDiscount.value;
+    amountPaid.value = payableAmount.value;
 }
 
 function onAmountPaidInput() {

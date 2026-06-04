@@ -10,7 +10,8 @@ class Sale extends TenantModel
 {
     protected $fillable = [
         'tenant_id', 'customer_id', 'invoice_no', 'sold_at',
-        'subtotal', 'discount', 'tax', 'total', 'paid', 'amount_tendered', 'change_returned', 'due', 'status',
+        'subtotal', 'discount', 'tax', 'total', 'rounded_total', 'round_adjustment',
+        'paid', 'amount_tendered', 'change_returned', 'due', 'status',
     ];
 
     protected function casts(): array
@@ -21,11 +22,21 @@ class Sale extends TenantModel
             'discount' => 'decimal:4',
             'tax' => 'decimal:4',
             'total' => 'decimal:4',
+            'rounded_total' => 'decimal:4',
+            'round_adjustment' => 'decimal:4',
             'paid' => 'decimal:4',
             'amount_tendered' => 'decimal:4',
             'change_returned' => 'decimal:4',
             'due' => 'decimal:4',
         ];
+    }
+
+    /**
+     * Payable amount (rounded_total if set, else total).
+     */
+    public function payable(): float
+    {
+        return (float) ($this->rounded_total ?? $this->total);
     }
 
     public function customer(): BelongsTo

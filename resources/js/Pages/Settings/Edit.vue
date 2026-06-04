@@ -32,6 +32,15 @@
                 </div>
                 <div v-if="form.errors['settings.currency']" class="text-danger small">{{ form.errors['settings.currency'] }}</div>
             </div>
+            <div class="mb-2">
+                <label class="form-label">{{ t('sales.pos_rounding_label') }}</label>
+                <select v-model="form.settings.invoice_rounding" class="form-select">
+                    <option v-for="opt in roundingOptions" :key="opt.value" :value="opt.value">
+                        {{ opt.label }}
+                    </option>
+                </select>
+                <div class="form-text">{{ t('sales.pos_rounding_hint') }}</div>
+            </div>
             <button v-if="can('settings.manage')" type="submit" class="btn btn-primary" :disabled="form.processing">Save</button>
             <p v-else class="small text-muted mb-0">View only — you need settings.manage to update.</p>
         </form>
@@ -40,15 +49,18 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { useLocale } from '@/composables/useLocale';
 import { usePermissions } from '@/composables/usePermissions';
+import { Head, useForm } from '@inertiajs/vue3';
 
 const props = defineProps({
     tenant: { type: Object, required: true },
     currencies: { type: Array, default: () => ['BDT', 'USD', 'EUR', 'GBP', 'INR', 'SAR'] },
     platformDefaultCurrency: { type: String, default: 'BDT' },
+    roundingOptions: { type: Array, default: () => [{ value: 'none', label: 'None' }] },
 });
 
+const { t } = useLocale();
 const { can } = usePermissions();
 
 const form = useForm({
@@ -57,6 +69,7 @@ const form = useForm({
         phone: props.tenant.settings?.phone ?? '',
         address: props.tenant.settings?.address ?? '',
         currency: props.tenant.settings?.currency ?? props.tenant.currency ?? props.platformDefaultCurrency,
+        invoice_rounding: props.tenant.settings?.invoice_rounding ?? 'none',
     },
 });
 

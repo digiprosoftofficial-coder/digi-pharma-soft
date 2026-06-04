@@ -251,6 +251,82 @@ class SaleVoidExpiryPrintTest extends TestCase
         $this->assertSame(5.0, (float) $batch->quantity_on_hand);
     }
 
+    public function test_invoice_rounding_rounds_to_nearest_taka(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+        $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
+
+        ProductBatch::query()->where('product_id', $product->getKey())->delete();
+
+        $batch = $this->makeBatch($product, [
+            'batch_no' => 'ROUND-1',
+            'expiry_date' => now()->addMonths(6)->toDateString(),
+            'quantity_on_hand' => 10,
+        ]);
+
+        $tenant = \App\Domain\Tenant\Models\Tenant::query()->firstOrFail();
+        $settings = $tenant->settings ?? [];
+        $settings['invoice_rounding'] = 'nearest_1';
+        $tenant->update(['settings' => $settings]);
+
+        $this->actingAs($user)->post('/pos/sales', [
+            'lines' => [[
+                'product_batch_id' => $batch->getKey(),
+                'quantity' => 3,
+                'sell_unit' => 'strip',
+                'unit_price' => 33.25,
+            ]],
+            'payments' => [['method' => 'cash', 'amount' => 100]],
+        ])->assertRedirect();
+
+        $sale = Sale::query()->latest('id')->firstOrFail();
+        $this->assertSame(99.75, (float) $sale->total);
+        $this->assertSame(100.0, (float) $sale->rounded_total);
+        $this->assertSame(0.25, (float) $sale->round_adjustment);
+        $this->assertSame(100.0, (float) $sale->paid);
+        $this->assertSame(0.0, (float) $sale->change_returned);
+        $this->assertSame(0.0, (float) $sale->due);
+    }
+
+    public function test_invoice_rounding_down_gives_change(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+        $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
+
+        ProductBatch::query()->where('product_id', $product->getKey())->delete();
+
+        $batch = $this->makeBatch($product, [
+            'batch_no' => 'ROUND-2',
+            'expiry_date' => now()->addMonths(6)->toDateString(),
+            'quantity_on_hand' => 10,
+        ]);
+
+        $tenant = \App\Domain\Tenant\Models\Tenant::query()->firstOrFail();
+        $settings = $tenant->settings ?? [];
+        $settings['invoice_rounding'] = 'nearest_1';
+        $tenant->update(['settings' => $settings]);
+
+        $this->actingAs($user)->post('/pos/sales', [
+            'lines' => [[
+                'product_batch_id' => $batch->getKey(),
+                'quantity' => 3,
+                'sell_unit' => 'strip',
+                'unit_price' => 33.10,
+            ]],
+            'payments' => [['method' => 'cash', 'amount' => 100]],
+        ])->assertRedirect();
+
+        $sale = Sale::query()->latest('id')->firstOrFail();
+        $this->assertSame(99.30, (float) $sale->total);
+        $this->assertSame(99.0, (float) $sale->rounded_total);
+        $this->assertSame(-0.30, (float) $sale->round_adjustment);
+        $this->assertSame(99.0, (float) $sale->paid);
+        $this->assertSame(1.0, (float) $sale->change_returned);
+        $this->assertSame(0.0, (float) $sale->due);
+    }
+
     public function test_sale_invoice_print_is_available_to_authorized_user(): void
     {
         $this->seed();

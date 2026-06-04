@@ -39,4 +39,10 @@ return [
     'return_search' => 'ফেরতের জন্য পণ্য খুঁজুন',
     'return_add_product' => 'ফেরতে যোগ করুন',
     'status_posted' => 'সম্পন্ন',
+    'round_adjustment' => 'রাউন্ড সমন্বয়',
+    'payable_amount' => 'দেয় টাকা',
+    'rounding_none' => 'নেই',
+    'rounding_nearest_1' => 'নিকটতম ১ টাকা',
+    'pos_rounding_label' => 'ইনভয়েস রাউন্ডিং',
+    'pos_rounding_hint' => 'দেয় টাকা পূর্ণ সংখ্যায় রাউন্ড করে। বাংলাদেশে খুচরা বিক্রিতে সাধারণত পয়সা ব্যবহার হয় না।',
 ];

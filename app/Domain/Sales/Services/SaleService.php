@@ -7,6 +7,7 @@ use App\Support\Catalog\BatchExpiry;
 use App\Support\Catalog\BatchSalePricing;
 use App\Support\Catalog\FefoBatchAllocator;
 use App\Support\Catalog\ProductUnitResolver;
+use App\Support\Sales\InvoiceRounding;
 use InvalidArgumentException;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Sales\Models\Customer;
@@ -55,10 +56,15 @@ final class SaleService
             $discount = round($cartDiscount + $couponDiscount, 4);
             $total = round(max(0, $subtotal - $discount + $tax), 4);
 
+            $roundingMode = InvoiceRounding::resolve(tenant());
+            $rounding = InvoiceRounding::apply($total, $roundingMode);
+            $roundedTotal = $rounding['rounded_total'];
+            $roundAdjustment = $rounding['round_adjustment'];
+
             $tendered = round((float) collect($payments)->sum(fn (array $p) => (float) $p['amount']), 4);
-            $paid = round(min($tendered, $total), 4);
-            $change = round(max(0, $tendered - $total), 4);
-            $due = round(max(0, $total - $paid), 4);
+            $paid = round(min($tendered, $roundedTotal), 4);
+            $change = round(max(0, $tendered - $roundedTotal), 4);
+            $due = round(max(0, $roundedTotal - $paid), 4);
 
             if ($due > 0.0001 && ! $customerId) {
                 throw new RuntimeException(__('sales.due_requires_customer'));
@@ -79,6 +85,8 @@ final class SaleService
                 'discount' => $discount,
                 'tax' => $tax,
                 'total' => $total,
+                'rounded_total' => $roundedTotal,
+                'round_adjustment' => $roundAdjustment,
                 'paid' => $paid,
                 'amount_tendered' => $tendered,
                 'change_returned' => $change,

@@ -6,6 +6,7 @@ use App\Domain\Sales\Models\Customer;
 use App\Domain\Sales\Services\SaleService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sales\StorePosSaleRequest;
+use App\Support\Sales\InvoiceRounding;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -25,6 +26,7 @@ final class PosController extends Controller
         return Inertia::render('Pos/Index', [
             'customers' => Customer::query()->orderBy('name')->get(['id', 'name', 'phone', 'balance_due']),
             'lastSaleId' => $lastSaleId,
+            'roundingMode' => InvoiceRounding::resolve(tenant()),
         ]);
     }
 

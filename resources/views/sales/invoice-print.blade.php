@@ -87,6 +87,13 @@
                 <tr><td>{{ __('sales.tax') }}</td><td class="num">{{ number_format((float) $sale->tax, 2) }}</td></tr>
             @endif
             <tr class="grand"><td>{{ __('sales.total') }}</td><td class="num">{{ number_format((float) $sale->total, 2) }}</td></tr>
+            @if ((float) $sale->round_adjustment != 0)
+                <tr>
+                    <td>{{ __('sales.round_adjustment') }}</td>
+                    <td class="num">{{ ((float) $sale->round_adjustment > 0 ? '+' : '') . number_format((float) $sale->round_adjustment, 2) }}</td>
+                </tr>
+                <tr style="font-weight:600"><td>{{ __('sales.payable_amount') }}</td><td class="num">{{ number_format((float) $sale->rounded_total, 2) }}</td></tr>
+            @endif
             @if ((float) $sale->amount_tendered > 0)
                 <tr><td>{{ __('sales.amount_tendered') }}</td><td class="num">{{ number_format((float) $sale->amount_tendered, 2) }}</td></tr>
             @endif
