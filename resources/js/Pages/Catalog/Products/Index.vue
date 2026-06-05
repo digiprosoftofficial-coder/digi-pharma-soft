@@ -44,20 +44,50 @@
         </form>
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
             <p class="small text-muted mb-0">{{ resultsSummary }}</p>
-            <div class="d-flex align-items-center gap-2">
-                <label class="small text-muted mb-0" for="per-page">{{ t('catalog.products_per_page') }}</label>
-                <select
-                    id="per-page"
-                    v-model.number="filterForm.per_page"
-                    class="form-select form-select-sm"
-                    style="width: auto"
-                    @change="applyFilters"
-                >
-                    <option v-for="n in perPageOptions" :key="n" :value="n">{{ n }}</option>
-                </select>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="btn-group btn-group-sm" role="group" :aria-label="t('catalog.products_view_mode')">
+                    <button
+                        type="button"
+                        class="btn"
+                        :class="viewMode === 'table' ? 'btn-primary' : 'btn-outline-secondary'"
+                        @click="setViewMode('table')"
+                    >
+                        {{ t('catalog.products_view_table') }}
+                    </button>
+                    <button
+                        type="button"
+                        class="btn"
+                        :class="viewMode === 'grid' ? 'btn-primary' : 'btn-outline-secondary'"
+                        @click="setViewMode('grid')"
+                    >
+                        {{ t('catalog.products_view_grid') }}
+                    </button>
+                    <button
+                        type="button"
+                        class="btn"
+                        :class="viewMode === 'compact' ? 'btn-primary' : 'btn-outline-secondary'"
+                        @click="setViewMode('compact')"
+                    >
+                        {{ t('catalog.products_view_compact') }}
+                    </button>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <label class="small text-muted mb-0" for="per-page">{{ t('catalog.products_per_page') }}</label>
+                    <select
+                        id="per-page"
+                        v-model.number="filterForm.per_page"
+                        class="form-select form-select-sm"
+                        style="width: auto"
+                        @change="applyFilters"
+                    >
+                        <option v-for="n in perPageOptions" :key="n" :value="n">{{ n }}</option>
+                    </select>
+                </div>
             </div>
         </div>
-        <div class="table-responsive card border-0 shadow-sm">
+
+        <!-- Table view -->
+        <div v-if="viewMode === 'table'" class="table-responsive card border-0 shadow-sm">
             <table class="table table-striped mb-0">
                 <thead>
                     <tr>
@@ -112,17 +142,7 @@
                             </span>
                         </td>
                         <td class="text-end text-nowrap">
-                            <Link :href="`/products/${p.id}`" class="btn btn-sm btn-outline-primary me-1">View</Link>
-                            <a :href="`/barcodes/${p.id}`" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary me-1">Barcode</a>
-                            <Link v-if="can('products.manage')" :href="`/products/${p.id}/edit`" class="btn btn-sm btn-outline-secondary me-1">Edit</Link>
-                            <button
-                                v-if="can('products.manage')"
-                                type="button"
-                                class="btn btn-sm btn-outline-danger"
-                                @click="confirmDelete(p)"
-                            >
-                                Delete
-                            </button>
+                            <ProductRowActions :product="p" :can-manage="can('products.manage')" @delete="confirmDelete" />
                         </td>
                     </tr>
                     <tr v-if="!products.data?.length">
@@ -131,6 +151,109 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Grid view -->
+        <div v-else-if="viewMode === 'grid'">
+            <div v-if="!products.data?.length" class="card border-0 shadow-sm card-body text-muted text-center py-4">
+                No products found.
+            </div>
+            <div v-else class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-3">
+                <div v-for="p in products.data" :key="p.id" class="col">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="ratio ratio-4x3 border-bottom product-card-image-wrap">
+                            <img
+                                :src="cardImage(p)"
+                                :alt="p.name"
+                                class="product-card-image"
+                                :class="{ 'product-card-image--placeholder': !p.image_url }"
+                            />
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                                <Link :href="`/products/${p.id}`" class="text-decoration-none fw-semibold stretched-link">
+                                    {{ p.name }}
+                                </Link>
+                                <span class="badge flex-shrink-0" :class="p.is_active ? 'text-bg-success' : 'text-bg-secondary'">
+                                    {{ p.is_active ? 'Active' : 'Inactive' }}
+                                </span>
+                            </div>
+                            <p v-if="p.generic_name" class="small text-muted mb-1">{{ p.generic_name }}</p>
+                            <p v-if="p.strength" class="small text-muted mb-2">{{ p.strength }}</p>
+                            <div class="mt-auto">
+                                <div class="d-flex justify-content-between align-items-baseline mb-2">
+                                    <span class="h6 mb-0 text-primary">{{ formatMoney(p.sale_price) }}</span>
+                                    <span class="small text-muted">{{ p.sku }}</span>
+                                </div>
+                                <div class="small text-muted mb-2">
+                                    <span class="fw-semibold text-body">{{ formatQty(p.stock_on_hand) }}</span>
+                                    {{ unitLabel(p.base_unit || p.unit) }} on hand
+                                    <span v-if="p.stock_pieces"> · {{ formatQty(p.stock_pieces) }} pcs</span>
+                                </div>
+                                <div class="d-flex flex-wrap gap-1 position-relative" style="z-index: 2">
+                                    <Link :href="`/products/${p.id}`" class="btn btn-sm btn-outline-primary">View</Link>
+                                    <a :href="`/barcodes/${p.id}`" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">Barcode</a>
+                                    <Link v-if="can('products.manage')" :href="`/products/${p.id}/edit`" class="btn btn-sm btn-outline-secondary">Edit</Link>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Compact view -->
+        <div v-else class="table-responsive card border-0 shadow-sm">
+            <table class="table table-sm table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th class="text-end">Sale ({{ currencyCode() }})</th>
+                        <th class="text-end">On hand</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="p in products.data" :key="p.id">
+                        <td>
+                            <Link :href="`/products/${p.id}`" class="text-decoration-none fw-medium">{{ p.name }}</Link>
+                            <div class="small text-muted">
+                                <span v-if="p.generic_name">{{ p.generic_name }}</span>
+                                <span v-if="p.generic_name && p.sku"> · </span>
+                                <span>{{ p.sku }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <ProductTypeLabel
+                                v-if="p.product_type"
+                                :type="p.product_type"
+                                :icon-url="p.product_type_icon_url"
+                                size="sm"
+                            />
+                            <span v-else class="text-muted">—</span>
+                        </td>
+                        <td class="text-end">{{ formatMoney(p.sale_price) }}</td>
+                        <td class="text-end">
+                            {{ formatQty(p.stock_on_hand) }}
+                            <span class="text-muted small">{{ unitLabel(p.base_unit || p.unit) }}</span>
+                        </td>
+                        <td>
+                            <span class="badge" :class="p.is_active ? 'text-bg-success' : 'text-bg-secondary'">
+                                {{ p.is_active ? 'Active' : 'Inactive' }}
+                            </span>
+                        </td>
+                        <td class="text-end text-nowrap">
+                            <ProductRowActions :product="p" :can-manage="can('products.manage')" compact @delete="confirmDelete" />
+                        </td>
+                    </tr>
+                    <tr v-if="!products.data?.length">
+                        <td colspan="6" class="text-muted text-center py-4">No products found.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
         <nav v-if="products.links?.length > 3" class="mt-3">
             <ul class="pagination">
                 <li v-for="l in products.links" :key="l.label" class="page-item" :class="{ active: l.active, disabled: !l.url }">
@@ -150,7 +273,10 @@ import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { usePermissions } from '@/composables/usePermissions';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, reactive } from 'vue';
+import { computed, defineComponent, h, reactive, ref } from 'vue';
+
+const VIEW_MODE_KEY = 'catalog.products.viewMode';
+const PRODUCT_PLACEHOLDER_URL = '/images/product-placeholder.png';
 
 const props = defineProps({
     products: { type: Object, required: true },
@@ -163,6 +289,80 @@ const props = defineProps({
 const { t } = useLocale();
 const { formatMoney, currencyCode } = useMoney();
 const { can } = usePermissions();
+
+const viewMode = ref(loadViewMode());
+
+const ProductRowActions = defineComponent({
+    name: 'ProductRowActions',
+    props: {
+        product: { type: Object, required: true },
+        canManage: { type: Boolean, default: false },
+        compact: { type: Boolean, default: false },
+    },
+    emits: ['delete'],
+    setup(props, { emit }) {
+        return () =>
+            h('div', { class: 'd-inline-flex flex-wrap gap-1' }, [
+                h(
+                    Link,
+                    { href: `/products/${props.product.id}`, class: `btn btn-sm btn-outline-primary${props.compact ? '' : ' me-1'}` },
+                    () => 'View',
+                ),
+                h(
+                    'a',
+                    {
+                        href: `/barcodes/${props.product.id}`,
+                        target: '_blank',
+                        rel: 'noopener',
+                        class: `btn btn-sm btn-outline-secondary${props.compact ? '' : ' me-1'}`,
+                    },
+                    'Barcode',
+                ),
+                props.canManage
+                    ? h(
+                          Link,
+                          {
+                              href: `/products/${props.product.id}/edit`,
+                              class: `btn btn-sm btn-outline-secondary${props.compact ? '' : ' me-1'}`,
+                          },
+                          () => 'Edit',
+                      )
+                    : null,
+                props.canManage
+                    ? h(
+                          'button',
+                          {
+                              type: 'button',
+                              class: 'btn btn-sm btn-outline-danger',
+                              onClick: () => emit('delete', props.product),
+                          },
+                          'Delete',
+                      )
+                    : null,
+            ]);
+    },
+});
+
+function loadViewMode() {
+    try {
+        const saved = localStorage.getItem(VIEW_MODE_KEY);
+        if (saved === 'table' || saved === 'grid' || saved === 'compact') {
+            return saved;
+        }
+    } catch {
+        // ignore
+    }
+    return 'table';
+}
+
+function setViewMode(mode) {
+    viewMode.value = mode;
+    try {
+        localStorage.setItem(VIEW_MODE_KEY, mode);
+    } catch {
+        // ignore
+    }
+}
 
 function labelForType(slug) {
     return productTypeLabel(slug, t);
@@ -191,6 +391,10 @@ function shelfLabel(product) {
     }
 
     return loc.code ? `${loc.name} (${loc.code})` : loc.name;
+}
+
+function cardImage(product) {
+    return product.image_url || PRODUCT_PLACEHOLDER_URL;
 }
 
 const filterForm = reactive({
@@ -233,3 +437,20 @@ function confirmDelete(product) {
     router.delete(`/products/${product.id}`, { preserveScroll: true });
 }
 </script>
+
+<style scoped>
+.product-card-image-wrap {
+    background: #111;
+}
+
+.product-card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.product-card-image--placeholder {
+    object-fit: contain;
+    padding: 0.75rem;
+}
+</style>

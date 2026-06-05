@@ -128,4 +128,8 @@ return [
     'strength' => 'Strength',
     'strength_placeholder' => 'e.g. 500 mg',
     'products_search_placeholder' => 'Name, generic name, strength, SKU, barcode',
+    'products_view_table' => 'Table',
+    'products_view_grid' => 'Grid',
+    'products_view_compact' => 'Compact',
+    'products_view_mode' => 'View',
 ];

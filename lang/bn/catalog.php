@@ -128,4 +128,8 @@ return [
     'strength' => 'শক্তি / পাওয়ার',
     'strength_placeholder' => 'যেমন 500 mg',
     'products_search_placeholder' => 'নাম, জেনেরিক, শক্তি, SKU, বারকোড',
+    'products_view_table' => 'টেবিল',
+    'products_view_grid' => 'গ্রিড',
+    'products_view_compact' => 'কম্প্যাক্ট',
+    'products_view_mode' => 'ভিউ',
 ];
