@@ -60,31 +60,72 @@ final class ProductImportController extends Controller
         return back()->with('import_preview', $preview);
     }
 
+    public function revalidate(Request $request): RedirectResponse
+    {
+        $this->authorizeImport();
+
+        $validated = $request->validate([
+            'headers' => ['required', 'array', 'min:1'],
+            'headers.*' => ['required', 'string', 'max:64'],
+            'rows' => ['required', 'array', 'min:1', 'max:500'],
+            'rows.*.row' => ['required', 'integer', 'min:2'],
+            'rows.*.raw' => ['required', 'array'],
+        ]);
+
+        $preview = $this->import->previewFromRows(
+            $validated['headers'],
+            $validated['rows'],
+        );
+
+        return back()->with('import_preview', $preview);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $this->authorizeImport();
 
+        $hasRows = $request->has('rows');
+
         $request->validate([
-            'file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
+            'file' => [$hasRows ? 'nullable' : 'required', 'file', 'mimes:csv,txt', 'max:2048'],
+            'headers' => ['required_with:rows', 'array', 'min:1'],
+            'headers.*' => ['required', 'string', 'max:64'],
+            'rows' => ['required_without:file', 'array', 'min:1', 'max:500'],
+            'rows.*.row' => ['required', 'integer', 'min:2'],
+            'rows.*.raw' => ['required', 'array'],
             'skip_duplicates' => ['sometimes', 'boolean'],
         ]);
 
-        $file = $request->file('file');
-
+        $skipDuplicates = $request->boolean('skip_duplicates', true);
         $maxRows = TenantLimits::maxImportRows(tenant());
-        if ($maxRows !== null) {
-            $rowCount = $this->import->dataRowCount($file);
-            if ($rowCount > $maxRows) {
+
+        if ($hasRows) {
+            $rowCount = count($request->input('rows', []));
+            if ($maxRows !== null && $rowCount > $maxRows) {
                 return back()->withErrors([
-                    'file' => __('catalog.import_rows_limit', ['max' => $maxRows, 'rows' => $rowCount]),
+                    'rows' => __('catalog.import_rows_limit', ['max' => $maxRows, 'rows' => $rowCount]),
                 ]);
             }
-        }
 
-        $result = $this->import->execute(
-            $file,
-            $request->boolean('skip_duplicates', true),
-        );
+            $result = $this->import->executeFromRows(
+                $request->input('headers'),
+                $request->input('rows'),
+                $skipDuplicates,
+            );
+        } else {
+            $file = $request->file('file');
+
+            if ($maxRows !== null) {
+                $rowCount = $this->import->dataRowCount($file);
+                if ($rowCount > $maxRows) {
+                    return back()->withErrors([
+                        'file' => __('catalog.import_rows_limit', ['max' => $maxRows, 'rows' => $rowCount]),
+                    ]);
+                }
+            }
+
+            $result = $this->import->execute($file, $skipDuplicates);
+        }
 
         return redirect()
             ->route('tenant.catalog.import.index')

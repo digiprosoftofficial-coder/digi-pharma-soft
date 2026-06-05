@@ -130,6 +130,137 @@ class ProductImportTest extends TestCase
         $this->assertNotContains('strength', $columns);
     }
 
+    public function test_import_revalidate_updates_preview_after_edit(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+
+        $headers = ProductImportCsv::HEADERS;
+
+        $this->actingAs($user)
+            ->from(route('tenant.catalog.import.index'))
+            ->post('/catalog/import/revalidate', [
+                'headers' => $headers,
+                'rows' => [[
+                    'row' => 2,
+                    'raw' => [
+                        'name' => '',
+                        'generic_name' => 'Bad',
+                        'strength' => '',
+                        'sku' => 'BAD-1',
+                        'barcode' => '',
+                        'product_type' => 'tablet',
+                        'base_unit' => 'strip',
+                        'pieces_per_strip' => '',
+                        'strips_per_box' => '',
+                        'boxes_per_carton' => '',
+                        'category_slug' => 'unknown-slug',
+                        'manufacturer_name' => '',
+                        'storage_location_code' => '',
+                        'purchase_price' => '10',
+                        'sale_price' => '12',
+                        'wholesale_price' => '',
+                        'vat_percent' => '',
+                        'short_description' => '',
+                        'min_stock' => '0',
+                        'opening_quantity' => '',
+                        'opening_batch_no' => '',
+                        'opening_expiry_date' => '',
+                        'is_active' => '1',
+                    ],
+                ]],
+            ])
+            ->assertRedirect(route('tenant.catalog.import.index'))
+            ->assertSessionHas('import_preview');
+
+        $badPreview = session('import_preview');
+        $this->assertGreaterThanOrEqual(1, $badPreview['error_count']);
+        $this->assertSame(0, $badPreview['valid_count']);
+
+        $this->actingAs($user)
+            ->from(route('tenant.catalog.import.index'))
+            ->post('/catalog/import/revalidate', [
+                'headers' => $headers,
+                'rows' => [[
+                    'row' => 2,
+                    'raw' => [
+                        'name' => 'Fixed Vitamin',
+                        'generic_name' => 'Fixed Generic',
+                        'strength' => '500 mg',
+                        'sku' => 'FIX-1',
+                        'barcode' => '',
+                        'product_type' => 'tablet',
+                        'base_unit' => 'strip',
+                        'pieces_per_strip' => '',
+                        'strips_per_box' => '',
+                        'boxes_per_carton' => '',
+                        'category_slug' => 'general',
+                        'manufacturer_name' => '',
+                        'storage_location_code' => '',
+                        'purchase_price' => '10',
+                        'sale_price' => '12',
+                        'wholesale_price' => '',
+                        'vat_percent' => '',
+                        'short_description' => '',
+                        'min_stock' => '0',
+                        'opening_quantity' => '',
+                        'opening_batch_no' => '',
+                        'opening_expiry_date' => '',
+                        'is_active' => '1',
+                    ],
+                ]],
+            ])
+            ->assertRedirect(route('tenant.catalog.import.index'))
+            ->assertSessionHas('import_preview', fn (array $preview) => $preview['valid_count'] === 1
+                && $preview['error_count'] === 0);
+    }
+
+    public function test_import_from_edited_rows_without_file(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+
+        $headers = ProductImportCsv::HEADERS;
+        $raw = [
+            'name' => 'Edited Import Product',
+            'generic_name' => 'Edited Generic',
+            'strength' => '250 mg',
+            'sku' => 'EDIT-IMP-1',
+            'barcode' => '',
+            'product_type' => 'tablet',
+            'base_unit' => 'strip',
+            'pieces_per_strip' => '',
+            'strips_per_box' => '',
+            'boxes_per_carton' => '',
+            'category_slug' => 'general',
+            'manufacturer_name' => '',
+            'storage_location_code' => '',
+            'purchase_price' => '8',
+            'sale_price' => '10',
+            'wholesale_price' => '',
+            'vat_percent' => '',
+            'short_description' => '',
+            'min_stock' => '0',
+            'opening_quantity' => '',
+            'opening_batch_no' => '',
+            'opening_expiry_date' => '',
+            'is_active' => '1',
+        ];
+
+        $this->actingAs($user)
+            ->post('/catalog/import', [
+                'headers' => $headers,
+                'rows' => [['row' => 2, 'raw' => $raw]],
+                'skip_duplicates' => true,
+            ])
+            ->assertRedirect(route('tenant.catalog.import.index'));
+
+        $this->assertDatabaseHas('products', [
+            'sku' => 'EDIT-IMP-1',
+            'name' => 'Edited Import Product',
+        ]);
+    }
+
     private function csvHeaderLine(): string
     {
         return implode(',', ProductImportCsv::HEADERS);

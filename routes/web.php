@@ -93,6 +93,7 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
             Route::get('/catalog/import', [ProductImportController::class, 'index'])->name('catalog.import.index');
             Route::get('/catalog/import/sample', [ProductImportController::class, 'sample'])->name('catalog.import.sample');
             Route::post('/catalog/import/preview', [ProductImportController::class, 'preview'])->name('catalog.import.preview');
+            Route::post('/catalog/import/revalidate', [ProductImportController::class, 'revalidate'])->name('catalog.import.revalidate');
             Route::post('/catalog/import', [ProductImportController::class, 'store'])->name('catalog.import.store');
 
             Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');

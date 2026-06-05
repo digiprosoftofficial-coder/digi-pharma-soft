@@ -23,7 +23,25 @@ final class ImportProductsFromCsvAction
      */
     public function execute(UploadedFile $file, bool $skipDuplicates = true): array
     {
-        $preview = $this->preview($file);
+        return $this->executeFromPreview($this->preview($file), $skipDuplicates);
+    }
+
+    /**
+     * @param  list<string>  $headers
+     * @param  list<array{row:int,raw:array<string,string>}>  $rows
+     * @return array{created:int,skipped:int,errors:list<array{row:int,messages:list<string>}>}
+     */
+    public function executeFromRows(array $headers, array $rows, bool $skipDuplicates = true): array
+    {
+        return $this->executeFromPreview($this->previewFromRows($headers, $rows), $skipDuplicates);
+    }
+
+    /**
+     * @param  array{headers:list<string>,rows:list<array{row:int,data:array<string,mixed>,raw:array<string,string>,errors:list<string>}>,valid_count:int,error_count:int}  $preview
+     * @return array{created:int,skipped:int,errors:list<array{row:int,messages:list<string>}>}
+     */
+    public function executeFromPreview(array $preview, bool $skipDuplicates = true): array
+    {
         $created = 0;
         $skipped = 0;
         $errors = [];
@@ -121,10 +139,8 @@ final class ImportProductsFromCsvAction
         }
 
         $headers = array_map(fn ($h) => Str::snake(trim((string) $h)), fgetcsv($handle) ?: []);
-        $rows = [];
+        $inputRows = [];
         $rowNum = 1;
-        $validCount = 0;
-        $errorCount = 0;
 
         while (($line = fgetcsv($handle)) !== false) {
             $rowNum++;
@@ -139,29 +155,78 @@ final class ImportProductsFromCsvAction
                 }
             }
 
-            $normalized = $this->normalizeRow($assoc);
-            $errors = $this->validateRow($normalized, $assoc);
+            $inputRows[] = ['row' => $rowNum, 'raw' => $assoc];
 
-            if ($errors === []) {
-                $validCount++;
-            } else {
-                $errorCount++;
-            }
-
-            $rows[] = ['row' => $rowNum, 'data' => $normalized, 'raw' => $assoc, 'errors' => $errors];
-
-            if (count($rows) >= 500) {
+            if (count($inputRows) >= 500) {
                 break;
             }
         }
 
         fclose($handle);
 
+        return $this->previewFromRows($headers, $inputRows);
+    }
+
+    /**
+     * @param  list<string>  $headers
+     * @param  list<array{row:int,raw:array<string,string>}>  $rows
+     * @return array{headers:list<string>,rows:list<array{row:int,data:array<string,mixed>,raw:array<string,string>,errors:list<string>}>,valid_count:int,error_count:int}
+     */
+    public function previewFromRows(array $headers, array $rows): array
+    {
+        $parsed = [];
+        $validCount = 0;
+        $errorCount = 0;
+
+        foreach ($rows as $entry) {
+            $rowNum = (int) ($entry['row'] ?? 0);
+            $rawInput = $entry['raw'] ?? [];
+            $assoc = [];
+
+            foreach ($headers as $key) {
+                if ($key === '') {
+                    continue;
+                }
+                $assoc[$key] = trim((string) ($rawInput[$key] ?? ''));
+            }
+
+            $built = $this->buildRowEntry($rowNum, $assoc);
+
+            if ($built['errors'] === []) {
+                $validCount++;
+            } else {
+                $errorCount++;
+            }
+
+            $parsed[] = $built;
+
+            if (count($parsed) >= 500) {
+                break;
+            }
+        }
+
         return [
             'headers' => $headers,
-            'rows' => $rows,
+            'rows' => $parsed,
             'valid_count' => $validCount,
             'error_count' => $errorCount,
+        ];
+    }
+
+    /**
+     * @param  array<string, string>  $assoc
+     * @return array{row:int,data:array<string,mixed>,raw:array<string,string>,errors:list<string>}
+     */
+    private function buildRowEntry(int $rowNum, array $assoc): array
+    {
+        $normalized = $this->normalizeRow($assoc);
+        $errors = $this->validateRow($normalized, $assoc);
+
+        return [
+            'row' => $rowNum,
+            'data' => $normalized,
+            'raw' => $assoc,
+            'errors' => $errors,
         ];
     }
 
