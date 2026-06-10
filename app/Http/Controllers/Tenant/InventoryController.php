@@ -47,10 +47,47 @@ final class InventoryController extends Controller
             return $batch;
         });
 
+        $expiryQuery = fn () => ProductBatch::query()
+            ->where('quantity_on_hand', '>', 0)
+            ->whereNotNull('expiry_date')
+            ->with(['product.storageLocation', 'storageLocation'])
+            ->orderBy('expiry_date');
+
+        $mapExpiryBatch = function (ProductBatch $batch) {
+            $batch->setAttribute('effective_storage_location', EffectiveStorageLocation::forBatch($batch));
+
+            return $batch;
+        };
+
+        $today = now()->toDateString();
+
         return Inertia::render('Inventory/Index', [
             'lowStockBatches' => $lowStockBatches,
             'recentMovements' => $recentMovements,
             'batches' => $batchSummary,
+            'expiredBatches' => $expiryQuery()
+                ->whereDate('expiry_date', '<', $today)
+                ->limit(50)
+                ->get()
+                ->map($mapExpiryBatch),
+            'expiringWithin30' => $expiryQuery()
+                ->whereDate('expiry_date', '>=', $today)
+                ->whereDate('expiry_date', '<=', now()->addDays(30)->toDateString())
+                ->limit(50)
+                ->get()
+                ->map($mapExpiryBatch),
+            'expiringWithin60' => $expiryQuery()
+                ->whereDate('expiry_date', '>', now()->addDays(30)->toDateString())
+                ->whereDate('expiry_date', '<=', now()->addDays(60)->toDateString())
+                ->limit(50)
+                ->get()
+                ->map($mapExpiryBatch),
+            'expiringWithin90' => $expiryQuery()
+                ->whereDate('expiry_date', '>', now()->addDays(60)->toDateString())
+                ->whereDate('expiry_date', '<=', now()->addDays(90)->toDateString())
+                ->limit(50)
+                ->get()
+                ->map($mapExpiryBatch),
         ]);
     }
 }

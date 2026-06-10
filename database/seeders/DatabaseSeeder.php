@@ -70,6 +70,8 @@ class DatabaseSeeder extends Seeder
 
         foreach ([
             ['1000', 'Cash on hand', 'asset'],
+            ['1200', 'Inventory', 'asset'],
+            ['2000', 'Accounts payable', 'liability'],
             ['4000', 'Sales revenue', 'income'],
             ['5000', 'Cost of goods sold', 'expense'],
         ] as [$code, $name, $type]) {

@@ -9,15 +9,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class PurchaseLine extends TenantModel
 {
     protected $fillable = [
-        'tenant_id', 'purchase_id', 'product_id', 'batch_no', 'expiry_date',
+        'tenant_id', 'purchase_id', 'product_id', 'batch_no', 'expiry_date', 'manufactured_at',
         'quantity', 'sell_unit', 'conversion_factor', 'quantity_base',
-        'unit_cost', 'line_total',
+        'unit_cost', 'sale_price', 'line_total',
     ];
 
     protected function casts(): array
     {
         return [
             'expiry_date' => 'date',
+            'manufactured_at' => 'date',
+            'sale_price' => 'decimal:4',
             'quantity' => 'decimal:4',
             'conversion_factor' => 'decimal:4',
             'quantity_base' => 'decimal:4',

@@ -5,22 +5,68 @@
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="row g-2 mb-3">
                 <div class="col-md-4">
-                    <label class="form-label">Supplier</label>
-                    <select v-model="form.supplier_id" class="form-select" required>
-                        <option value="" disabled>Select</option>
-                        <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.name }}</option>
-                    </select>
+                    <label class="form-label">{{ t('purchases.supplier') }}</label>
+                    <div v-if="selectedSupplier" class="d-flex align-items-center gap-2 mb-1">
+                        <span class="badge text-bg-primary">{{ selectedSupplier.name }}</span>
+                        <button type="button" class="btn btn-sm btn-link p-0" @click="clearSupplier">{{ t('purchases.change_supplier') }}</button>
+                    </div>
+                    <div v-else-if="!showNewSupplierForm">
+                        <input
+                            v-model="supplierQuery"
+                            type="search"
+                            class="form-control"
+                            :placeholder="t('purchases.supplier_search_placeholder')"
+                            autocomplete="off"
+                            @input="debouncedSupplierSearch"
+                        />
+                        <ul v-if="supplierResults.length" class="list-group list-group-flush mt-1 border rounded overflow-hidden">
+                            <li
+                                v-for="s in supplierResults"
+                                :key="s.id"
+                                class="list-group-item list-group-item-action py-2 small"
+                                role="button"
+                                @click="selectSupplier(s)"
+                            >
+                                {{ s.name }}
+                                <span v-if="s.phone" class="text-muted">({{ s.phone }})</span>
+                            </li>
+                        </ul>
+                        <button type="button" class="btn btn-sm btn-link p-0 mt-1" @click="toggleNewSupplierForm">
+                            + {{ t('purchases.add_new_supplier') }}
+                        </button>
+                    </div>
+                    <div v-else class="border rounded p-2 bg-light">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="small fw-semibold">{{ t('purchases.new_supplier') }}</span>
+                            <button type="button" class="btn btn-sm btn-link p-0" @click="toggleNewSupplierForm">{{ t('common.cancel') }}</button>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <input v-model="newSupplierName" type="text" class="form-control form-control-sm" :placeholder="t('purchases.supplier_name')" required />
+                            </div>
+                            <div class="col-6">
+                                <input v-model="newSupplierPhone" type="text" class="form-control form-control-sm" :placeholder="t('purchases.supplier_phone')" />
+                            </div>
+                            <div class="col-6">
+                                <input v-model="newSupplierEmail" type="email" class="form-control form-control-sm" :placeholder="t('purchases.supplier_email')" />
+                            </div>
+                        </div>
+                    </div>
                     <div v-if="form.errors.supplier_id" class="text-danger small">{{ form.errors.supplier_id }}</div>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Invoice no</label>
+                    <label class="form-label">{{ t('purchases.invoice') }}</label>
                     <input v-model="form.invoice_no" class="form-control" required />
                     <div v-if="form.errors.invoice_no" class="text-danger small">{{ form.errors.invoice_no }}</div>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Purchased at</label>
+                    <label class="form-label">{{ t('purchases.date') }}</label>
                     <input v-model="form.purchased_at" type="date" class="form-control" required />
                 </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">{{ t('purchases.notes') }}</label>
+                <textarea v-model="form.notes" class="form-control" rows="2" :placeholder="t('purchases.notes_placeholder')" />
             </div>
             <div class="row g-2 mb-3">
                 <div class="col-md-4">
@@ -43,6 +89,13 @@
                         <span class="input-group-text">{{ currencySymbol() }}</span>
                         <input v-model.number="form.paid" type="number" min="0" step="0.01" class="form-control" />
                     </div>
+                </div>
+                <div v-if="Number(form.paid) > 0" class="col-md-4">
+                    <label class="form-label">{{ t('purchases.payment_method') }}</label>
+                    <select v-model="form.payment_method" class="form-select" required>
+                        <option v-for="m in paymentMethods" :key="m.value" :value="m.value">{{ m.label }}</option>
+                    </select>
+                    <div v-if="form.errors.payment_method" class="text-danger small">{{ form.errors.payment_method }}</div>
                 </div>
             </div>
 
@@ -117,8 +170,12 @@
                         <input :value="line.batch_no" type="text" class="form-control form-control-sm" disabled />
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label small">Expiry</label>
+                        <label class="form-label small">{{ t('purchases.expiry') }}</label>
                         <input v-model="line.expiry_date" type="date" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">{{ t('purchases.manufactured_at') }}</label>
+                        <input v-model="line.manufactured_at" type="date" class="form-control form-control-sm" />
                     </div>
                     <div v-if="props.storageLocations.length" class="col-md-3">
                         <label class="form-label small">{{ t('catalog.storage_location_shelf') }}</label>
@@ -142,13 +199,23 @@
                         <input v-model.number="line.quantity" type="number" min="0.0001" step="0.0001" class="form-control form-control-sm" required />
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label small">Unit cost ({{ currencyCode() }})</label>
+                        <label class="form-label small">{{ t('purchases.unit_cost') }} ({{ currencyCode() }})</label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text">{{ currencySymbol() }}</span>
                             <input v-model.number="line.unit_cost" type="number" min="0" step="0.01" class="form-control" required />
                         </div>
+                        <div v-if="priceComparisonLabel(line)" class="form-text" :class="priceComparisonClass(line)">
+                            {{ priceComparisonLabel(line) }}
+                        </div>
                         <div v-if="Number(line.quantity) > 0 && Number(line.unit_cost) > 0" class="form-text">
                             = {{ formatMoney(Number(line.quantity) * Number(line.unit_cost)) }}
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">{{ t('purchases.sale_price_mrp') }} ({{ currencyCode() }})</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">{{ currencySymbol() }}</span>
+                            <input v-model.number="line.sale_price" type="number" min="0" step="0.01" class="form-control" />
                         </div>
                     </div>
                 </div>
@@ -224,12 +291,13 @@ import {
     hasBoxAndCartonUnits,
     unitLabel,
     unitPurchasePrice,
+    unitSalePrice,
 } from '@/composables/useProductUnits';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 const props = defineProps({
-    suppliers: { type: Array, required: true },
+    paymentMethods: { type: Array, default: () => [] },
     storageLocations: { type: Array, default: () => [] },
 });
 
@@ -251,15 +319,60 @@ const searchResults = ref([]);
 const searching = ref(false);
 let searchTimer;
 
+const supplierQuery = ref('');
+const supplierResults = ref([]);
+const selectedSupplier = ref(null);
+const showNewSupplierForm = ref(false);
+const newSupplierName = ref('');
+const newSupplierPhone = ref('');
+const newSupplierEmail = ref('');
+let supplierSearchTimer;
+
 const form = useForm({
     supplier_id: '',
     invoice_no: '',
     purchased_at: new Date().toISOString().slice(0, 10),
+    notes: '',
     tax: 0,
     discount: 0,
     paid: 0,
+    payment_method: props.paymentMethods[0]?.value ?? 'cash',
     lines: [],
 });
+
+function debouncedSupplierSearch() {
+    clearTimeout(supplierSearchTimer);
+    supplierSearchTimer = setTimeout(runSupplierSearch, 250);
+}
+
+async function runSupplierSearch() {
+    if (supplierQuery.value.length < 1) {
+        supplierResults.value = [];
+        return;
+    }
+    const { data } = await window.axios.get('/purchases/supplier-search', { params: { q: supplierQuery.value } });
+    supplierResults.value = data.data ?? [];
+}
+
+function selectSupplier(supplier) {
+    selectedSupplier.value = supplier;
+    form.supplier_id = supplier.id;
+    supplierQuery.value = '';
+    supplierResults.value = [];
+    showNewSupplierForm.value = false;
+}
+
+function clearSupplier() {
+    selectedSupplier.value = null;
+    form.supplier_id = '';
+}
+
+function toggleNewSupplierForm() {
+    showNewSupplierForm.value = !showNewSupplierForm.value;
+    if (showNewSupplierForm.value) {
+        clearSupplier();
+    }
+}
 
 function formatQty(value) {
     const n = Number(value ?? 0);
@@ -445,10 +558,15 @@ function addProductLine(product) {
         batch_pick: '__new__',
         batch_no: '',
         expiry_date: '',
+        manufactured_at: '',
         sell_unit: sellUnit,
         conversion_factor: 1,
         quantity: 1,
         unit_cost: unitPurchasePrice(product, sellUnit),
+        sale_price: unitSalePrice(product, sellUnit),
+        last_purchase_unit_cost: product.last_purchase?.unit_cost ?? null,
+        last_purchase_sell_unit: product.last_purchase?.sell_unit ?? null,
+        last_purchase_date: product.last_purchase?.purchased_at ?? null,
         unit_options: unitOptions,
         existing_batches: existingBatches,
         catalog_strips_per_box: product.strips_per_box ?? null,
@@ -491,18 +609,62 @@ function applyBatchPick(line) {
     }
 }
 
-function onUnitChange(line) {
+async function onUnitChange(line) {
     const product = {
         units: line.unit_options,
         purchase_price: line.unit_options[0]?.purchase_price,
+        sale_price: line.unit_options[0]?.sale_price,
     };
     line.unit_cost = unitPurchasePrice(product, line.sell_unit);
+    line.sale_price = unitSalePrice(product, line.sell_unit);
     line.pack_strips_per_box = null;
     line.pack_boxes_per_carton = null;
     initLinePackFields(line);
     if (!usesPackSizeFriendlyInput(line)) {
         line.conversion_factor = defaultConversion(line);
     }
+    await refreshLastPurchase(line);
+}
+
+async function refreshLastPurchase(line) {
+    try {
+        const { data } = await window.axios.get(`/catalog/products/${line.product_id}/last-purchase`, {
+            params: { sell_unit: line.sell_unit },
+        });
+        line.last_purchase_unit_cost = data.data?.unit_cost ?? null;
+        line.last_purchase_sell_unit = data.data?.sell_unit ?? line.sell_unit;
+        line.last_purchase_date = data.data?.purchased_at ?? null;
+    } catch {
+        line.last_purchase_unit_cost = null;
+        line.last_purchase_sell_unit = null;
+        line.last_purchase_date = null;
+    }
+}
+
+function priceComparisonLabel(line) {
+    if (line.last_purchase_unit_cost == null || line.last_purchase_unit_cost === '') {
+        return '';
+    }
+    return t('purchases.price_comparison', {
+        last: formatMoney(line.last_purchase_unit_cost),
+        unit: unitLabel(line.last_purchase_sell_unit || line.sell_unit),
+        date: line.last_purchase_date || '—',
+    });
+}
+
+function priceComparisonClass(line) {
+    const last = Number(line.last_purchase_unit_cost);
+    const current = Number(line.unit_cost);
+    if (Number.isNaN(last) || Number.isNaN(current)) {
+        return 'text-muted';
+    }
+    if (current > last + 0.0001) {
+        return 'text-danger';
+    }
+    if (current < last - 0.0001) {
+        return 'text-success';
+    }
+    return 'text-muted';
 }
 
 function removeLine(index) {
@@ -510,26 +672,42 @@ function removeLine(index) {
 }
 
 function submit() {
-    form.transform((data) => ({
-        ...data,
-        lines: data.lines.map((line) => {
-            if (usesPackSizeFriendlyInput(line)) {
-                syncLineConversionFromPackInput(line);
-            }
-            const payload = {
-                product_id: line.product_id,
-                batch_no: line.batch_no,
-                expiry_date: line.expiry_date || null,
-                sell_unit: line.sell_unit,
-                quantity: line.quantity,
-                unit_cost: line.unit_cost,
-                storage_location_id: line.storage_location_id || null,
+    form.transform((data) => {
+        const payload = {
+            ...data,
+            notes: data.notes || null,
+            lines: data.lines.map((line) => {
+                if (usesPackSizeFriendlyInput(line)) {
+                    syncLineConversionFromPackInput(line);
+                }
+                const row = {
+                    product_id: line.product_id,
+                    batch_no: line.batch_no,
+                    expiry_date: line.expiry_date || null,
+                    manufactured_at: line.manufactured_at || null,
+                    sell_unit: line.sell_unit,
+                    quantity: line.quantity,
+                    unit_cost: line.unit_cost,
+                    sale_price: line.sale_price > 0 ? line.sale_price : null,
+                    storage_location_id: line.storage_location_id || null,
+                };
+                if (needsPackSize(line)) {
+                    row.conversion_factor = line.conversion_factor;
+                }
+                return row;
+            }),
+        };
+
+        if (showNewSupplierForm.value && newSupplierName.value.trim()) {
+            payload.new_supplier = {
+                name: newSupplierName.value.trim(),
+                phone: newSupplierPhone.value.trim() || null,
+                email: newSupplierEmail.value.trim() || null,
             };
-            if (needsPackSize(line)) {
-                payload.conversion_factor = line.conversion_factor;
-            }
-            return payload;
-        }),
-    })).post('/purchases');
+            delete payload.supplier_id;
+        }
+
+        return payload;
+    }).post('/purchases');
 }
 </script>

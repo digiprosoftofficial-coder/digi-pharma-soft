@@ -158,6 +158,7 @@ const sectionsConfig = computed(() => [
             { href: '/purchases', icon: 'list', label: t('tenant_nav.purchase_list'), show: can('purchases.view'), match: 'exact' },
             { href: '/purchases/create', icon: 'plus', label: t('tenant_nav.new_purchase'), show: can('purchases.manage'), match: 'exact' },
             { href: '/purchases/supplier-bills', icon: 'bill', label: t('tenant_nav.supplier_bills'), show: can('purchases.view'), match: 'prefix' },
+            { href: '/purchases/returns', icon: 'return', label: t('tenant_nav.purchase_returns'), show: can('purchases.manage'), match: 'prefix' },
         ],
     },
     {

@@ -10,7 +10,7 @@ class Purchase extends TenantModel
 {
     protected $fillable = [
         'tenant_id', 'supplier_id', 'invoice_no', 'purchased_at',
-        'subtotal', 'tax', 'discount', 'total', 'paid', 'due', 'status',
+        'subtotal', 'tax', 'discount', 'total', 'paid', 'due', 'status', 'notes',
     ];
 
     protected function casts(): array
@@ -34,5 +34,10 @@ class Purchase extends TenantModel
     public function lines(): HasMany
     {
         return $this->hasMany(PurchaseLine::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(PurchasePayment::class);
     }
 }

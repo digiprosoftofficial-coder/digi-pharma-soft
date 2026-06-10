@@ -22,7 +22,7 @@ class PurchaseCreateTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Purchases/Create')
-                ->has('suppliers', 1));
+                ->has('paymentMethods', 6));
     }
 
     public function test_product_search_returns_products_for_purchase(): void

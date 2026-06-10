@@ -5,12 +5,16 @@ namespace App\Http\Controllers\Api\Catalog;
 use App\Domain\Catalog\Repositories\ProductRepository;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Catalog\ProductResource;
+use App\Support\Purchasing\LastPurchasePriceLookup;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 final class ProductSearchController extends Controller
 {
-    public function __construct(private readonly ProductRepository $products) {}
+    public function __construct(
+        private readonly ProductRepository $products,
+        private readonly LastPurchasePriceLookup $lastPurchase,
+    ) {}
 
     public function __invoke(Request $request): JsonResponse
     {
@@ -19,6 +23,7 @@ final class ProductSearchController extends Controller
         $request->validate(['q' => ['required', 'string', 'min:1', 'max:100']]);
 
         $items = $this->products->searchByTerm($request->string('q')->toString(), 30);
+        $this->lastPurchase->attachToProducts($items);
 
         return response()->json([
             'data' => ProductResource::collection($items)->resolve(),

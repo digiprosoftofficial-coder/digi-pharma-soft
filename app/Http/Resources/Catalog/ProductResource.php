@@ -65,6 +65,10 @@ class ProductResource extends JsonResource
             ] : null),
             'effective_storage_location' => EffectiveStorageLocation::forProduct($this->resource),
             'batches' => $this->whenLoaded('batches', fn () => ProductBatchResource::collection($this->batches)),
+            'last_purchase' => $this->when(
+                $this->getAttribute('last_purchase') !== null,
+                fn () => $this->getAttribute('last_purchase'),
+            ),
         ];
     }
 

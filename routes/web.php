@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\Catalog\ProductLastPurchaseController;
 use App\Http\Controllers\Api\Catalog\ProductSearchController;
+use App\Http\Controllers\Api\Purchasing\SupplierSearchController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Central\PlatformAdminController;
 use App\Http\Controllers\Central\PlatformAuditController;
@@ -34,6 +36,10 @@ use App\Http\Controllers\Tenant\ProductImportController;
 use App\Http\Controllers\Tenant\ProductTypeController;
 use App\Http\Controllers\Tenant\PromotionsController;
 use App\Http\Controllers\Tenant\PurchaseController;
+use App\Http\Controllers\Tenant\PurchaseExportController;
+use App\Http\Controllers\Tenant\PurchaseInvoiceController;
+use App\Http\Controllers\Tenant\PurchasePaymentController;
+use App\Http\Controllers\Tenant\PurchaseReturnController;
 use App\Http\Controllers\Tenant\ReportController;
 use App\Http\Controllers\Tenant\ReportsHubController;
 use App\Http\Controllers\Tenant\SaleController;
@@ -76,6 +82,16 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
             Route::get('/purchases/create', [PurchaseController::class, 'create'])->name('purchases.create');
             Route::post('/purchases', [PurchaseController::class, 'store'])->name('purchases.store');
             Route::get('/purchases/supplier-bills', [SupplierBillsController::class, 'index'])->name('purchases.supplier-bills');
+            Route::get('/purchases/supplier-bills/{supplier}', [SupplierBillsController::class, 'show'])->name('purchases.supplier-bills.show');
+            Route::get('/purchases/supplier-search', SupplierSearchController::class)->name('purchases.supplier-search');
+            Route::get('/purchases/export', [PurchaseExportController::class, 'csv'])->name('purchases.export');
+            Route::get('/purchases/returns', [PurchaseReturnController::class, 'index'])->name('purchases.returns.index');
+            Route::get('/purchases/returns/create', [PurchaseReturnController::class, 'create'])->name('purchases.returns.create');
+            Route::post('/purchases/returns', [PurchaseReturnController::class, 'store'])->name('purchases.returns.store');
+            Route::get('/purchases/{purchase}', [PurchaseController::class, 'show'])->name('purchases.show');
+            Route::post('/purchases/{purchase}/void', [PurchaseController::class, 'void'])->name('purchases.void');
+            Route::get('/purchases/{purchase}/print', [PurchaseInvoiceController::class, 'print'])->name('purchases.print');
+            Route::post('/purchases/{purchase}/payments', [PurchasePaymentController::class, 'store'])->name('purchases.payments.store');
 
             Route::get('/accounts', [LedgerAccountController::class, 'index'])->name('accounts.index');
             Route::get('/accounts/create', [LedgerAccountController::class, 'create'])->name('accounts.create');
@@ -137,6 +153,7 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
             Route::resource('employees', EmployeeController::class)->except(['show']);
 
             Route::get('/catalog/product-search', ProductSearchController::class)->name('catalog.product-search');
+            Route::get('/catalog/products/{product}/last-purchase', ProductLastPurchaseController::class)->name('catalog.products.last-purchase');
             Route::get('/sales/customer-search', \App\Http\Controllers\Api\Sales\CustomerSearchController::class)->name('sales.customer-search');
 
             Route::get('/barcodes/{product}', [BarcodePrintController::class, 'show'])->name('barcodes.show');

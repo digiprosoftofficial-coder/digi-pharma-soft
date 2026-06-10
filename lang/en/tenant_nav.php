@@ -11,6 +11,7 @@ return [
     'purchase_list' => 'Purchase list',
     'new_purchase' => 'New purchase',
     'supplier_bills' => 'Supplier bills',
+    'purchase_returns' => 'Purchase returns',
     'accounts' => 'General accounts',
     'products' => 'Products',
     'catalog' => 'Product catalog',

@@ -21,4 +21,10 @@ class PurchasePolicy
     {
         return $user->can('purchases.manage');
     }
+
+    public function void(User $user, Purchase $purchase): bool
+    {
+        return $user->can('purchases.manage')
+            && (int) $user->tenant_id === (int) $purchase->tenant_id;
+    }
 }
