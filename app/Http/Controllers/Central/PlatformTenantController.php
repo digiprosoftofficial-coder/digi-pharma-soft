@@ -10,6 +10,7 @@ use App\Domain\Tenant\Actions\AttachTenantOwnerAction;
 use App\Domain\Tenant\Actions\ProvisionTenantAction;
 use App\Domain\Tenant\Actions\SuspendTenantAction;
 use App\Domain\Tenant\Actions\UnsuspendTenantAction;
+use App\Domain\Tenant\Models\Branch;
 use App\Domain\Tenant\Models\Tenant;
 use App\Http\Controllers\Controller;
 use App\Support\Platform\PlatformSettings;
@@ -129,6 +130,12 @@ final class PlatformTenantController extends Controller
             ]),
             'billingStatus' => $tenant->billing_status,
             'gracePeriodEndsAt' => $tenant->grace_period_ends_at?->toIso8601String(),
+            'branches' => Branch::query()
+                ->withoutGlobalScopes()
+                ->where('tenant_id', $tenant->getKey())
+                ->orderByDesc('is_default')
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'is_active', 'is_default', 'created_at']),
             'catalogTemplates' => CatalogTemplate::query()
                 ->where('is_published', true)
                 ->withCount('items')
@@ -206,6 +213,8 @@ final class PlatformTenantController extends Controller
             'wholesale_pricing_override' => ['nullable', 'string', Rule::in(['inherit', 'on', 'off'])],
             'max_products_override' => ['nullable'],
             'max_import_rows_override' => ['nullable'],
+            'multi_branch_override' => ['nullable', 'string', Rule::in(['inherit', 'on', 'off'])],
+            'max_branches_override' => ['nullable'],
         ]);
 
         $tenant->name = $validated['name'];
@@ -234,7 +243,26 @@ final class PlatformTenantController extends Controller
             $tenant->settings = $settings;
         }
 
-        if (array_key_exists('max_products_override', $validated) || array_key_exists('max_import_rows_override', $validated)) {
+        if (array_key_exists('multi_branch_override', $validated)) {
+            $settings = $tenant->settings ?? [];
+            $features = $settings['features'] ?? [];
+
+            if ($validated['multi_branch_override'] === 'inherit') {
+                unset($features[TenantFeatures::MULTI_BRANCH]);
+            } else {
+                $features[TenantFeatures::MULTI_BRANCH] = $validated['multi_branch_override'] === 'on';
+            }
+
+            if ($features === []) {
+                unset($settings['features']);
+            } else {
+                $settings['features'] = $features;
+            }
+
+            $tenant->settings = $settings;
+        }
+
+        if (array_key_exists('max_products_override', $validated) || array_key_exists('max_import_rows_override', $validated) || array_key_exists('max_branches_override', $validated)) {
             $settings = $tenant->settings ?? [];
             $limits = $settings['limits'] ?? [];
 
@@ -243,6 +271,9 @@ final class PlatformTenantController extends Controller
             }
             if (array_key_exists('max_import_rows_override', $validated)) {
                 $limits = $this->applyLimitOverride($limits, 'max_import_rows', $validated['max_import_rows_override']);
+            }
+            if (array_key_exists('max_branches_override', $validated)) {
+                $limits = $this->applyLimitOverride($limits, 'max_branches', $validated['max_branches_override']);
             }
 
             if ($limits === []) {

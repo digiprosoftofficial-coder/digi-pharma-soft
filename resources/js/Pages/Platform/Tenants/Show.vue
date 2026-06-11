@@ -63,7 +63,59 @@
                                 ({{ t(`platform.wholesale_override_${tenant.wholesale_pricing_override}`) }})
                             </span>
                         </dd>
+                        <dt class="col-5">{{ t('platform.multi_branch_override_label') }}</dt>
+                        <dd class="col-7">
+                            <span
+                                class="badge"
+                                :class="tenant.multi_branch_enabled ? 'text-bg-success' : 'text-bg-secondary'"
+                            >
+                                {{
+                                    tenant.multi_branch_enabled
+                                        ? t('platform.multi_branch_effective_on')
+                                        : t('platform.multi_branch_effective_off')
+                                }}
+                            </span>
+                            <span v-if="tenant.multi_branch_override !== 'inherit'" class="text-muted small ms-1">
+                                ({{ t(`platform.multi_branch_override_${tenant.multi_branch_override}`) }})
+                            </span>
+                            <span class="text-muted small d-block mt-1">
+                                {{ tenant.branches_count }} / {{ tenant.max_branches_effective ?? '∞' }} {{ t('platform.tenant_branches').toLowerCase() }}
+                            </span>
+                        </dd>
                     </dl>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm card-body">
+                    <h2 class="h6">{{ t('platform.tenant_branches') }} ({{ branches.length }})</h2>
+                    <div v-if="branches.length" class="table-responsive">
+                        <table class="table table-sm small mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>{{ t('branches.name') }}</th>
+                                    <th>{{ t('branches.code') }}</th>
+                                    <th>{{ t('branches.active') }}</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="b in branches" :key="b.id">
+                                    <td>
+                                        {{ b.name }}
+                                        <span v-if="b.is_default" class="badge text-bg-secondary ms-1">{{ t('branches.default_badge') }}</span>
+                                    </td>
+                                    <td><code>{{ b.code }}</code></td>
+                                    <td>
+                                        <span class="badge" :class="b.is_active ? 'text-bg-success' : 'text-bg-secondary'">
+                                            {{ b.is_active ? t('common.yes') : t('common.no') }}
+                                        </span>
+                                    </td>
+                                    <td>{{ formatDate(b.created_at) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p v-else class="text-muted small mb-0">{{ t('branches.empty') }}</p>
                 </div>
             </div>
             <div class="col-lg-6">
@@ -384,6 +436,7 @@ const props = defineProps({
     billingStatus: { type: String, default: 'trialing' },
     gracePeriodEndsAt: { type: String, default: null },
     catalogTemplates: { type: Array, default: () => [] },
+    branches: { type: Array, default: () => [] },
 });
 
 const { t } = useLocale();

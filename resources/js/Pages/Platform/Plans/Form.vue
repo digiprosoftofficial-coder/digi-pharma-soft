@@ -47,7 +47,12 @@
                     <input id="fadvcatalog" v-model="form.features.advanced_catalog" type="checkbox" class="form-check-input" />
                     <label class="form-check-label" for="fadvcatalog">{{ t('platform.feature_advanced_catalog') }}</label>
                 </div>
-                <p class="form-text small mb-0">{{ t('platform.feature_advanced_catalog_help') }}</p>
+                <p class="form-text small mb-2">{{ t('platform.feature_advanced_catalog_help') }}</p>
+                <div class="form-check">
+                    <input id="fmultibranch" v-model="form.features.multi_branch" type="checkbox" class="form-check-input" />
+                    <label class="form-check-label" for="fmultibranch">{{ t('platform.feature_multi_branch') }}</label>
+                </div>
+                <p class="form-text small mb-0">{{ t('platform.feature_multi_branch_help') }}</p>
             </div>
             <div class="row g-2 mb-3">
                 <div class="col-md-6">
@@ -59,6 +64,11 @@
                     <label class="form-label">{{ t('platform.limit_max_import_rows') }}</label>
                     <input v-model="form.limits.max_import_rows" type="number" min="0" step="1" class="form-control" :placeholder="t('platform.limit_unlimited_placeholder')" />
                     <div class="form-text">{{ t('platform.limit_max_import_rows_help') }}</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{{ t('platform.limit_max_branches') }}</label>
+                    <input v-model="form.limits.max_branches" type="number" min="1" step="1" class="form-control" />
+                    <div class="form-text">{{ t('platform.limit_max_branches_help') }}</div>
                 </div>
             </div>
             <div v-if="form.features.bulk_import" class="mb-3">
@@ -127,12 +137,14 @@ const form = useForm({
         wholesale_pricing: props.plan?.features?.wholesale_pricing ?? false,
         bulk_import: props.plan?.features?.bulk_import ?? true,
         advanced_catalog: props.plan?.features?.advanced_catalog ?? true,
+        multi_branch: props.plan?.features?.multi_branch ?? false,
         import_preset: props.plan?.features?.import_preset ?? 'pro',
         import_columns: props.plan?.features?.import_columns ?? ['name'],
     },
     limits: {
         max_products: props.plan?.limits?.max_products ?? null,
         max_import_rows: props.plan?.limits?.max_import_rows ?? null,
+        max_branches: props.plan?.limits?.max_branches ?? 1,
     },
 });
 

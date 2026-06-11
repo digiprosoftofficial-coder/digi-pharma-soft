@@ -18,6 +18,7 @@ use App\Http\Controllers\Central\PlatformSettingsController;
 use App\Http\Controllers\Central\PlatformTenantComplianceController;
 use App\Http\Controllers\Central\PlatformTenantController;
 use App\Http\Controllers\Central\PlatformTenantImpersonationController;
+use App\Http\Controllers\Tenant\BranchController;
 use App\Http\Controllers\Tenant\BarcodePrintController;
 use App\Http\Controllers\Tenant\CustomerController;
 use App\Http\Controllers\Tenant\DashboardController;
@@ -125,6 +126,14 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
             Route::get('/reports', [ReportsHubController::class, 'index'])->name('reports.hub');
             Route::get('/reports/summary', [ReportController::class, 'summary'])->name('reports.summary');
             Route::get('/reports/export', [ReportController::class, 'exportCsv'])->name('reports.export');
+
+            Route::get('/branches', [BranchController::class, 'index'])->name('branches.index');
+            Route::get('/branches/create', [BranchController::class, 'create'])->name('branches.create');
+            Route::post('/branches', [BranchController::class, 'store'])->name('branches.store');
+            Route::get('/branches/{branch}/edit', [BranchController::class, 'edit'])->name('branches.edit');
+            Route::put('/branches/{branch}', [BranchController::class, 'update'])->name('branches.update');
+            Route::delete('/branches/{branch}', [BranchController::class, 'destroy'])->name('branches.destroy');
+            Route::post('/branches/switch', [BranchController::class, 'switch'])->name('branches.switch');
 
             Route::get('/settings', [TenantSettingsController::class, 'edit'])->name('settings.edit');
             Route::put('/settings', [TenantSettingsController::class, 'update'])->name('settings.update');

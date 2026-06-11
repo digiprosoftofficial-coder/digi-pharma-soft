@@ -2,6 +2,7 @@
 
 namespace App\Support\Tenant;
 
+use App\Domain\Tenant\Models\Branch;
 use App\Domain\Tenant\Models\Tenant;
 use Illuminate\Support\Collection;
 
@@ -46,6 +47,13 @@ final class TenantPresenter
             'max_import_rows_override' => TenantLimits::maxImportRowsOverrideMode($tenant),
             'max_import_rows_effective' => TenantLimits::maxImportRows($tenant),
             'plan_max_import_rows' => TenantLimits::fromPlanLimit($tenant, TenantLimits::MAX_IMPORT_ROWS),
+            'multi_branch_override' => TenantFeatures::multiBranchOverrideMode($tenant),
+            'multi_branch_enabled' => TenantFeatures::multiBranchEnabled($tenant),
+            'plan_multi_branch' => TenantFeatures::fromPlan($tenant, TenantFeatures::MULTI_BRANCH),
+            'max_branches_override' => TenantLimits::maxBranchesOverrideMode($tenant),
+            'max_branches_effective' => TenantLimits::maxBranches($tenant),
+            'plan_max_branches' => TenantLimits::fromPlanLimit($tenant, TenantLimits::MAX_BRANCHES),
+            'branches_count' => Branch::query()->withoutGlobalScopes()->where('tenant_id', $tenant->getKey())->count(),
             'internal_notes' => $tenant->internal_notes,
             'users' => $tenant->relationLoaded('users')
                 ? $tenant->users->map(fn ($u) => [

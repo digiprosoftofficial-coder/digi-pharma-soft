@@ -12,6 +12,8 @@ final class TenantFeatures
 
     public const ADVANCED_CATALOG = 'advanced_catalog';
 
+    public const MULTI_BRANCH = 'multi_branch';
+
     /**
      * Catalog fields only available when the advanced_catalog feature is on.
      *
@@ -37,6 +39,11 @@ final class TenantFeatures
     public static function advancedCatalogEnabled(?Tenant $tenant): bool
     {
         return self::enabled($tenant, self::ADVANCED_CATALOG, true);
+    }
+
+    public static function multiBranchEnabled(?Tenant $tenant): bool
+    {
+        return self::enabled($tenant, self::MULTI_BRANCH, false);
     }
 
     public static function enabled(?Tenant $tenant, string $feature, bool $default = false): bool
@@ -80,7 +87,23 @@ final class TenantFeatures
      */
     public static function wholesalePricingOverrideMode(Tenant $tenant): string
     {
-        $override = self::override($tenant, self::WHOLESALE_PRICING);
+        return self::overrideMode($tenant, self::WHOLESALE_PRICING);
+    }
+
+    /**
+     * @return 'inherit'|'on'|'off'
+     */
+    public static function multiBranchOverrideMode(Tenant $tenant): string
+    {
+        return self::overrideMode($tenant, self::MULTI_BRANCH);
+    }
+
+    /**
+     * @return 'inherit'|'on'|'off'
+     */
+    private static function overrideMode(Tenant $tenant, string $feature): string
+    {
+        $override = self::override($tenant, $feature);
 
         if ($override === null) {
             return 'inherit';
@@ -132,6 +155,7 @@ final class TenantFeatures
             'wholesale_pricing' => self::wholesalePricingEnabled($tenant),
             'bulk_import' => self::bulkImportEnabled($tenant),
             'advanced_catalog' => self::advancedCatalogEnabled($tenant),
+            'multi_branch' => self::multiBranchEnabled($tenant),
         ];
     }
 }

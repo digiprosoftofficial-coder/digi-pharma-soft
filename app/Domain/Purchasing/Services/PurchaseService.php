@@ -84,6 +84,7 @@ final class PurchaseService
 
                 $batch = ProductBatch::query()->firstOrCreate(
                     [
+                        'branch_id' => \branch_id(),
                         'product_id' => $line['product_id'],
                         'batch_no' => $line['batch_no'],
                     ],
@@ -227,6 +228,8 @@ final class PurchaseService
 
             foreach ($purchase->lines as $line) {
                 $batch = ProductBatch::query()
+                    ->withoutGlobalScope('branch')
+                    ->where('branch_id', $purchase->branch_id)
                     ->where('product_id', $line->product_id)
                     ->where('batch_no', $line->batch_no)
                     ->lockForUpdate()

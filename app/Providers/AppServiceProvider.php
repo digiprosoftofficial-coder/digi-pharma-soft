@@ -10,6 +10,7 @@ use App\Domain\Platform\Models\PlatformProductType;
 use App\Domain\Platform\Models\PlatformAnnouncement;
 use App\Domain\Platform\Models\PlatformSetting;
 use App\Domain\Platform\Models\Reseller;
+use App\Domain\Tenant\Models\Branch;
 use App\Domain\Tenant\Models\Tenant;
 use App\Domain\Catalog\Models\CatalogProductType;
 use App\Domain\Catalog\Models\Category;
@@ -26,6 +27,7 @@ use App\Domain\Sales\Models\DiscountCoupon;
 use App\Domain\Sales\Models\Sale;
 use App\Domain\Sales\Models\SaleReturn;
 use App\Models\User;
+use App\Policies\BranchPolicy;
 use App\Policies\CustomerPolicy;
 use App\Policies\DiscountCouponPolicy;
 use App\Policies\EmployeePolicy;
@@ -50,6 +52,8 @@ use App\Policies\Platform\ResellerPolicy;
 use App\Policies\Platform\SubscriptionPlanPolicy;
 use App\Policies\Platform\TenantPolicy;
 use App\Policies\TenantUserPolicy;
+use App\Support\Tenant\BranchContext;
+use App\Support\Tenant\BranchContextResolver;
 use App\Support\Tenant\TenantContext;
 use App\Support\Tenant\TenantContextResolver;
 use App\Support\Tenant\TenantImpersonation;
@@ -63,8 +67,10 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(TenantContext::class, fn () => new TenantContext);
+        $this->app->singleton(BranchContext::class, fn () => new BranchContext);
         $this->app->singleton(TenantImpersonation::class);
         $this->app->singleton(TenantContextResolver::class);
+        $this->app->singleton(BranchContextResolver::class);
     }
 
     public function boot(): void
@@ -88,6 +94,7 @@ class AppServiceProvider extends ServiceProvider
             return Gate::forUser($acting)->inspect($ability, $arguments)->allowed();
         });
 
+        Gate::policy(Branch::class, BranchPolicy::class);
         Gate::policy(Product::class, ProductPolicy::class);
         Gate::policy(Category::class, CategoryPolicy::class);
         Gate::policy(CatalogProductType::class, CatalogProductTypePolicy::class);

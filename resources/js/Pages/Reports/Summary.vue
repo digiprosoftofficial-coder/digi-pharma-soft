@@ -2,7 +2,12 @@
     <TenantShellLayout page-title="Sales summary">
         <Head title="Sales summary" />
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-            <h1 class="h4 mb-0">Sales summary</h1>
+            <div>
+                <h1 class="h4 mb-0">Sales summary</h1>
+                <p v-if="activeBranch" class="small text-muted mb-0">
+                    {{ t('branches.switch_branch') }}: {{ activeBranch.name }} ({{ activeBranch.code }})
+                </p>
+            </div>
             <Link href="/reports" class="btn btn-sm btn-outline-secondary">Reports hub</Link>
         </div>
         <form class="card border-0 shadow-sm card-body mb-3" @submit.prevent="applyRange">
@@ -70,9 +75,14 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, reactive } from 'vue';
+
+const { t } = useLocale();
+const page = usePage();
+const activeBranch = computed(() => (page.props.features?.multi_branch ? page.props.branch : null));
 
 const props = defineProps({
     dateFrom: { type: String, required: true },

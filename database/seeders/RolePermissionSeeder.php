@@ -37,6 +37,7 @@ class RolePermissionSeeder extends Seeder
             'suppliers.view', 'suppliers.manage',
             'team.users.view', 'team.users.manage',
             'settings.view', 'settings.manage',
+            'branches.view', 'branches.manage',
             'sms.send',
             'promotions.view', 'promotions.manage',
             'platform.tenants', 'platform.subscriptions', 'platform.analytics',

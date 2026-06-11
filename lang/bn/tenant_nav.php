@@ -41,4 +41,5 @@ return [
     'finance' => 'অর্থ',
     'marketing' => 'মার্কেটিং',
     'administration' => 'প্রশাসন',
+    'branches' => 'শাখা',
 ];

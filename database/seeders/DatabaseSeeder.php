@@ -10,6 +10,7 @@ use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductBatch;
 use App\Support\Catalog\ProductUnitResolver;
 use App\Support\Catalog\SeedDefaultProductTypes;
+use App\Support\Tenant\BranchProvisioner;
 use App\Domain\Accounting\Models\LedgerAccount;
 use App\Domain\Purchasing\Models\Supplier;
 use App\Domain\Sales\Models\DiscountCoupon;
@@ -30,7 +31,8 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Professional',
                 'price_cents' => 4900,
                 'trial_days' => 14,
-                'features' => ['pos' => true, 'reports' => true],
+                'features' => ['pos' => true, 'reports' => true, 'multi_branch' => false],
+                'limits' => ['max_branches' => 1],
             ],
         );
 
@@ -52,6 +54,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call(RolePermissionSeeder::class);
         SeedDefaultProductTypes::forTenant((int) $tenant->getKey());
+        $defaultBranch = BranchProvisioner::provisionForTenant((int) $tenant->getKey());
 
         $registrar = app(PermissionRegistrar::class);
 
@@ -119,6 +122,7 @@ class DatabaseSeeder extends Seeder
 
         ProductBatch::query()->withoutGlobalScopes()->create([
             'tenant_id' => $tenant->getKey(),
+            'branch_id' => $defaultBranch->getKey(),
             'product_id' => $product->getKey(),
             'batch_no' => 'B001',
             'expiry_date' => now()->addYear(),

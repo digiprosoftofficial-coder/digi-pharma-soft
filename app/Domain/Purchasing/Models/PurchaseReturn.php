@@ -3,13 +3,16 @@
 namespace App\Domain\Purchasing\Models;
 
 use App\Support\Models\TenantModel;
+use App\Support\Traits\BranchScoped;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PurchaseReturn extends TenantModel
 {
+    use BranchScoped;
+
     protected $fillable = [
-        'tenant_id', 'purchase_id', 'supplier_id', 'reference_no', 'returned_at',
+        'tenant_id', 'branch_id', 'purchase_id', 'supplier_id', 'reference_no', 'returned_at',
         'total_credit', 'notes', 'status',
     ];
 

@@ -74,6 +74,27 @@
                     }}
                 </p>
             </div>
+            <div class="mb-3">
+                <label class="form-label">{{ t('platform.multi_branch_override_label') }}</label>
+                <select v-model="form.multi_branch_override" class="form-select">
+                    <option value="inherit">{{ t('platform.multi_branch_override_inherit') }}</option>
+                    <option value="on">{{ t('platform.multi_branch_override_on') }}</option>
+                    <option value="off">{{ t('platform.multi_branch_override_off') }}</option>
+                </select>
+                <p class="form-text small mb-0">
+                    {{
+                        t('platform.multi_branch_override_help', {
+                            plan: tenant.plan_multi_branch
+                                ? t('platform.multi_branch_plan_on')
+                                : t('platform.multi_branch_plan_off'),
+                            effective: tenant.multi_branch_enabled
+                                ? t('platform.multi_branch_effective_on')
+                                : t('platform.multi_branch_effective_off'),
+                        })
+                    }}
+                    · {{ tenant.branches_count }} / {{ formatLimit(tenant.max_branches_effective) }} {{ t('platform.tenant_branches').toLowerCase() }}
+                </p>
+            </div>
             <div class="row g-2 mb-3">
                 <div class="col-md-6">
                     <label class="form-label">{{ t('platform.limit_max_products_override') }}</label>
@@ -97,6 +118,18 @@
                     />
                     <p class="form-text small mb-0">
                         {{ t('platform.limit_override_help', { plan: formatLimit(tenant.plan_max_import_rows), effective: formatLimit(tenant.max_import_rows_effective) }) }}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{{ t('platform.limit_max_branches_override') }}</label>
+                    <input
+                        v-model="form.max_branches_override"
+                        type="text"
+                        class="form-control"
+                        :placeholder="t('platform.limit_override_inherit_placeholder')"
+                    />
+                    <p class="form-text small mb-0">
+                        {{ t('platform.limit_override_help', { plan: formatLimit(tenant.plan_max_branches), effective: formatLimit(tenant.max_branches_effective) }) }}
                     </p>
                 </div>
             </div>
@@ -156,8 +189,10 @@ const form = useForm({
     internal_notes: props.tenant.internal_notes ?? '',
     reseller_id: props.tenant.reseller_id ?? null,
     wholesale_pricing_override: props.tenant.wholesale_pricing_override ?? 'inherit',
+    multi_branch_override: props.tenant.multi_branch_override ?? 'inherit',
     max_products_override: initLimitOverride(props.tenant.max_products_override),
     max_import_rows_override: initLimitOverride(props.tenant.max_import_rows_override),
+    max_branches_override: initLimitOverride(props.tenant.max_branches_override),
 });
 
 const { subscriptionInputKey, onSubscriptionEndsChange, committedSubscriptionEnds } = useSubscriptionEndsConfirm(

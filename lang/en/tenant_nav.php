@@ -41,4 +41,5 @@ return [
     'finance' => 'Finance',
     'marketing' => 'Marketing',
     'administration' => 'Administration',
+    'branches' => 'Branches',
 ];

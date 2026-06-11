@@ -44,6 +44,21 @@
                     <form class="flex-grow-1" style="max-width: 320px" @submit.prevent="runSearch">
                         <input v-model="searchQ" type="search" class="form-control form-control-sm" placeholder="Search products…" />
                     </form>
+                    <form
+                        v-if="multiBranch && branches.length > 1"
+                        class="d-flex align-items-center gap-1"
+                        @submit.prevent="switchBranch"
+                    >
+                        <label class="small text-muted mb-0 d-none d-lg-inline">{{ t('branches.switch_branch') }}</label>
+                        <select
+                            v-model="activeBranchId"
+                            class="form-select form-select-sm"
+                            style="min-width: 10rem"
+                            @change="switchBranch"
+                        >
+                            <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
+                        </select>
+                    </form>
                     <Link v-if="can('pos.access')" href="/pos" class="btn btn-sm btn-primary">{{ t('tenant_nav.new_sale') }}</Link>
                     <LocaleSwitcher />
                     <span class="small text-muted d-none d-md-inline">{{ userName }}</span>
@@ -62,8 +77,8 @@ import TenantSidebarNav from '@/Components/Tenant/TenantSidebarNav.vue';
 import LocaleSwitcher from '@/Components/LocaleSwitcher.vue';
 import { useLocale } from '@/composables/useLocale';
 import { usePermissions } from '@/composables/usePermissions';
-import { Link, router, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 
 const { t } = useLocale();
 
@@ -78,6 +93,23 @@ const tenantName = computed(() => page.props.tenant?.name ?? 'Pharmacy');
 const userName = computed(() => page.props.auth?.user?.name ?? 'User');
 const impersonation = computed(() => page.props.impersonation);
 const networkAnnouncement = computed(() => page.props.networkAnnouncement);
+const multiBranch = computed(() => page.props.features?.multi_branch ?? false);
+const branches = computed(() => page.props.branches ?? []);
+const activeBranchId = ref(page.props.branch?.id ?? null);
+
+watch(
+    () => page.props.branch?.id,
+    (id) => {
+        activeBranchId.value = id ?? null;
+    },
+);
+
+const branchSwitchForm = useForm({ branch_id: null });
+
+function switchBranch() {
+    branchSwitchForm.branch_id = activeBranchId.value;
+    branchSwitchForm.post('/branches/switch', { preserveScroll: true });
+}
 
 const announcementAlertClass = computed(() => {
     const severity = networkAnnouncement.value?.severity ?? 'info';

@@ -3,6 +3,7 @@
 namespace App\Support\Tenant;
 
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Tenant\Models\Branch;
 use App\Domain\Tenant\Models\Tenant;
 
 /**
@@ -17,6 +18,8 @@ final class TenantLimits
 
     public const MAX_IMPORT_ROWS = 'max_import_rows';
 
+    public const MAX_BRANCHES = 'max_branches';
+
     public static function maxProducts(?Tenant $tenant): ?int
     {
         return self::limit($tenant, self::MAX_PRODUCTS);
@@ -25,6 +28,21 @@ final class TenantLimits
     public static function maxImportRows(?Tenant $tenant): ?int
     {
         return self::limit($tenant, self::MAX_IMPORT_ROWS);
+    }
+
+    public static function maxBranches(?Tenant $tenant): ?int
+    {
+        return self::limit($tenant, self::MAX_BRANCHES);
+    }
+
+    public static function remainingBranches(?Tenant $tenant): ?int
+    {
+        $max = self::maxBranches($tenant);
+        if ($max === null) {
+            return null;
+        }
+
+        return max(0, $max - Branch::query()->count());
     }
 
     public static function limit(?Tenant $tenant, string $key): ?int
@@ -78,6 +96,14 @@ final class TenantLimits
     public static function maxImportRowsOverrideMode(Tenant $tenant): string|int
     {
         return self::overrideMode($tenant, self::MAX_IMPORT_ROWS);
+    }
+
+    /**
+     * @return 'inherit'|int
+     */
+    public static function maxBranchesOverrideMode(Tenant $tenant): string|int
+    {
+        return self::overrideMode($tenant, self::MAX_BRANCHES);
     }
 
     /**

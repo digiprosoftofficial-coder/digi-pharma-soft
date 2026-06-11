@@ -3,12 +3,15 @@
 namespace App\Domain\Catalog\Models;
 
 use App\Support\Models\TenantModel;
+use App\Support\Traits\BranchScoped;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StorageLocation extends TenantModel
 {
+    use BranchScoped;
+
     protected $fillable = [
-        'tenant_id',
+        'tenant_id', 'branch_id',
         'name',
         'code',
         'sort_order',

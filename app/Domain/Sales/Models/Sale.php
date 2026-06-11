@@ -3,13 +3,16 @@
 namespace App\Domain\Sales\Models;
 
 use App\Support\Models\TenantModel;
+use App\Support\Traits\BranchScoped;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Sale extends TenantModel
 {
+    use BranchScoped;
+
     protected $fillable = [
-        'tenant_id', 'customer_id', 'invoice_no', 'sold_at',
+        'tenant_id', 'branch_id', 'customer_id', 'invoice_no', 'sold_at',
         'subtotal', 'discount', 'tax', 'total', 'rounded_total', 'round_adjustment',
         'paid', 'amount_tendered', 'change_returned', 'due', 'status',
     ];

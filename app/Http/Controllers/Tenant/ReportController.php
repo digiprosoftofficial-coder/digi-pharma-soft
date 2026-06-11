@@ -28,10 +28,17 @@ final class ReportController extends Controller
 
         $salesTotal = (float) Sale::query()->whereBetween('sold_at', [$from, $to])->sum('total');
 
-        $topProducts = DB::table('sale_lines')
-            ->select('product_id', DB::raw('SUM(quantity) as qty'), DB::raw('SUM(line_total) as revenue'))
-            ->where('tenant_id', $tenantId)
-            ->whereBetween('created_at', [$from, $to])
+        $topProductsQuery = DB::table('sale_lines')
+            ->select('sale_lines.product_id', DB::raw('SUM(sale_lines.quantity) as qty'), DB::raw('SUM(sale_lines.line_total) as revenue'))
+            ->join('sales', 'sales.id', '=', 'sale_lines.sale_id')
+            ->where('sale_lines.tenant_id', $tenantId)
+            ->whereBetween('sale_lines.created_at', [$from, $to]);
+
+        if (\branch_id()) {
+            $topProductsQuery->where('sales.branch_id', \branch_id());
+        }
+
+        $topProducts = $topProductsQuery
             ->groupBy('product_id')
             ->orderByDesc('qty')
             ->limit(10)

@@ -3,12 +3,15 @@
 namespace App\Domain\Catalog\Models;
 
 use App\Support\Models\TenantModel;
+use App\Support\Traits\BranchScoped;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductBatch extends TenantModel
 {
+    use BranchScoped;
+
     protected $fillable = [
-        'tenant_id', 'product_id', 'storage_location_id', 'batch_no', 'expiry_date', 'manufactured_at',
+        'tenant_id', 'branch_id', 'product_id', 'storage_location_id', 'batch_no', 'expiry_date', 'manufactured_at',
         'quantity_on_hand', 'purchase_unit_cost', 'sale_price', 'markup_percent',
         'pack_sell_unit', 'pack_conversion_factor',
     ];

@@ -108,6 +108,7 @@ const page = usePage();
 
 const usesPlatform = computed(() => page.props.auth?.user?.uses_platform_dashboard === true);
 const bulkImportEnabled = computed(() => page.props.features?.bulk_import ?? true);
+const multiBranchEnabled = computed(() => page.props.features?.multi_branch ?? false);
 
 const url = computed(() => page.url || '');
 function pathNow() {
@@ -225,11 +226,12 @@ const sectionsConfig = computed(() => [
         id: 'admin',
         icon: 'settings',
         label: t('tenant_nav.administration'),
-        show: can('reports.view') || can('settings.view') || can('team.users.view'),
-        paths: ['/reports', '/settings', '/team/users'],
+        show: can('reports.view') || can('settings.view') || can('team.users.view') || (can('branches.view') && multiBranchEnabled.value),
+        paths: ['/reports', '/settings', '/team/users', '/branches'],
         children: [
             { href: '/reports', icon: 'report', label: t('tenant_nav.reports'), show: can('reports.view'), match: 'prefix' },
             { href: '/settings', icon: 'settings', label: t('tenant_nav.settings'), show: can('settings.view'), match: 'prefix' },
+            { href: '/branches', icon: 'inventory', label: t('tenant_nav.branches'), show: can('branches.view') && multiBranchEnabled.value, match: 'prefix' },
             { href: '/team/users', icon: 'users', label: t('tenant_nav.users'), show: can('team.users.view'), match: 'prefix' },
         ],
     },

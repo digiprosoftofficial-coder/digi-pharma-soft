@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Support\Middleware\SetLocale::class,
             \App\Support\Middleware\EnsureTenantContext::class,
+            \App\Support\Middleware\EnsureBranchContext::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
         ]);
         $middleware->alias([

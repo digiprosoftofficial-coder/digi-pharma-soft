@@ -114,7 +114,7 @@ class ProductUnitsTest extends TestCase
 
         $this->actingAs($user)->put("/products/{$product->getKey()}", [
             'stock_adjustment' => 25,
-        ])->assertRedirect(route('tenant.products.index'));
+        ])->assertRedirect(route('tenant.products.show', $product));
 
         $batch->refresh();
         $this->assertSame($before + 25.0, (float) $batch->quantity_on_hand);
