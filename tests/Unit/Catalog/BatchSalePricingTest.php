@@ -57,4 +57,21 @@ class BatchSalePricingTest extends TestCase
         $this->assertSame(25.0, BatchSalePricing::resolveMarkupPercent($product, $batch));
         $this->assertSame(125.0, BatchSalePricing::suggestedUnitPrice($batch, $product, 'strip'));
     }
+
+    public function test_batch_sale_price_in_sell_unit(): void
+    {
+        $this->seed();
+        $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
+
+        $batch = ProductBatch::query()->create([
+            'tenant_id' => $product->tenant_id,
+            'product_id' => $product->getKey(),
+            'batch_no' => 'MRP-UNIT',
+            'quantity_on_hand' => 10,
+            'purchase_unit_cost' => 10,
+            'sale_price' => 25,
+        ]);
+
+        $this->assertSame(25.0, BatchSalePricing::batchSalePriceInSellUnit($batch, $product, 'strip'));
+    }
 }

@@ -111,7 +111,7 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
-import { resolveMarkupPercent, suggestedUnitPrice, unitCostInSellUnit } from '@/composables/useBatchPricing';
+import { batchSalePriceInSellUnit, resolveMarkupPercent, suggestedUnitPrice, unitCostInSellUnit } from '@/composables/useBatchPricing';
 import { batchesWithStock, formatBatchLabel, onBatchChange as syncBatchFields } from '@/composables/usePosBatches';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
@@ -184,7 +184,17 @@ function refreshLinePricing(line) {
         return;
     }
     const product = { default_markup_percent: line.default_markup_percent };
+
+    const batchPrice = batchSalePriceInSellUnit(batch, line.sell_unit, line.unit_options);
+    if (batchPrice !== null) {
+        line.unit_price = batchPrice;
+        line.price_from_batch = true;
+        line.uses_markup_pricing = false;
+        return;
+    }
+
     const suggested = suggestedUnitPrice(batch, product, line.sell_unit, line.unit_options);
+    line.price_from_batch = false;
     line.uses_markup_pricing = suggested !== null;
     line.unit_price =
         suggested ??
@@ -195,6 +205,9 @@ function linePriceSourceHint(line) {
     const batch = selectedBatch(line);
     if (!batch) {
         return '';
+    }
+    if (line.price_from_batch) {
+        return t('catalog.pos_price_from_batch', { price: formatMoney(line.unit_price) });
     }
     if (line.uses_markup_pricing) {
         const markup = resolveMarkupPercent(batch, { default_markup_percent: line.default_markup_percent });

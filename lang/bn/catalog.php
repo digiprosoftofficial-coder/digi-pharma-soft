@@ -91,6 +91,7 @@ return [
     'default_markup_example' => 'উদাহরণ: ব্যাচ কস্ট ৪০, মার্কআপ ১৫% → POS প্রস্তাব ৪০ × ১.১৫ = ৪৬ (দাম পরে বদলাতে পারবেন)।',
     'batch_markup_help' => 'শুধু এক ব্যাচের জন্য আলাদা মার্কআপ। খালি = উপরের প্রোডাক্ট ডিফল্ট।',
     'pos_price_from_markup' => 'কস্ট থেকে দাম: :cost + :markup% → :price',
+    'pos_price_from_batch' => 'লটের MRP থেকে দাম: :price',
     'pos_price_from_catalog' => 'ক্যাটালগের বিক্রি মূল্য (এই পণ্যে মার্কআপ নেই)।',
     'pos_batch_expired' => 'এই ব্যাচের মেয়াদ শেষ — বিক্রি করা যাবে না।',
     'pos_no_sellable_batch' => 'বিক্রির যোগ্য ব্যাচ নেই (মেয়াদ/স্টক দেখুন)।',

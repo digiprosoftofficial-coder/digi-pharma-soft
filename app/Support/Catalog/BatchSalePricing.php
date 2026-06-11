@@ -25,6 +25,43 @@ final class BatchSalePricing
         return $cost;
     }
 
+    /**
+     * MRP / sale price from purchase, normalized to the product base unit.
+     */
+    public static function salePricePerBaseUnit(ProductBatch $batch): ?float
+    {
+        if ($batch->sale_price === null || $batch->sale_price === '') {
+            return null;
+        }
+
+        $price = (float) $batch->sale_price;
+
+        if (
+            $batch->pack_sell_unit
+            && $batch->pack_conversion_factor !== null
+            && (float) $batch->pack_conversion_factor > 0
+        ) {
+            return $price / (float) $batch->pack_conversion_factor;
+        }
+
+        return $price;
+    }
+
+    public static function batchSalePriceInSellUnit(
+        ProductBatch $batch,
+        Product $product,
+        string $sellUnit,
+    ): ?float {
+        $basePrice = self::salePricePerBaseUnit($batch);
+        if ($basePrice === null) {
+            return null;
+        }
+
+        $factor = ProductUnitResolver::conversionFactorForBatch($product, $batch, $sellUnit);
+
+        return round($basePrice * $factor, 4);
+    }
+
     public static function unitCostInSellUnit(
         ProductBatch $batch,
         Product $product,

@@ -10,6 +10,24 @@ export function costPerBaseUnit(batch) {
     return cost;
 }
 
+export function salePricePerBaseUnit(batch) {
+    if (batch?.sale_price === null || batch?.sale_price === undefined || batch?.sale_price === '') {
+        return null;
+    }
+
+    let price = Number(batch.sale_price);
+    if (Number.isNaN(price)) {
+        return null;
+    }
+
+    const packFactor = Number(batch?.pack_conversion_factor ?? 0);
+    if (batch?.pack_sell_unit && packFactor > 0) {
+        price /= packFactor;
+    }
+
+    return price;
+}
+
 export function conversionFactorForBatchLine(batch, sellUnit, unitOptions) {
     if (batch?.pack_sell_unit === sellUnit && batch?.pack_conversion_factor) {
         const packFactor = Number(batch.pack_conversion_factor);
@@ -23,6 +41,15 @@ export function conversionFactorForBatchLine(batch, sellUnit, unitOptions) {
 
 export function unitCostInSellUnit(batch, sellUnit, unitOptions) {
     return costPerBaseUnit(batch) * conversionFactorForBatchLine(batch, sellUnit, unitOptions);
+}
+
+export function batchSalePriceInSellUnit(batch, sellUnit, unitOptions) {
+    const basePrice = salePricePerBaseUnit(batch);
+    if (basePrice === null) {
+        return null;
+    }
+
+    return Math.round(basePrice * conversionFactorForBatchLine(batch, sellUnit, unitOptions) * 10000) / 10000;
 }
 
 export function resolveMarkupPercent(batch, product) {
@@ -63,6 +90,7 @@ export function lineMarginPercent(unitPrice, unitCost) {
 export function applyPricingToCartLine(line, productMeta) {
     const batch = line.batches?.find((b) => b.id === line.product_batch_id) ?? {
         purchase_unit_cost: line.batch_purchase_cost,
+        sale_price: line.batch_sale_price,
         pack_sell_unit: line.batch_pack_sell_unit,
         pack_conversion_factor: line.batch_pack_conversion_factor,
         markup_percent: line.batch_markup_percent,
@@ -74,9 +102,22 @@ export function applyPricingToCartLine(line, productMeta) {
     const unitCost = unitCostInSellUnit(batch, line.sell_unit, line.unit_options);
     line.unit_cost = unitCost;
 
+    const batchPrice = batchSalePriceInSellUnit(batch, line.sell_unit, line.unit_options);
+    if (batchPrice !== null) {
+        line.unit_price = batchPrice;
+        line.price_from_batch = true;
+        line.uses_markup_pricing = false;
+        return;
+    }
+
     const suggested = suggestedUnitPrice(batch, product, line.sell_unit, line.unit_options);
     if (suggested !== null) {
         line.unit_price = suggested;
-        line.price_from_markup = true;
+        line.price_from_batch = false;
+        line.uses_markup_pricing = true;
+        return;
     }
+
+    line.price_from_batch = false;
+    line.uses_markup_pricing = false;
 }

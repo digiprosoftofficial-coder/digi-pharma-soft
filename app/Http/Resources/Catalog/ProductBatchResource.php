@@ -23,6 +23,7 @@ class ProductBatchResource extends JsonResource
             'is_expired' => BatchExpiry::isExpired($this->resource),
             'quantity_on_hand' => (string) $this->quantity_on_hand,
             'purchase_unit_cost' => (string) $this->purchase_unit_cost,
+            'sale_price' => $this->sale_price !== null ? (string) $this->sale_price : null,
             'markup_percent' => $this->markup_percent !== null ? (string) $this->markup_percent : null,
             'cost_per_base_unit' => (string) BatchSalePricing::costPerBaseUnit($this->resource),
             'pack_sell_unit' => $this->pack_sell_unit,

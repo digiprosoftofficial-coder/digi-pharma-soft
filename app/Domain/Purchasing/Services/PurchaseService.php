@@ -119,6 +119,10 @@ final class PurchaseService
                     $batch->pack_conversion_factor = $factor;
                 }
 
+                if (isset($line['sale_price']) && $line['sale_price'] !== null && $line['sale_price'] !== '') {
+                    $batch->sale_price = $line['sale_price'];
+                }
+
                 $batch->save();
 
                 $this->applyCatalogPrices(

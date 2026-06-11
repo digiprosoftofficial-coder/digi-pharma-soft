@@ -91,6 +91,7 @@ return [
     'default_markup_example' => 'Example: batch cost 40, markup 15% → POS suggests 40 × 1.15 = 46 (you can still change the price).',
     'batch_markup_help' => 'Override markup for one batch only. Empty = use product default above.',
     'pos_price_from_markup' => 'Price from cost: :cost + :markup% → :price',
+    'pos_price_from_batch' => 'Price from lot MRP: :price',
     'pos_price_from_catalog' => 'Price from catalog sale price (no markup set on this product).',
     'pos_batch_expired' => 'This batch is expired and cannot be sold.',
     'pos_no_sellable_batch' => 'No sellable batch (check expiry and stock).',
