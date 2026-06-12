@@ -147,6 +147,7 @@ const sectionsConfig = computed(() => [
             { href: '/pos', icon: 'plus', label: t('tenant_nav.pos'), show: can('pos.access'), match: 'exact' },
             { href: '/sales/package', icon: 'package', label: t('tenant_nav.package_sell'), show: can('pos.access'), match: 'prefix' },
             { href: '/sales/returns', icon: 'return', label: t('tenant_nav.returns'), show: can('returns.manage'), match: 'prefix' },
+            { href: '/sales/customer-bills', icon: 'bill', label: t('tenant_nav.customer_bills'), show: can('customers.view'), match: 'prefix' },
         ],
     },
     {

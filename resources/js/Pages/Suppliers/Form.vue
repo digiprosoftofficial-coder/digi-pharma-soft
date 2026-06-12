@@ -1,6 +1,7 @@
 <template>
     <TenantShellLayout page-title="Supplier">
         <Head :title="supplier ? 'Edit supplier' : 'New supplier'" />
+        <div v-if="formError" class="alert alert-danger small">{{ formError }}</div>
         <h1 class="h4 mb-3">{{ supplier ? 'Edit supplier' : 'New supplier' }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="mb-2">
@@ -15,17 +16,33 @@
                 <label class="form-label">Email</label>
                 <input v-model="form.email" type="email" class="form-control" />
             </div>
-            <button type="submit" class="btn btn-primary" :disabled="form.processing">Save</button>
-            <Link href="/suppliers" class="btn btn-link">Cancel</Link>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <button type="submit" class="btn btn-primary" :disabled="form.processing">Save</button>
+                <Link href="/suppliers" class="btn btn-link">Cancel</Link>
+                <button
+                    v-if="supplier"
+                    type="button"
+                    class="btn btn-outline-danger ms-auto"
+                    @click="remove"
+                >
+                    Delete
+                </button>
+            </div>
         </form>
     </TenantShellLayout>
 </template>
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { useLocale } from '@/composables/useLocale';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 const props = defineProps({ supplier: { type: Object, default: null } });
+
+const { t } = useLocale();
+const page = usePage();
+const formError = computed(() => page.props.errors?.supplier);
 
 const form = useForm({
     name: props.supplier?.name ?? '',
@@ -33,11 +50,26 @@ const form = useForm({
     email: props.supplier?.email ?? '',
 });
 
+function hasPurchaseHistory() {
+    return Number(props.supplier?.purchases_count) > 0 || Number(props.supplier?.purchase_returns_count) > 0;
+}
+
 function submit() {
     if (props.supplier) {
         form.put(`/suppliers/${props.supplier.id}`);
     } else {
         form.post('/suppliers');
     }
+}
+
+function remove() {
+    if (hasPurchaseHistory()) {
+        window.alert(t('suppliers.cannot_delete_has_purchases'));
+        return;
+    }
+    if (!window.confirm(t('suppliers.delete_confirm', { name: props.supplier.name }))) {
+        return;
+    }
+    router.delete(`/suppliers/${props.supplier.id}`);
 }
 </script>

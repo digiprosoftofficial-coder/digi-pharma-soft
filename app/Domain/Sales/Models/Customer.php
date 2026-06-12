@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Customer extends TenantModel
 {
-    protected $fillable = ['tenant_id', 'name', 'phone', 'email', 'loyalty_points', 'balance_due'];
+    protected $fillable = ['tenant_id', 'name', 'phone', 'email', 'address', 'loyalty_points', 'balance_due'];
 
     protected function casts(): array
     {

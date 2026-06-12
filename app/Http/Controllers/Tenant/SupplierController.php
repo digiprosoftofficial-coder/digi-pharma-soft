@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Support\Tenant\TenantFeatures;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,7 +25,10 @@ final class SupplierController extends Controller
             && TenantFeatures::supplierBranchLedgerEnabled(tenant());
         $branchId = \branch_id();
 
-        $suppliers = Supplier::query()->orderBy('name')->paginate(20);
+        $suppliers = Supplier::query()
+            ->withCount(['purchases', 'purchaseReturns'])
+            ->orderBy('name')
+            ->paginate(20);
 
         $suppliers->getCollection()->transform(function (Supplier $supplier) use ($viewAll, $branchId) {
             $supplier->setAttribute('open_due', $this->dues->displayDue($supplier, $viewAll, $branchId));
@@ -44,8 +48,12 @@ final class SupplierController extends Controller
         $viewAll = (auth()->user()?->can('purchases.view_all_branches') ?? false)
             && TenantFeatures::supplierBranchLedgerEnabled(tenant());
 
+        $supplier->loadCount(['purchases', 'purchaseReturns']);
+
         return Inertia::render('Suppliers/Show', [
-            'supplier' => $supplier->only(['id', 'name', 'phone', 'email']),
+            'supplier' => $supplier->only([
+                'id', 'name', 'phone', 'email', 'purchases_count', 'purchase_returns_count',
+            ]),
             'totalDue' => $this->dues->totalDue($supplier),
             'branchBreakdown' => TenantFeatures::supplierBranchLedgerEnabled(tenant())
                 ? $this->dues->breakdownByBranch($supplier)
@@ -77,6 +85,8 @@ final class SupplierController extends Controller
 
     public function edit(Supplier $supplier): Response
     {
+        $supplier->loadCount(['purchases', 'purchaseReturns']);
+
         return Inertia::render('Suppliers/Form', [
             'supplier' => $supplier,
         ]);
@@ -97,8 +107,14 @@ final class SupplierController extends Controller
 
     public function destroy(Supplier $supplier): RedirectResponse
     {
+        if ($supplier->purchases()->exists() || $supplier->purchaseReturns()->exists()) {
+            throw ValidationException::withMessages([
+                'supplier' => [__('suppliers.cannot_delete_has_purchases')],
+            ]);
+        }
+
         $supplier->delete();
 
-        return redirect()->route('tenant.suppliers.index')->with('success', __('Supplier removed.'));
+        return redirect()->route('tenant.suppliers.index')->with('success', __('suppliers.removed'));
     }
 }

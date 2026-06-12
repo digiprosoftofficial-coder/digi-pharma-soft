@@ -284,6 +284,51 @@ final class SaleService
         });
     }
 
+    public function recordPayment(Sale $sale, string $method, float $amount): SalePayment
+    {
+        return DB::transaction(function () use ($sale, $method, $amount) {
+            $sale = Sale::query()->withoutGlobalScope('branch')->whereKey($sale->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($sale->status !== 'posted') {
+                throw new RuntimeException(__('sales.payment_sale_not_posted'));
+            }
+
+            $due = (float) $sale->due;
+
+            if ($due <= 0.0001) {
+                throw new RuntimeException(__('sales.payment_no_due'));
+            }
+
+            if ($amount <= 0) {
+                throw new RuntimeException(__('sales.payment_amount_invalid'));
+            }
+
+            if ($amount > $due + 0.0001) {
+                throw new RuntimeException(__('sales.payment_exceeds_due'));
+            }
+
+            $payment = SalePayment::query()->create([
+                'sale_id' => $sale->getKey(),
+                'method' => $method,
+                'amount' => $amount,
+            ]);
+
+            $sale->paid = (string) ((float) $sale->paid + $amount);
+            $sale->due = (string) max(0, $due - $amount);
+            $sale->save();
+
+            if ($sale->customer_id) {
+                $customer = Customer::query()->whereKey($sale->customer_id)->lockForUpdate()->first();
+                if ($customer) {
+                    $customer->balance_due = (string) max(0, (float) $customer->balance_due - $amount);
+                    $customer->save();
+                }
+            }
+
+            return $payment;
+        });
+    }
+
     private function nextInvoiceNo(): string
     {
         return 'INV-'.now()->format('Ymd').'-'.Str::upper(Str::random(6));

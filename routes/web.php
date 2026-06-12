@@ -20,6 +20,7 @@ use App\Http\Controllers\Central\PlatformTenantController;
 use App\Http\Controllers\Central\PlatformTenantImpersonationController;
 use App\Http\Controllers\Tenant\BranchController;
 use App\Http\Controllers\Tenant\BarcodePrintController;
+use App\Http\Controllers\Tenant\CustomerBillsController;
 use App\Http\Controllers\Tenant\CustomerController;
 use App\Http\Controllers\Tenant\DashboardController;
 use App\Http\Controllers\Tenant\EmployeeController;
@@ -45,6 +46,7 @@ use App\Http\Controllers\Tenant\ReportController;
 use App\Http\Controllers\Tenant\ReportsHubController;
 use App\Http\Controllers\Tenant\SaleController;
 use App\Http\Controllers\Tenant\SaleInvoiceController;
+use App\Http\Controllers\Tenant\SalePaymentController;
 use App\Http\Controllers\Tenant\SaleReturnController;
 use App\Http\Controllers\Tenant\SmsController;
 use App\Http\Controllers\Tenant\StockTransferController;
@@ -69,6 +71,9 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
             Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
             Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
+            Route::get('/sales/customer-bills', [CustomerBillsController::class, 'index'])->name('sales.customer-bills');
+            Route::get('/sales/customer-bills/{customer}', [CustomerBillsController::class, 'show'])->name('sales.customer-bills.show');
+            Route::post('/sales/{sale}/payments', [SalePaymentController::class, 'store'])->name('sales.payments.store');
             Route::get('/sales/{sale}/print', [SaleInvoiceController::class, 'print'])->name('sales.print');
             Route::post('/sales/{sale}/void', [SaleController::class, 'void'])->name('sales.void');
             Route::get('/sales/package', [PackageSaleController::class, 'index'])->name('sales.package');

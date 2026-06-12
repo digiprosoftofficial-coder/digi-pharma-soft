@@ -20,4 +20,9 @@ class Supplier extends TenantModel
     {
         return $this->hasMany(Purchase::class);
     }
+
+    public function purchaseReturns(): HasMany
+    {
+        return $this->hasMany(PurchaseReturn::class);
+    }
 }

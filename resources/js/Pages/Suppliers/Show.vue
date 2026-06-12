@@ -1,6 +1,8 @@
 <template>
     <TenantShellLayout :page-title="supplier.name">
         <Head :title="supplier.name" />
+        <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
+        <div v-if="formError" class="alert alert-danger small">{{ formError }}</div>
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
             <div>
                 <Link href="/suppliers" class="small text-decoration-none d-block mb-1">← Suppliers</Link>
@@ -12,7 +14,17 @@
                 <Link :href="`/purchases/supplier-bills/${supplier.id}`" class="btn btn-sm btn-primary">
                     {{ t('purchases.view_bills') }}
                 </Link>
-                <Link :href="`/suppliers/${supplier.id}/edit`" class="btn btn-sm btn-outline-secondary">Edit</Link>
+                <Link v-if="can('suppliers.manage')" :href="`/suppliers/${supplier.id}/edit`" class="btn btn-sm btn-outline-secondary">
+                    Edit
+                </Link>
+                <button
+                    v-if="can('suppliers.manage')"
+                    type="button"
+                    class="btn btn-sm btn-outline-danger"
+                    @click="remove"
+                >
+                    Delete
+                </button>
             </div>
         </div>
 
@@ -61,9 +73,11 @@
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
-import { Head, Link } from '@inertiajs/vue3';
+import { usePermissions } from '@/composables/usePermissions';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
-defineProps({
+const props = defineProps({
     supplier: { type: Object, required: true },
     totalDue: { type: [Number, String], default: 0 },
     branchBreakdown: { type: Array, default: () => [] },
@@ -73,4 +87,23 @@ defineProps({
 
 const { t } = useLocale();
 const { formatMoney } = useMoney();
+const { can } = usePermissions();
+const page = usePage();
+
+const formError = computed(() => page.props.errors?.supplier);
+
+function hasPurchaseHistory() {
+    return Number(props.supplier.purchases_count) > 0 || Number(props.supplier.purchase_returns_count) > 0;
+}
+
+function remove() {
+    if (hasPurchaseHistory()) {
+        window.alert(t('suppliers.cannot_delete_has_purchases'));
+        return;
+    }
+    if (!window.confirm(t('suppliers.delete_confirm', { name: props.supplier.name }))) {
+        return;
+    }
+    router.delete(`/suppliers/${props.supplier.id}`);
+}
 </script>

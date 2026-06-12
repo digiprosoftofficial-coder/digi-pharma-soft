@@ -11,6 +11,7 @@ return [
     'purchase_list' => 'ক্রয় তালিকা',
     'new_purchase' => 'নতুন ক্রয়',
     'supplier_bills' => 'সাপ্লায়ার বিল',
+    'customer_bills' => 'গ্রাহক বাকি',
     'purchase_returns' => 'ক্রয় ফেরত',
     'accounts' => 'সাধারণ হিসাব',
     'products' => 'পণ্য',
