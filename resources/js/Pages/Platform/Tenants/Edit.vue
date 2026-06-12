@@ -119,6 +119,66 @@
                     }}
                 </p>
             </div>
+            <div class="mb-3">
+                <label class="form-label">{{ t('platform.employee_management_override_label') }}</label>
+                <select v-model="form.employee_management_override" class="form-select">
+                    <option value="inherit">{{ t('platform.employee_management_override_inherit') }}</option>
+                    <option value="on">{{ t('platform.employee_management_override_on') }}</option>
+                    <option value="off">{{ t('platform.employee_management_override_off') }}</option>
+                </select>
+                <p class="form-text small mb-0">
+                    {{
+                        t('platform.employee_management_override_help', {
+                            plan: tenant.plan_employee_management
+                                ? t('platform.employee_management_plan_on')
+                                : t('platform.employee_management_plan_off'),
+                            effective: tenant.employee_management_enabled
+                                ? t('platform.employee_management_effective_on')
+                                : t('platform.employee_management_effective_off'),
+                        })
+                    }}
+                </p>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">{{ t('platform.attendance_override_label') }}</label>
+                <select v-model="form.attendance_override" class="form-select">
+                    <option value="inherit">{{ t('platform.attendance_override_inherit') }}</option>
+                    <option value="on">{{ t('platform.attendance_override_on') }}</option>
+                    <option value="off">{{ t('platform.attendance_override_off') }}</option>
+                </select>
+                <p class="form-text small mb-0">
+                    {{
+                        t('platform.attendance_override_help', {
+                            plan: tenant.plan_attendance
+                                ? t('platform.attendance_plan_on')
+                                : t('platform.attendance_plan_off'),
+                            effective: tenant.attendance_enabled
+                                ? t('platform.attendance_effective_on')
+                                : t('platform.attendance_effective_off'),
+                        })
+                    }}
+                </p>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">{{ t('platform.hr_payroll_override_label') }}</label>
+                <select v-model="form.hr_payroll_override" class="form-select">
+                    <option value="inherit">{{ t('platform.hr_payroll_override_inherit') }}</option>
+                    <option value="on">{{ t('platform.hr_payroll_override_on') }}</option>
+                    <option value="off">{{ t('platform.hr_payroll_override_off') }}</option>
+                </select>
+                <p class="form-text small mb-0">
+                    {{
+                        t('platform.hr_payroll_override_help', {
+                            plan: tenant.plan_hr_payroll
+                                ? t('platform.hr_payroll_plan_on')
+                                : t('platform.hr_payroll_plan_off'),
+                            effective: tenant.hr_payroll_enabled
+                                ? t('platform.hr_payroll_effective_on')
+                                : t('platform.hr_payroll_effective_off'),
+                        })
+                    }}
+                </p>
+            </div>
             <div class="row g-2 mb-3">
                 <div class="col-md-6">
                     <label class="form-label">{{ t('platform.limit_max_products_override') }}</label>
@@ -215,6 +275,9 @@ const form = useForm({
     wholesale_pricing_override: props.tenant.wholesale_pricing_override ?? 'inherit',
     multi_branch_override: props.tenant.multi_branch_override ?? 'inherit',
     supplier_branch_ledger_override: props.tenant.supplier_branch_ledger_override ?? 'inherit',
+    employee_management_override: props.tenant.employee_management_override ?? 'inherit',
+    attendance_override: props.tenant.attendance_override ?? 'inherit',
+    hr_payroll_override: props.tenant.hr_payroll_override ?? 'inherit',
     max_products_override: initLimitOverride(props.tenant.max_products_override),
     max_import_rows_override: initLimitOverride(props.tenant.max_import_rows_override),
     max_branches_override: initLimitOverride(props.tenant.max_branches_override),

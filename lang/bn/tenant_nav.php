@@ -25,6 +25,8 @@ return [
     'bulk_import' => 'বাল্ক ইমপোর্ট',
     'inventory' => 'ইনভেন্টরি',
     'employees' => 'কর্মচারী',
+    'attendance' => 'উপস্থিতি',
+    'hr_payroll' => 'পে-রোল ও HR',
     'promotions' => 'প্রমোশন',
     'stock_transfer' => 'স্টক ট্রান্সফার',
     'suppliers' => 'সাপ্লায়ার',

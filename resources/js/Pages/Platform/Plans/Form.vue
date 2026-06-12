@@ -63,7 +63,22 @@
                     />
                     <label class="form-check-label" for="fsupplierledger">{{ t('platform.feature_supplier_branch_ledger') }}</label>
                 </div>
-                <p class="form-text small mb-0">{{ t('platform.feature_supplier_branch_ledger_help') }}</p>
+                <p class="form-text small mb-2">{{ t('platform.feature_supplier_branch_ledger_help') }}</p>
+                <div class="form-check">
+                    <input id="femployeemgmt" v-model="form.features.employee_management" type="checkbox" class="form-check-input" />
+                    <label class="form-check-label" for="femployeemgmt">{{ t('platform.feature_employee_management') }}</label>
+                </div>
+                <p class="form-text small mb-2">{{ t('platform.feature_employee_management_help') }}</p>
+                <div class="form-check">
+                    <input id="fattendance" v-model="form.features.attendance" type="checkbox" class="form-check-input" />
+                    <label class="form-check-label" for="fattendance">{{ t('platform.feature_attendance') }}</label>
+                </div>
+                <p class="form-text small mb-2">{{ t('platform.feature_attendance_help') }}</p>
+                <div class="form-check">
+                    <input id="fhrpayroll" v-model="form.features.hr_payroll" type="checkbox" class="form-check-input" />
+                    <label class="form-check-label" for="fhrpayroll">{{ t('platform.feature_hr_payroll') }}</label>
+                </div>
+                <p class="form-text small mb-0">{{ t('platform.feature_hr_payroll_help') }}</p>
             </div>
             <div class="row g-2 mb-3">
                 <div class="col-md-6">
@@ -150,6 +165,9 @@ const form = useForm({
         advanced_catalog: props.plan?.features?.advanced_catalog ?? true,
         multi_branch: props.plan?.features?.multi_branch ?? false,
         supplier_branch_ledger: props.plan?.features?.supplier_branch_ledger ?? false,
+        employee_management: props.plan?.features?.employee_management ?? true,
+        attendance: props.plan?.features?.attendance ?? false,
+        hr_payroll: props.plan?.features?.hr_payroll ?? false,
         import_preset: props.plan?.features?.import_preset ?? 'pro',
         import_columns: props.plan?.features?.import_columns ?? ['name'],
     },

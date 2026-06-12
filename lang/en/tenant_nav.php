@@ -25,6 +25,8 @@ return [
     'bulk_import' => 'Bulk import',
     'inventory' => 'Inventory',
     'employees' => 'Employees',
+    'attendance' => 'Attendance',
+    'hr_payroll' => 'Payroll & HR',
     'promotions' => 'Promotions',
     'stock_transfer' => 'Stock transfer',
     'suppliers' => 'Suppliers',

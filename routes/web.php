@@ -23,7 +23,11 @@ use App\Http\Controllers\Tenant\BarcodePrintController;
 use App\Http\Controllers\Tenant\CustomerBillsController;
 use App\Http\Controllers\Tenant\CustomerController;
 use App\Http\Controllers\Tenant\DashboardController;
+use App\Http\Controllers\Tenant\AttendanceController;
 use App\Http\Controllers\Tenant\EmployeeController;
+use App\Http\Controllers\Tenant\LeaveRequestController;
+use App\Http\Controllers\Tenant\LeaveTypeController;
+use App\Http\Controllers\Tenant\PayrollController;
 use App\Http\Controllers\Tenant\InventoryController;
 use App\Http\Controllers\Tenant\LedgerAccountController;
 use App\Http\Controllers\Tenant\LedgerEntryController;
@@ -164,7 +168,25 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
 
             Route::resource('promotions', PromotionsController::class)->except(['show']);
 
-            Route::resource('employees', EmployeeController::class)->except(['show']);
+            Route::resource('employees', EmployeeController::class);
+
+            Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+            Route::post('/attendance/clock-in', [AttendanceController::class, 'clockIn'])->name('attendance.clock-in');
+            Route::post('/attendance/clock-out', [AttendanceController::class, 'clockOut'])->name('attendance.clock-out');
+            Route::post('/attendance/{employee}/clock-in', [AttendanceController::class, 'clockIn'])->name('attendance.employee.clock-in');
+            Route::post('/attendance/{employee}/clock-out', [AttendanceController::class, 'clockOut'])->name('attendance.employee.clock-out');
+
+            Route::get('/hr/payroll', [PayrollController::class, 'index'])->name('hr.payroll.index');
+            Route::post('/hr/payroll', [PayrollController::class, 'store'])->name('hr.payroll.store');
+            Route::get('/hr/payroll/{payrollRun}', [PayrollController::class, 'show'])->name('hr.payroll.show');
+            Route::post('/hr/payroll/{payrollRun}/finalize', [PayrollController::class, 'finalize'])->name('hr.payroll.finalize');
+            Route::get('/hr/leave-types', [LeaveTypeController::class, 'index'])->name('hr.leave-types.index');
+            Route::post('/hr/leave-types', [LeaveTypeController::class, 'store'])->name('hr.leave-types.store');
+            Route::put('/hr/leave-types/{leaveType}', [LeaveTypeController::class, 'update'])->name('hr.leave-types.update');
+            Route::delete('/hr/leave-types/{leaveType}', [LeaveTypeController::class, 'destroy'])->name('hr.leave-types.destroy');
+            Route::get('/hr/leave-requests', [LeaveRequestController::class, 'index'])->name('hr.leave-requests.index');
+            Route::post('/hr/leave-requests', [LeaveRequestController::class, 'store'])->name('hr.leave-requests.store');
+            Route::patch('/hr/leave-requests/{leaveRequest}', [LeaveRequestController::class, 'update'])->name('hr.leave-requests.update');
 
             Route::get('/catalog/product-search', ProductSearchController::class)->name('catalog.product-search');
             Route::get('/catalog/products/{product}/last-purchase', ProductLastPurchaseController::class)->name('catalog.products.last-purchase');

@@ -109,6 +109,9 @@ const page = usePage();
 const usesPlatform = computed(() => page.props.auth?.user?.uses_platform_dashboard === true);
 const bulkImportEnabled = computed(() => page.props.features?.bulk_import ?? true);
 const multiBranchEnabled = computed(() => page.props.features?.multi_branch ?? false);
+const employeeManagementEnabled = computed(() => page.props.features?.employee_management ?? true);
+const attendanceEnabled = computed(() => page.props.features?.attendance ?? false);
+const hrPayrollEnabled = computed(() => page.props.features?.hr_payroll ?? false);
 
 const url = computed(() => page.url || '');
 function pathNow() {
@@ -194,12 +197,14 @@ const sectionsConfig = computed(() => [
         id: 'people',
         icon: 'people',
         label: t('tenant_nav.people'),
-        show: can('suppliers.view') || can('customers.view') || can('employees.view'),
-        paths: ['/suppliers', '/customers', '/employees'],
+        show: can('suppliers.view') || can('customers.view') || (employeeManagementEnabled.value && can('employees.view')) || attendanceEnabled.value || (hrPayrollEnabled.value && can('employees.manage')),
+        paths: ['/suppliers', '/customers', '/employees', '/attendance', '/hr'],
         children: [
             { href: '/suppliers', icon: 'supplier', label: t('tenant_nav.suppliers'), show: can('suppliers.view'), match: 'prefix' },
             { href: '/customers', icon: 'customer', label: t('tenant_nav.customers'), show: can('customers.view'), match: 'prefix' },
-            { href: '/employees', icon: 'employee', label: t('tenant_nav.employees'), show: can('employees.view'), match: 'prefix' },
+            { href: '/employees', icon: 'employee', label: t('tenant_nav.employees'), show: employeeManagementEnabled.value && can('employees.view'), match: 'prefix' },
+            { href: '/attendance', icon: 'employee', label: t('tenant_nav.attendance'), show: attendanceEnabled.value, match: 'prefix' },
+            { href: '/hr/payroll', icon: 'accounts', label: t('tenant_nav.hr_payroll'), show: hrPayrollEnabled.value && can('employees.manage'), match: 'prefix' },
         ],
     },
     {

@@ -16,6 +16,12 @@ final class TenantFeatures
 
     public const SUPPLIER_BRANCH_LEDGER = 'supplier_branch_ledger';
 
+    public const EMPLOYEE_MANAGEMENT = 'employee_management';
+
+    public const ATTENDANCE = 'attendance';
+
+    public const HR_PAYROLL = 'hr_payroll';
+
     /**
      * Catalog fields only available when the advanced_catalog feature is on.
      *
@@ -59,6 +65,21 @@ final class TenantFeatures
         }
 
         return self::enabled($tenant, self::SUPPLIER_BRANCH_LEDGER, false);
+    }
+
+    public static function employeeManagementEnabled(?Tenant $tenant): bool
+    {
+        return self::enabled($tenant, self::EMPLOYEE_MANAGEMENT, true);
+    }
+
+    public static function attendanceEnabled(?Tenant $tenant): bool
+    {
+        return self::enabled($tenant, self::ATTENDANCE, false);
+    }
+
+    public static function hrPayrollEnabled(?Tenant $tenant): bool
+    {
+        return self::enabled($tenant, self::HR_PAYROLL, false);
     }
 
     public static function enabled(?Tenant $tenant, string $feature, bool $default = false): bool
@@ -124,6 +145,30 @@ final class TenantFeatures
     /**
      * @return 'inherit'|'on'|'off'
      */
+    public static function employeeManagementOverrideMode(Tenant $tenant): string
+    {
+        return self::overrideMode($tenant, self::EMPLOYEE_MANAGEMENT);
+    }
+
+    /**
+     * @return 'inherit'|'on'|'off'
+     */
+    public static function attendanceOverrideMode(Tenant $tenant): string
+    {
+        return self::overrideMode($tenant, self::ATTENDANCE);
+    }
+
+    /**
+     * @return 'inherit'|'on'|'off'
+     */
+    public static function hrPayrollOverrideMode(Tenant $tenant): string
+    {
+        return self::overrideMode($tenant, self::HR_PAYROLL);
+    }
+
+    /**
+     * @return 'inherit'|'on'|'off'
+     */
     private static function overrideMode(Tenant $tenant, string $feature): string
     {
         $override = self::override($tenant, $feature);
@@ -180,6 +225,9 @@ final class TenantFeatures
             'advanced_catalog' => self::advancedCatalogEnabled($tenant),
             'multi_branch' => self::multiBranchEnabled($tenant),
             'supplier_branch_ledger' => self::supplierBranchLedgerEnabled($tenant),
+            'employee_management' => self::employeeManagementEnabled($tenant),
+            'attendance' => self::attendanceEnabled($tenant),
+            'hr_payroll' => self::hrPayrollEnabled($tenant),
         ];
     }
 }

@@ -215,6 +215,9 @@ final class PlatformTenantController extends Controller
             'max_import_rows_override' => ['nullable'],
             'multi_branch_override' => ['nullable', 'string', Rule::in(['inherit', 'on', 'off'])],
             'supplier_branch_ledger_override' => ['nullable', 'string', Rule::in(['inherit', 'on', 'off'])],
+            'employee_management_override' => ['nullable', 'string', Rule::in(['inherit', 'on', 'off'])],
+            'attendance_override' => ['nullable', 'string', Rule::in(['inherit', 'on', 'off'])],
+            'hr_payroll_override' => ['nullable', 'string', Rule::in(['inherit', 'on', 'off'])],
             'max_branches_override' => ['nullable'],
         ]);
 
@@ -271,6 +274,33 @@ final class PlatformTenantController extends Controller
                 unset($features[TenantFeatures::SUPPLIER_BRANCH_LEDGER]);
             } else {
                 $features[TenantFeatures::SUPPLIER_BRANCH_LEDGER] = $validated['supplier_branch_ledger_override'] === 'on';
+            }
+
+            if ($features === []) {
+                unset($settings['features']);
+            } else {
+                $settings['features'] = $features;
+            }
+
+            $tenant->settings = $settings;
+        }
+
+        foreach ([
+            'employee_management_override' => TenantFeatures::EMPLOYEE_MANAGEMENT,
+            'attendance_override' => TenantFeatures::ATTENDANCE,
+            'hr_payroll_override' => TenantFeatures::HR_PAYROLL,
+        ] as $field => $featureKey) {
+            if (! array_key_exists($field, $validated)) {
+                continue;
+            }
+
+            $settings = $tenant->settings ?? [];
+            $features = $settings['features'] ?? [];
+
+            if ($validated[$field] === 'inherit') {
+                unset($features[$featureKey]);
+            } else {
+                $features[$featureKey] = $validated[$field] === 'on';
             }
 
             if ($features === []) {
