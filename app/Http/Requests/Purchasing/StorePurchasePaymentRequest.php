@@ -10,8 +10,7 @@ class StorePurchasePaymentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        /** @var Purchase|null $purchase */
-        $purchase = $this->route('purchase');
+        $purchase = $this->resolvePurchase();
 
         return $purchase
             && $this->user()?->can('purchases.manage')
@@ -29,14 +28,14 @@ class StorePurchasePaymentRequest extends FormRequest
             'paid_at' => ['nullable', 'date'],
             'reference' => ['nullable', 'string', 'max:128'],
             'notes' => ['nullable', 'string', 'max:500'],
+            'redirect' => ['nullable', 'string', 'max:32'],
         ];
     }
 
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            /** @var Purchase|null $purchase */
-            $purchase = $this->route('purchase');
+            $purchase = $this->resolvePurchase();
             if (! $purchase) {
                 return;
             }
@@ -46,5 +45,23 @@ class StorePurchasePaymentRequest extends FormRequest
                 $validator->errors()->add('amount', __('purchases.payment_exceeds_due'));
             }
         });
+    }
+
+    private function resolvePurchase(): ?Purchase
+    {
+        $purchase = $this->route('purchase');
+
+        if ($purchase instanceof Purchase) {
+            return $purchase;
+        }
+
+        if (is_numeric($purchase)) {
+            return Purchase::query()
+                ->withoutGlobalScope('branch')
+                ->whereKey((int) $purchase)
+                ->first();
+        }
+
+        return null;
     }
 }

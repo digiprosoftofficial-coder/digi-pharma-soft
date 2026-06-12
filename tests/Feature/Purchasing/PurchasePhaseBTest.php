@@ -6,6 +6,7 @@ use App\Domain\Catalog\Models\Product;
 use App\Domain\Purchasing\Models\Purchase;
 use App\Domain\Purchasing\Models\PurchasePayment;
 use App\Domain\Purchasing\Models\Supplier;
+use App\Domain\Purchasing\Services\SupplierDueService;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -62,9 +63,10 @@ class PurchasePhaseBTest extends TestCase
         $purchase = $this->recordDuePurchase(0);
         $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
         $supplier = Supplier::query()->findOrFail($purchase->supplier_id);
+        $dues = app(SupplierDueService::class);
 
         $this->assertSame('100.0000', (string) $purchase->due);
-        $this->assertSame('100.0000', (string) $supplier->balance_due);
+        $this->assertSame(100.0, $dues->totalDue($supplier));
 
         $this->actingAs($user)
             ->post("/purchases/{$purchase->getKey()}/payments", [
@@ -78,7 +80,7 @@ class PurchasePhaseBTest extends TestCase
 
         $this->assertSame('30.0000', (string) $purchase->paid);
         $this->assertSame('70.0000', (string) $purchase->due);
-        $this->assertSame('70.0000', (string) $supplier->balance_due);
+        $this->assertSame(70.0, $dues->totalDue($supplier));
         $this->assertDatabaseHas('purchase_payments', [
             'purchase_id' => $purchase->getKey(),
             'method' => 'bkash',

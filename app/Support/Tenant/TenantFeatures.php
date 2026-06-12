@@ -14,6 +14,8 @@ final class TenantFeatures
 
     public const MULTI_BRANCH = 'multi_branch';
 
+    public const SUPPLIER_BRANCH_LEDGER = 'supplier_branch_ledger';
+
     /**
      * Catalog fields only available when the advanced_catalog feature is on.
      *
@@ -44,6 +46,19 @@ final class TenantFeatures
     public static function multiBranchEnabled(?Tenant $tenant): bool
     {
         return self::enabled($tenant, self::MULTI_BRANCH, false);
+    }
+
+    public static function supplierBranchLedgerEnabled(?Tenant $tenant): bool
+    {
+        if ($tenant === null) {
+            return false;
+        }
+
+        if (! self::multiBranchEnabled($tenant)) {
+            return false;
+        }
+
+        return self::enabled($tenant, self::SUPPLIER_BRANCH_LEDGER, false);
     }
 
     public static function enabled(?Tenant $tenant, string $feature, bool $default = false): bool
@@ -96,6 +111,14 @@ final class TenantFeatures
     public static function multiBranchOverrideMode(Tenant $tenant): string
     {
         return self::overrideMode($tenant, self::MULTI_BRANCH);
+    }
+
+    /**
+     * @return 'inherit'|'on'|'off'
+     */
+    public static function supplierBranchLedgerOverrideMode(Tenant $tenant): string
+    {
+        return self::overrideMode($tenant, self::SUPPLIER_BRANCH_LEDGER);
     }
 
     /**
@@ -156,6 +179,7 @@ final class TenantFeatures
             'bulk_import' => self::bulkImportEnabled($tenant),
             'advanced_catalog' => self::advancedCatalogEnabled($tenant),
             'multi_branch' => self::multiBranchEnabled($tenant),
+            'supplier_branch_ledger' => self::supplierBranchLedgerEnabled($tenant),
         ];
     }
 }

@@ -119,7 +119,7 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
             Route::get('/stock-transfers/create', [StockTransferController::class, 'create'])->name('stock-transfers.create');
             Route::post('/stock-transfers', [StockTransferController::class, 'store'])->name('stock-transfers.store');
 
-            Route::resource('suppliers', SupplierController::class)->except(['show']);
+            Route::resource('suppliers', SupplierController::class);
 
             Route::resource('customers', CustomerController::class)->except(['show']);
 

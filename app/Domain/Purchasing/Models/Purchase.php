@@ -2,6 +2,7 @@
 
 namespace App\Domain\Purchasing\Models;
 
+use App\Domain\Tenant\Models\Branch;
 use App\Support\Models\TenantModel;
 use App\Support\Traits\BranchScoped;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,6 +33,11 @@ class Purchase extends TenantModel
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function lines(): HasMany

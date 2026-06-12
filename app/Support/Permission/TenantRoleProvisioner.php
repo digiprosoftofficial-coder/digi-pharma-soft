@@ -35,6 +35,7 @@ final class TenantRoleProvisioner
 
         $manager = Permission::query()->whereNotIn('name', [
             'platform.tenants', 'platform.subscriptions', 'platform.analytics', 'billing.manage',
+            'purchases.view_all_branches',
         ])->get();
 
         $map = [

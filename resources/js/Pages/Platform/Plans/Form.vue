@@ -52,7 +52,18 @@
                     <input id="fmultibranch" v-model="form.features.multi_branch" type="checkbox" class="form-check-input" />
                     <label class="form-check-label" for="fmultibranch">{{ t('platform.feature_multi_branch') }}</label>
                 </div>
-                <p class="form-text small mb-0">{{ t('platform.feature_multi_branch_help') }}</p>
+                <p class="form-text small mb-2">{{ t('platform.feature_multi_branch_help') }}</p>
+                <div class="form-check">
+                    <input
+                        id="fsupplierledger"
+                        v-model="form.features.supplier_branch_ledger"
+                        type="checkbox"
+                        class="form-check-input"
+                        :disabled="!form.features.multi_branch"
+                    />
+                    <label class="form-check-label" for="fsupplierledger">{{ t('platform.feature_supplier_branch_ledger') }}</label>
+                </div>
+                <p class="form-text small mb-0">{{ t('platform.feature_supplier_branch_ledger_help') }}</p>
             </div>
             <div class="row g-2 mb-3">
                 <div class="col-md-6">
@@ -138,6 +149,7 @@ const form = useForm({
         bulk_import: props.plan?.features?.bulk_import ?? true,
         advanced_catalog: props.plan?.features?.advanced_catalog ?? true,
         multi_branch: props.plan?.features?.multi_branch ?? false,
+        supplier_branch_ledger: props.plan?.features?.supplier_branch_ledger ?? false,
         import_preset: props.plan?.features?.import_preset ?? 'pro',
         import_columns: props.plan?.features?.import_columns ?? ['name'],
     },

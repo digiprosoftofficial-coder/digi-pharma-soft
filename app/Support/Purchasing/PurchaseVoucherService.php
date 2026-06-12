@@ -29,9 +29,11 @@ final class PurchaseVoucherService
             return;
         }
 
-        DB::transaction(function () use ($purchase, $inventory, $payable, $total) {
-            $this->entry($inventory, 'debit', $total, Purchase::class, $purchase->getKey(), "Purchase {$purchase->invoice_no}");
-            $this->entry($payable, 'credit', $total, Purchase::class, $purchase->getKey(), "Purchase {$purchase->invoice_no}");
+        $branchId = (int) $purchase->branch_id;
+
+        DB::transaction(function () use ($purchase, $inventory, $payable, $total, $branchId) {
+            $this->entry($inventory, 'debit', $total, Purchase::class, $purchase->getKey(), "Purchase {$purchase->invoice_no}", $branchId);
+            $this->entry($payable, 'credit', $total, Purchase::class, $purchase->getKey(), "Purchase {$purchase->invoice_no}", $branchId);
         });
     }
 
@@ -49,13 +51,16 @@ final class PurchaseVoucherService
         }
 
         $purchase = $payment->purchase;
+        $invoiceBranchId = $purchase ? (int) $purchase->branch_id : (int) $payment->paying_branch_id;
+        $payingBranchId = (int) ($payment->paying_branch_id ?? $invoiceBranchId);
+
         $memo = $purchase
             ? "Payment {$purchase->invoice_no} ({$payment->method})"
             : "Purchase payment #{$payment->getKey()}";
 
-        DB::transaction(function () use ($payment, $payable, $cash, $amount, $memo) {
-            $this->entry($payable, 'debit', $amount, PurchasePayment::class, $payment->getKey(), $memo);
-            $this->entry($cash, 'credit', $amount, PurchasePayment::class, $payment->getKey(), $memo);
+        DB::transaction(function () use ($payment, $payable, $cash, $amount, $memo, $invoiceBranchId, $payingBranchId) {
+            $this->entry($payable, 'debit', $amount, PurchasePayment::class, $payment->getKey(), $memo, $invoiceBranchId);
+            $this->entry($cash, 'credit', $amount, PurchasePayment::class, $payment->getKey(), $memo, $payingBranchId);
         });
     }
 
@@ -73,13 +78,16 @@ final class PurchaseVoucherService
         }
 
         $purchase = $payment->purchase;
+        $invoiceBranchId = $purchase ? (int) $purchase->branch_id : (int) $payment->paying_branch_id;
+        $payingBranchId = (int) ($payment->paying_branch_id ?? $invoiceBranchId);
+
         $memo = $purchase
             ? "Void payment {$purchase->invoice_no}"
             : "Void purchase payment #{$payment->getKey()}";
 
-        DB::transaction(function () use ($payment, $payable, $cash, $amount, $memo) {
-            $this->entry($payable, 'credit', $amount, PurchasePayment::class, $payment->getKey(), $memo);
-            $this->entry($cash, 'debit', $amount, PurchasePayment::class, $payment->getKey(), $memo);
+        DB::transaction(function () use ($payment, $payable, $cash, $amount, $memo, $invoiceBranchId, $payingBranchId) {
+            $this->entry($payable, 'credit', $amount, PurchasePayment::class, $payment->getKey(), $memo, $invoiceBranchId);
+            $this->entry($cash, 'debit', $amount, PurchasePayment::class, $payment->getKey(), $memo, $payingBranchId);
         });
     }
 
@@ -96,9 +104,11 @@ final class PurchaseVoucherService
             return;
         }
 
-        DB::transaction(function () use ($purchase, $inventory, $payable, $total) {
-            $this->entry($inventory, 'credit', $total, Purchase::class, $purchase->getKey(), "Void purchase {$purchase->invoice_no}");
-            $this->entry($payable, 'debit', $total, Purchase::class, $purchase->getKey(), "Void purchase {$purchase->invoice_no}");
+        $branchId = (int) $purchase->branch_id;
+
+        DB::transaction(function () use ($purchase, $inventory, $payable, $total, $branchId) {
+            $this->entry($inventory, 'credit', $total, Purchase::class, $purchase->getKey(), "Void purchase {$purchase->invoice_no}", $branchId);
+            $this->entry($payable, 'debit', $total, Purchase::class, $purchase->getKey(), "Void purchase {$purchase->invoice_no}", $branchId);
         });
     }
 
@@ -114,8 +124,10 @@ final class PurchaseVoucherService
         string $referenceType,
         int $referenceId,
         string $memo,
+        ?int $branchId = null,
     ): void {
         LedgerEntry::query()->create([
+            'branch_id' => $branchId,
             'ledger_account_id' => $account->getKey(),
             'reference_type' => $referenceType,
             'reference_id' => $referenceId,

@@ -82,6 +82,22 @@
                                 {{ tenant.branches_count }} / {{ tenant.max_branches_effective ?? '∞' }} {{ t('platform.tenant_branches').toLowerCase() }}
                             </span>
                         </dd>
+                        <dt class="col-5">{{ t('platform.supplier_branch_ledger_override_label') }}</dt>
+                        <dd class="col-7">
+                            <span
+                                class="badge"
+                                :class="tenant.supplier_branch_ledger_enabled ? 'text-bg-success' : 'text-bg-secondary'"
+                            >
+                                {{
+                                    tenant.supplier_branch_ledger_enabled
+                                        ? t('platform.supplier_branch_ledger_effective_on')
+                                        : t('platform.supplier_branch_ledger_effective_off')
+                                }}
+                            </span>
+                            <span v-if="tenant.supplier_branch_ledger_override !== 'inherit'" class="text-muted small ms-1">
+                                ({{ t(`platform.supplier_branch_ledger_override_${tenant.supplier_branch_ledger_override}`) }})
+                            </span>
+                        </dd>
                     </dl>
                 </div>
             </div>

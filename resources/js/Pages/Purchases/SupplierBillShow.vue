@@ -14,9 +14,42 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body py-2 px-3 text-end">
                     <div class="text-muted small">{{ t('purchases.open_due') }}</div>
-                    <div class="fs-5 fw-semibold text-danger">{{ formatMoney(supplier.balance_due) }}</div>
+                    <div class="fs-5 fw-semibold text-danger">{{ formatMoney(supplier.open_due) }}</div>
                 </div>
             </div>
+        </div>
+
+        <form
+            v-if="branchLedgerEnabled && viewAllBranches && branches.length"
+            class="card border-0 shadow-sm card-body mb-3"
+            @submit.prevent="applyBranchFilter"
+        >
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small mb-0">{{ t('purchases.filter_by_branch') }}</label>
+                    <select v-model="branchId" class="form-select form-select-sm">
+                        <option value="">{{ t('purchases.all_branches') }}</option>
+                        <option v-for="b in branches" :key="b.id" :value="String(b.id)">
+                            {{ b.name }} ({{ b.code }})
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-sm btn-primary">{{ t('purchases.filter') }}</button>
+                </div>
+            </div>
+        </form>
+
+        <div v-if="branchLedgerEnabled && branchBreakdown.length && viewAllBranches && !branchFilter" class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white fw-semibold">{{ t('purchases.branch_breakdown') }}</div>
+            <table class="table table-sm mb-0">
+                <tbody>
+                    <tr v-for="row in branchBreakdown" :key="row.branch_id">
+                        <td>{{ row.branch_name }} <code class="small">{{ row.branch_code }}</code></td>
+                        <td class="text-end text-danger fw-medium">{{ formatMoney(row.due) }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
         <div class="card border-0 shadow-sm mb-3">
@@ -27,6 +60,7 @@
                         <tr>
                             <th>{{ t('purchases.invoice') }}</th>
                             <th>{{ t('purchases.date') }}</th>
+                            <th v-if="branchLedgerEnabled">{{ t('purchases.invoice_branch') }}</th>
                             <th class="text-end">{{ t('purchases.total') }}</th>
                             <th class="text-end">{{ t('purchases.paid') }}</th>
                             <th class="text-end">{{ t('purchases.due') }}</th>
@@ -41,6 +75,10 @@
                                 </Link>
                             </td>
                             <td>{{ purchase.purchased_at }}</td>
+                            <td v-if="branchLedgerEnabled">
+                                <span v-if="purchase.branch">{{ purchase.branch.name }}</span>
+                                <span v-else>—</span>
+                            </td>
                             <td class="text-end">{{ formatMoney(purchase.total) }}</td>
                             <td class="text-end">{{ formatMoney(purchase.paid) }}</td>
                             <td class="text-end text-danger fw-medium">{{ formatMoney(purchase.due) }}</td>
@@ -73,7 +111,9 @@
                             </td>
                         </tr>
                         <tr v-if="!openPurchases.length">
-                            <td :colspan="canManage ? 6 : 5" class="text-muted text-center py-3">{{ t('purchases.no_open_invoices') }}</td>
+                            <td :colspan="canManage ? (branchLedgerEnabled ? 7 : 6) : (branchLedgerEnabled ? 6 : 5)" class="text-muted text-center py-3">
+                                {{ t('purchases.no_open_invoices') }}
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -88,6 +128,7 @@
                         <tr>
                             <th>{{ t('purchases.date') }}</th>
                             <th>{{ t('purchases.invoice') }}</th>
+                            <th v-if="branchLedgerEnabled">{{ t('purchases.paying_branch') }}</th>
                             <th>{{ t('purchases.payment_method') }}</th>
                             <th class="text-end">{{ t('purchases.amount') }}</th>
                             <th>{{ t('purchases.reference') }}</th>
@@ -105,12 +146,15 @@
                                     {{ payment.purchase.invoice_no }}
                                 </Link>
                             </td>
+                            <td v-if="branchLedgerEnabled">
+                                {{ payment.paying_branch?.name ?? '—' }}
+                            </td>
                             <td>{{ paymentMethodLabel(payment.method) }}</td>
                             <td class="text-end">{{ formatMoney(payment.amount) }}</td>
                             <td class="small text-muted">{{ payment.reference || '—' }}</td>
                         </tr>
                         <tr v-if="!paymentHistory.length">
-                            <td colspan="5" class="text-muted text-center py-3">{{ t('purchases.no_payments') }}</td>
+                            <td :colspan="branchLedgerEnabled ? 6 : 5" class="text-muted text-center py-3">{{ t('purchases.no_payments') }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -124,7 +168,7 @@ import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { reactive, watch } from 'vue';
+import { reactive, ref, watch } from 'vue';
 
 const props = defineProps({
     supplier: { type: Object, required: true },
@@ -132,10 +176,17 @@ const props = defineProps({
     paymentHistory: { type: Array, default: () => [] },
     paymentMethods: { type: Array, default: () => [] },
     canManage: { type: Boolean, default: false },
+    branchLedgerEnabled: { type: Boolean, default: false },
+    viewAllBranches: { type: Boolean, default: false },
+    branches: { type: Array, default: () => [] },
+    branchFilter: { type: Number, default: null },
+    branchBreakdown: { type: Array, default: () => [] },
+    crossBranchEnabled: { type: Boolean, default: true },
 });
 
 const { t } = useLocale();
 const { formatMoney } = useMoney();
+const branchId = ref(props.branchFilter ? String(props.branchFilter) : '');
 
 const paymentForms = reactive({});
 
@@ -165,6 +216,11 @@ watch(
 
 function paymentMethodLabel(method) {
     return props.paymentMethods.find((m) => m.value === method)?.label ?? method;
+}
+
+function applyBranchFilter() {
+    const params = branchId.value ? { branch_id: branchId.value } : {};
+    router.get(`/purchases/supplier-bills/${props.supplier.id}`, params, { preserveState: true });
 }
 
 function submitPayment(purchase) {

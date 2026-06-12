@@ -214,6 +214,7 @@ final class PlatformTenantController extends Controller
             'max_products_override' => ['nullable'],
             'max_import_rows_override' => ['nullable'],
             'multi_branch_override' => ['nullable', 'string', Rule::in(['inherit', 'on', 'off'])],
+            'supplier_branch_ledger_override' => ['nullable', 'string', Rule::in(['inherit', 'on', 'off'])],
             'max_branches_override' => ['nullable'],
         ]);
 
@@ -251,6 +252,25 @@ final class PlatformTenantController extends Controller
                 unset($features[TenantFeatures::MULTI_BRANCH]);
             } else {
                 $features[TenantFeatures::MULTI_BRANCH] = $validated['multi_branch_override'] === 'on';
+            }
+
+            if ($features === []) {
+                unset($settings['features']);
+            } else {
+                $settings['features'] = $features;
+            }
+
+            $tenant->settings = $settings;
+        }
+
+        if (array_key_exists('supplier_branch_ledger_override', $validated)) {
+            $settings = $tenant->settings ?? [];
+            $features = $settings['features'] ?? [];
+
+            if ($validated['supplier_branch_ledger_override'] === 'inherit') {
+                unset($features[TenantFeatures::SUPPLIER_BRANCH_LEDGER]);
+            } else {
+                $features[TenantFeatures::SUPPLIER_BRANCH_LEDGER] = $validated['supplier_branch_ledger_override'] === 'on';
             }
 
             if ($features === []) {

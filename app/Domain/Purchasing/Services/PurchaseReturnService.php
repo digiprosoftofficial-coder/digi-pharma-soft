@@ -72,10 +72,6 @@ final class PurchaseReturnService
                 ]);
             }
 
-            $supplier = Supplier::query()->whereKey($supplier->getKey())->lockForUpdate()->firstOrFail();
-            $supplier->balance_due = (string) max(0, (float) $supplier->balance_due - $total);
-            $supplier->save();
-
             return $return->load(['lines.product', 'lines.batch', 'supplier']);
         });
     }

@@ -97,6 +97,7 @@ final class PlatformPlanController extends Controller
             'features.bulk_import' => ['boolean'],
             'features.advanced_catalog' => ['boolean'],
             'features.multi_branch' => ['boolean'],
+            'features.supplier_branch_ledger' => ['boolean'],
             'features.import_preset' => ['nullable', 'string', Rule::in(ProductImportCsv::PRESETS)],
             'features.import_columns' => ['nullable', 'array'],
             'features.import_columns.*' => ['string', Rule::in(ProductImportCsv::HEADERS)],
@@ -118,6 +119,7 @@ final class PlatformPlanController extends Controller
             'bulk_import' => $request->boolean('features.bulk_import', true),
             'advanced_catalog' => $request->boolean('features.advanced_catalog', true),
             'multi_branch' => $request->boolean('features.multi_branch', false),
+            'supplier_branch_ledger' => $request->boolean('features.supplier_branch_ledger', false),
             'import_preset' => $importPreset,
             'import_columns' => $importColumns,
         ];

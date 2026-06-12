@@ -11,6 +11,8 @@ use App\Domain\Purchasing\Models\PurchasePayment;
 use App\Domain\Purchasing\Models\Supplier;
 use App\Support\Catalog\ProductUnitResolver;
 use App\Support\Purchasing\PurchaseVoucherService;
+use App\Support\Tenant\SupplierPaymentSettings;
+use App\Support\Tenant\TenantFeatures;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
@@ -18,6 +20,7 @@ use RuntimeException;
 final class PurchaseService
 {
     public function __construct(private readonly PurchaseVoucherService $vouchers) {}
+
     /**
      * @param  array<int, array{product_id:int,batch_no:string,expiry_date?:string,manufactured_at?:string,quantity:float,unit_cost:float,sale_price?:float|null,sell_unit?:string,conversion_factor?:float|null}>  $lines
      */
@@ -147,9 +150,6 @@ final class PurchaseService
                 ]);
             }
 
-            $supplier->balance_due = (string) ((float) $supplier->balance_due + $due);
-            $supplier->save();
-
             if ($paid > 0) {
                 if ($paymentMethod === null || $paymentMethod === '') {
                     throw new RuntimeException(__('purchases.payment_method_required'));
@@ -157,6 +157,7 @@ final class PurchaseService
 
                 $payment = PurchasePayment::query()->create([
                     'purchase_id' => $purchase->getKey(),
+                    'paying_branch_id' => \branch_id() ?? $purchase->branch_id,
                     'method' => $paymentMethod,
                     'amount' => $paid,
                     'paid_at' => $purchasedAt,
@@ -180,8 +181,7 @@ final class PurchaseService
         ?string $notes = null,
     ): PurchasePayment {
         return DB::transaction(function () use ($purchase, $method, $amount, $paidAt, $reference, $notes) {
-            $purchase = Purchase::query()->whereKey($purchase->getKey())->lockForUpdate()->firstOrFail();
-            $supplier = Supplier::query()->whereKey($purchase->supplier_id)->lockForUpdate()->firstOrFail();
+            $purchase = Purchase::query()->withoutGlobalScope('branch')->whereKey($purchase->getKey())->lockForUpdate()->firstOrFail();
             $due = (float) $purchase->due;
 
             if ($amount <= 0) {
@@ -192,14 +192,27 @@ final class PurchaseService
                 throw new RuntimeException(__('purchases.payment_exceeds_due'));
             }
 
+            $payingBranchId = \branch_id();
+            if ($payingBranchId === null) {
+                throw new RuntimeException(__('purchases.payment_branch_required'));
+            }
+
+            if (
+                TenantFeatures::supplierBranchLedgerEnabled(tenant())
+                && ! SupplierPaymentSettings::crossBranchEnabled(tenant())
+                && (int) $payingBranchId !== (int) $purchase->branch_id
+            ) {
+                throw new RuntimeException(__('purchases.cross_branch_payment_disabled'));
+            }
+
             $payment = $this->createPayment(
                 $purchase,
-                $supplier,
                 $method,
                 $amount,
                 $paidAt ?? now()->toDateString(),
                 $reference,
                 $notes,
+                (int) $payingBranchId,
             );
 
             $payment->load('purchase');
@@ -212,7 +225,7 @@ final class PurchaseService
     public function voidPurchase(Purchase $purchase): Purchase
     {
         return DB::transaction(function () use ($purchase) {
-            $purchase = Purchase::query()->whereKey($purchase->getKey())->lockForUpdate()->firstOrFail();
+            $purchase = Purchase::query()->withoutGlobalScope('branch')->whereKey($purchase->getKey())->lockForUpdate()->firstOrFail();
 
             if ($purchase->status === 'voided') {
                 throw new RuntimeException(__('purchases.already_voided'));
@@ -224,7 +237,6 @@ final class PurchaseService
                 $this->vouchers->reversePurchasePayment($payment);
                 $payment->delete();
             }
-            $supplier = Supplier::query()->whereKey($purchase->supplier_id)->lockForUpdate()->firstOrFail();
 
             foreach ($purchase->lines as $line) {
                 $batch = ProductBatch::query()
@@ -257,9 +269,6 @@ final class PurchaseService
                 ]);
             }
 
-            $supplier->balance_due = (string) max(0, (float) $supplier->balance_due - (float) $purchase->due);
-            $supplier->save();
-
             $purchase->update(['status' => 'voided']);
             $this->vouchers->reversePurchase($purchase);
 
@@ -269,15 +278,16 @@ final class PurchaseService
 
     private function createPayment(
         Purchase $purchase,
-        Supplier $supplier,
         string $method,
         float $amount,
         string $paidAt,
-        ?string $reference = null,
-        ?string $notes = null,
+        ?string $reference,
+        ?string $notes,
+        int $payingBranchId,
     ): PurchasePayment {
         $payment = PurchasePayment::query()->create([
             'purchase_id' => $purchase->getKey(),
+            'paying_branch_id' => $payingBranchId,
             'method' => $method,
             'amount' => $amount,
             'paid_at' => $paidAt,
@@ -288,9 +298,6 @@ final class PurchaseService
         $purchase->paid = (string) ((float) $purchase->paid + $amount);
         $purchase->due = (string) max(0, (float) $purchase->due - $amount);
         $purchase->save();
-
-        $supplier->balance_due = (string) max(0, (float) $supplier->balance_due - $amount);
-        $supplier->save();
 
         return $payment;
     }

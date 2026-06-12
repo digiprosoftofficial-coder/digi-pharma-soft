@@ -8,6 +8,7 @@ use App\Domain\Catalog\Models\ProductBatch;
 use App\Domain\Purchasing\Models\Purchase;
 use App\Domain\Purchasing\Models\PurchaseReturn;
 use App\Domain\Purchasing\Models\Supplier;
+use App\Domain\Purchasing\Services\SupplierDueService;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -59,7 +60,8 @@ class PurchasePhaseDTest extends TestCase
         $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
         $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
         $supplier = Supplier::query()->firstOrFail();
-        $balanceBefore = (float) $supplier->balance_due;
+        $dues = app(SupplierDueService::class);
+        $balanceBefore = $dues->totalDue($supplier);
 
         $this->actingAs($user)->post('/purchases', [
             'supplier_id' => $supplier->getKey(),
@@ -90,10 +92,9 @@ class PurchasePhaseDTest extends TestCase
         ])->assertRedirect(route('tenant.purchases.returns.index'));
 
         $batch->refresh();
-        $supplier->refresh();
 
         $this->assertEquals(15.0, (float) $batch->quantity_on_hand);
-        $this->assertEquals($balanceBefore + 150, (float) $supplier->balance_due);
+        $this->assertEquals($balanceBefore + 150, $dues->totalDue($supplier));
         $this->assertDatabaseHas('stock_movements', ['type' => 'purchase_return', 'quantity_delta' => '-5.0000']);
         $this->assertEquals(1, PurchaseReturn::query()->count());
     }

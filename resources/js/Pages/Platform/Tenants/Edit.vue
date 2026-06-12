@@ -95,6 +95,30 @@
                     · {{ tenant.branches_count }} / {{ formatLimit(tenant.max_branches_effective) }} {{ t('platform.tenant_branches').toLowerCase() }}
                 </p>
             </div>
+            <div class="mb-3">
+                <label class="form-label">{{ t('platform.supplier_branch_ledger_override_label') }}</label>
+                <select
+                    v-model="form.supplier_branch_ledger_override"
+                    class="form-select"
+                    :disabled="!tenant.multi_branch_enabled"
+                >
+                    <option value="inherit">{{ t('platform.supplier_branch_ledger_override_inherit') }}</option>
+                    <option value="on">{{ t('platform.supplier_branch_ledger_override_on') }}</option>
+                    <option value="off">{{ t('platform.supplier_branch_ledger_override_off') }}</option>
+                </select>
+                <p class="form-text small mb-0">
+                    {{
+                        t('platform.supplier_branch_ledger_override_help', {
+                            plan: tenant.plan_supplier_branch_ledger
+                                ? t('platform.supplier_branch_ledger_plan_on')
+                                : t('platform.supplier_branch_ledger_plan_off'),
+                            effective: tenant.supplier_branch_ledger_enabled
+                                ? t('platform.supplier_branch_ledger_effective_on')
+                                : t('platform.supplier_branch_ledger_effective_off'),
+                        })
+                    }}
+                </p>
+            </div>
             <div class="row g-2 mb-3">
                 <div class="col-md-6">
                     <label class="form-label">{{ t('platform.limit_max_products_override') }}</label>
@@ -190,6 +214,7 @@ const form = useForm({
     reseller_id: props.tenant.reseller_id ?? null,
     wholesale_pricing_override: props.tenant.wholesale_pricing_override ?? 'inherit',
     multi_branch_override: props.tenant.multi_branch_override ?? 'inherit',
+    supplier_branch_ledger_override: props.tenant.supplier_branch_ledger_override ?? 'inherit',
     max_products_override: initLimitOverride(props.tenant.max_products_override),
     max_import_rows_override: initLimitOverride(props.tenant.max_import_rows_override),
     max_branches_override: initLimitOverride(props.tenant.max_branches_override),

@@ -32,6 +32,31 @@
                 </div>
                 <div v-if="form.errors['settings.currency']" class="text-danger small">{{ form.errors['settings.currency'] }}</div>
             </div>
+            <div v-if="supplierBranchLedgerEnabled" class="border-top pt-3 mt-3 mb-3">
+                <h2 class="h6 mb-3">{{ t('purchases.supplier_bills') }}</h2>
+                <div class="form-check mb-2">
+                    <input
+                        id="crossBranch"
+                        v-model="form.settings.supplier_payments.cross_branch"
+                        type="checkbox"
+                        class="form-check-input"
+                        :disabled="!can('settings.manage')"
+                    />
+                    <label class="form-check-label" for="crossBranch">{{ t('purchases.cross_branch_payment') }}</label>
+                </div>
+                <p class="form-text small">{{ t('purchases.cross_branch_payment_hint') }}</p>
+                <div class="form-check mb-2">
+                    <input
+                        id="managersPay"
+                        v-model="form.settings.supplier_payments.managers_can_pay"
+                        type="checkbox"
+                        class="form-check-input"
+                        :disabled="!can('settings.manage')"
+                    />
+                    <label class="form-check-label" for="managersPay">{{ t('purchases.managers_can_pay') }}</label>
+                </div>
+                <p class="form-text small mb-0">{{ t('purchases.managers_can_pay_hint') }}</p>
+            </div>
             <div class="mb-2">
                 <label class="form-label">{{ t('sales.pos_rounding_label') }}</label>
                 <select v-model="form.settings.invoice_rounding" class="form-select">
@@ -58,6 +83,7 @@ const props = defineProps({
     currencies: { type: Array, default: () => ['BDT', 'USD', 'EUR', 'GBP', 'INR', 'SAR'] },
     platformDefaultCurrency: { type: String, default: 'BDT' },
     roundingOptions: { type: Array, default: () => [{ value: 'none', label: 'None' }] },
+    supplierBranchLedgerEnabled: { type: Boolean, default: false },
 });
 
 const { t } = useLocale();
@@ -70,6 +96,10 @@ const form = useForm({
         address: props.tenant.settings?.address ?? '',
         currency: props.tenant.settings?.currency ?? props.tenant.currency ?? props.platformDefaultCurrency,
         invoice_rounding: props.tenant.settings?.invoice_rounding ?? 'none',
+        supplier_payments: {
+            cross_branch: props.tenant.settings?.supplier_payments?.cross_branch ?? true,
+            managers_can_pay: props.tenant.settings?.supplier_payments?.managers_can_pay ?? false,
+        },
     },
 });
 

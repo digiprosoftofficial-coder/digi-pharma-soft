@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Support\Money\SupportedCurrencies;
 use App\Support\Platform\PlatformSettings;
 use App\Support\Sales\InvoiceRounding;
+use App\Support\Tenant\TenantFeatures;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -28,6 +29,7 @@ final class TenantSettingsController extends Controller
                 'settings' => $tenant->settings ?? [],
                 'currency' => $tenant->currency(),
             ],
+            'supplierBranchLedgerEnabled' => TenantFeatures::supplierBranchLedgerEnabled($tenant),
             'currencies' => SupportedCurrencies::codes(),
             'platformDefaultCurrency' => PlatformSettings::defaultCurrency(),
             'roundingOptions' => [
@@ -50,12 +52,27 @@ final class TenantSettingsController extends Controller
             'settings.address' => ['nullable', 'string', 'max:500'],
             'settings.currency' => ['nullable', SupportedCurrencies::validationRule()],
             'settings.invoice_rounding' => ['nullable', Rule::in([InvoiceRounding::NONE, InvoiceRounding::NEAREST_1])],
+            'settings.supplier_payments.cross_branch' => ['nullable', 'boolean'],
+            'settings.supplier_payments.managers_can_pay' => ['nullable', 'boolean'],
         ]);
 
         $tenant->name = $validated['name'];
         $settings = $tenant->settings ?? [];
         if (isset($validated['settings'])) {
             $incoming = $validated['settings'];
+
+            if (array_key_exists('supplier_payments', $incoming)) {
+                $payments = $settings['supplier_payments'] ?? [];
+                if (array_key_exists('cross_branch', $incoming['supplier_payments'])) {
+                    $payments['cross_branch'] = (bool) $incoming['supplier_payments']['cross_branch'];
+                }
+                if (array_key_exists('managers_can_pay', $incoming['supplier_payments'])) {
+                    $payments['managers_can_pay'] = (bool) $incoming['supplier_payments']['managers_can_pay'];
+                }
+                $settings['supplier_payments'] = $payments;
+                unset($incoming['supplier_payments']);
+            }
+
             foreach ($incoming as $key => $value) {
                 if ($value === null || $value === '') {
                     continue;
