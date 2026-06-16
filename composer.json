@@ -35,7 +35,8 @@
         },
         "files": [
             "app/Support/Helpers/tenant.php",
-            "app/Support/Helpers/branch.php"
+            "app/Support/Helpers/branch.php",
+            "app/Support/Helpers/format.php"
         ]
     },
     "autoload-dev": {

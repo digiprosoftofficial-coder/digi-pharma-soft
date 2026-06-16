@@ -21,7 +21,7 @@
                                     <td>{{ b.product?.name }}</td>
                                     <td>{{ b.batch_no }}</td>
                                     <td class="small">{{ shelfLabel(b) }}</td>
-                                    <td class="text-end">{{ b.quantity_on_hand }}</td>
+                                    <td class="text-end">{{ formatQty(b.quantity_on_hand) }}</td>
                                 </tr>
                                 <tr v-if="!lowStockBatches.length">
                                     <td colspan="4" class="text-muted small">No batches below min stock.</td>
@@ -47,7 +47,7 @@
                                 <tr v-for="m in recentMovements" :key="m.id">
                                     <td class="small">{{ m.created_at }}</td>
                                     <td>{{ m.type }}</td>
-                                    <td class="text-end">{{ m.quantity_delta }}</td>
+                                    <td class="text-end">{{ formatQty(m.quantity_delta) }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -75,7 +75,7 @@
                                     <td>{{ b.product?.name }}</td>
                                     <td>{{ b.batch_no }}</td>
                                     <td :class="section.dateClass">{{ b.expiry_date }}</td>
-                                    <td class="text-end">{{ b.quantity_on_hand }}</td>
+                                    <td class="text-end">{{ formatQty(b.quantity_on_hand) }}</td>
                                 </tr>
                                 <tr v-if="!section.items.length">
                                     <td colspan="4" class="text-muted small">{{ section.empty }}</td>
@@ -105,7 +105,7 @@
                         <td>{{ b.batch_no }}</td>
                         <td class="small">{{ shelfLabel(b) }}</td>
                         <td>{{ b.expiry_date }}</td>
-                        <td class="text-end">{{ b.quantity_on_hand }}</td>
+                        <td class="text-end">{{ formatQty(b.quantity_on_hand) }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -115,6 +115,7 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useQuantity } from '@/composables/useQuantity';
 import { Head } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
@@ -127,6 +128,8 @@ const props = defineProps({
     expiringWithin60: { type: Array, default: () => [] },
     expiringWithin90: { type: Array, default: () => [] },
 });
+
+const { formatQty } = useQuantity();
 
 const expirySections = computed(() => [
     {

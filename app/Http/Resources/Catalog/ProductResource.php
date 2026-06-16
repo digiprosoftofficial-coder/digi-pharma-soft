@@ -27,9 +27,15 @@ class ProductResource extends JsonResource
             'product_type' => $this->product_type ?? 'other',
             'product_type_icon_url' => ProductTypeIconResolver::urlForSlug($this->product_type ?? 'other'),
             'base_unit' => $this->base_unit ?? 'strip',
-            'pieces_per_strip' => $this->pieces_per_strip !== null ? (string) $this->pieces_per_strip : null,
-            'strips_per_box' => $this->strips_per_box !== null ? (string) $this->strips_per_box : null,
-            'boxes_per_carton' => $this->boxes_per_carton !== null ? (string) $this->boxes_per_carton : null,
+            'pieces_per_strip' => $this->pieces_per_strip !== null
+                ? ProductStockCalculator::formatQuantity((float) $this->pieces_per_strip)
+                : null,
+            'strips_per_box' => $this->strips_per_box !== null
+                ? ProductStockCalculator::formatQuantity((float) $this->strips_per_box)
+                : null,
+            'boxes_per_carton' => $this->boxes_per_carton !== null
+                ? ProductStockCalculator::formatQuantity((float) $this->boxes_per_carton)
+                : null,
             'unit' => $this->unit,
             'stock_pieces' => $this->when(
                 $this->resolveBaseStockForResource() !== null,
@@ -46,11 +52,13 @@ class ProductResource extends JsonResource
             'image_url' => ProductImageStorage::url($this->image_path),
             'min_stock' => $this->min_stock,
             'is_active' => $this->is_active,
-            'stock_on_hand' => (string) ($this->stock_on_hand ?? $this->stockOnHandFromBatches()),
-            'purchased_quantity' => (string) ($this->purchased_quantity ?? '0'),
+            'stock_on_hand' => ProductStockCalculator::formatQuantity(
+                (float) ($this->stock_on_hand ?? $this->stockOnHandFromBatches()),
+            ),
+            'purchased_quantity' => ProductStockCalculator::formatQuantity((float) ($this->purchased_quantity ?? 0)),
             'units' => $this->whenLoaded('units', fn () => $this->units->map(fn ($u) => [
                 'sell_unit' => $u->sell_unit,
-                'conversion_factor' => (string) $u->conversion_factor,
+                'conversion_factor' => ProductStockCalculator::formatQuantity((float) $u->conversion_factor),
                 'purchase_price' => (string) $u->purchase_price,
                 'sale_price' => (string) $u->sale_price,
                 'is_default' => (bool) $u->is_default,

@@ -80,12 +80,12 @@ class ProductUnitsTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Catalog/Products/Show')
                 ->where('product.sku', 'PAR-500')
-                ->where('stockBase', '500.0000')
+                ->where('stockBase', '500')
                 ->has('stockByUnit', 2)
                 ->where('stockByUnit.0.sell_unit', 'strip')
-                ->where('stockByUnit.0.quantity_on_hand', '500.0000')
+                ->where('stockByUnit.0.quantity_on_hand', '500')
                 ->where('stockByUnit.1.sell_unit', 'box')
-                ->where('stockByUnit.1.quantity_on_hand', '50.0000'));
+                ->where('stockByUnit.1.quantity_on_hand', '50'));
     }
 
     public function test_product_edit_page_includes_resolved_product_data(): void

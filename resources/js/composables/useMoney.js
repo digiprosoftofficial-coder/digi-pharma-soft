@@ -31,7 +31,7 @@ export function useMoney(override = null) {
         return new Intl.NumberFormat(locale, {
             style: 'currency',
             currency,
-            minimumFractionDigits: 2,
+            minimumFractionDigits: 0,
             maximumFractionDigits: 2,
         }).format(Number(amount || 0));
     }

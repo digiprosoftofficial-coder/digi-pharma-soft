@@ -79,26 +79,26 @@
                                 <br><small>{{ __('purchases.manufactured_at') }}: {{ $line->manufactured_at->format('Y-m-d') }}</small>
                             @endif
                         </td>
-                        <td class="num">{{ $line->quantity }} {{ $line->sell_unit }}</td>
-                        <td class="num">{{ number_format((float) $line->quantity_base, 2) }} {{ $line->product?->base_unit ?? '' }}</td>
-                        <td class="num">{{ number_format((float) $line->unit_cost, 2) }}</td>
-                        <td class="num">{{ number_format((float) $line->line_total, 2) }}</td>
+                        <td class="num">{{ display_qty($line->quantity) }} {{ $line->sell_unit }}</td>
+                        <td class="num">{{ display_qty($line->quantity_base) }} {{ $line->product?->base_unit ?? '' }}</td>
+                        <td class="num">{{ display_money($line->unit_cost) }}</td>
+                        <td class="num">{{ display_money($line->line_total) }}</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
         <table class="totals">
-            <tr><td>{{ __('purchases.subtotal') }}</td><td class="num">{{ number_format((float) $purchase->subtotal, 2) }}</td></tr>
+            <tr><td>{{ __('purchases.subtotal') }}</td><td class="num">{{ display_money($purchase->subtotal) }}</td></tr>
             @if ((float) $purchase->discount > 0)
-                <tr><td>{{ __('purchases.discount') }}</td><td class="num">−{{ number_format((float) $purchase->discount, 2) }}</td></tr>
+                <tr><td>{{ __('purchases.discount') }}</td><td class="num">−{{ display_money($purchase->discount) }}</td></tr>
             @endif
             @if ((float) $purchase->tax > 0)
-                <tr><td>{{ __('purchases.tax') }}</td><td class="num">{{ number_format((float) $purchase->tax, 2) }}</td></tr>
+                <tr><td>{{ __('purchases.tax') }}</td><td class="num">{{ display_money($purchase->tax) }}</td></tr>
             @endif
-            <tr class="grand"><td>{{ __('purchases.total') }}</td><td class="num">{{ number_format((float) $purchase->total, 2) }}</td></tr>
-            <tr><td>{{ __('purchases.paid') }}</td><td class="num">{{ number_format((float) $purchase->paid, 2) }}</td></tr>
+            <tr class="grand"><td>{{ __('purchases.total') }}</td><td class="num">{{ display_money($purchase->total) }}</td></tr>
+            <tr><td>{{ __('purchases.paid') }}</td><td class="num">{{ display_money($purchase->paid) }}</td></tr>
             @if ((float) $purchase->due > 0)
-                <tr><td>{{ __('purchases.due') }}</td><td class="num">{{ number_format((float) $purchase->due, 2) }}</td></tr>
+                <tr><td>{{ __('purchases.due') }}</td><td class="num">{{ display_money($purchase->due) }}</td></tr>
             @endif
         </table>
         @if ($purchase->payments->isNotEmpty())
@@ -116,7 +116,7 @@
                         <tr>
                             <td>{{ $payment->paid_at?->format('Y-m-d') }}</td>
                             <td>{{ \App\Support\Payments\PaymentMethods::label($payment->method) }}</td>
-                            <td class="num">{{ number_format((float) $payment->amount, 2) }}</td>
+                            <td class="num">{{ display_money($payment->amount) }}</td>
                         </tr>
                     @endforeach
                 </tbody>

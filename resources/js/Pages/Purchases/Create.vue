@@ -283,6 +283,7 @@
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
+import { useQuantity } from '@/composables/useQuantity';
 import {
     boxConversionFactor,
     catalogBoxesPerCarton,
@@ -311,6 +312,7 @@ function locationLabel(loc) {
 
 const { t } = useLocale();
 const { formatMoney, currencyCode, currencySymbol } = useMoney();
+const { formatQty } = useQuantity();
 
 const purchaseBatchTip = computed(() => t('catalog.purchase_batch_pack_tip'));
 
@@ -372,14 +374,6 @@ function toggleNewSupplierForm() {
     if (showNewSupplierForm.value) {
         clearSupplier();
     }
-}
-
-function formatQty(value) {
-    const n = Number(value ?? 0);
-    if (Number.isNaN(n)) {
-        return '0';
-    }
-    return n % 1 === 0 ? String(n) : n.toFixed(2);
 }
 
 function debouncedSearch() {

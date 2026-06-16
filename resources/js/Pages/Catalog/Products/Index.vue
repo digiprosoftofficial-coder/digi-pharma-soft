@@ -271,6 +271,7 @@ import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { productTypeLabel } from '@/composables/useProductType';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
+import { useQuantity } from '@/composables/useQuantity';
 import { usePermissions } from '@/composables/usePermissions';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, defineComponent, h, reactive, ref } from 'vue';
@@ -288,6 +289,7 @@ const props = defineProps({
 
 const { t } = useLocale();
 const { formatMoney, currencyCode } = useMoney();
+const { formatQty } = useQuantity();
 const { can } = usePermissions();
 
 const viewMode = ref(loadViewMode());
@@ -366,14 +368,6 @@ function setViewMode(mode) {
 
 function labelForType(slug) {
     return productTypeLabel(slug, t);
-}
-
-function formatQty(value) {
-    const n = Number(value ?? 0);
-    if (Number.isNaN(n)) {
-        return '0';
-    }
-    return n % 1 === 0 ? String(n) : n.toFixed(2);
 }
 
 function unitLabel(unit) {

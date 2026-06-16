@@ -227,6 +227,7 @@ import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { unitLabel } from '@/composables/useProductUnits';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
+import { useQuantity } from '@/composables/useQuantity';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -238,6 +239,7 @@ const props = defineProps({
 
 const { t } = useLocale();
 const { formatMoney } = useMoney();
+const { formatQty } = useQuantity();
 
 const paymentForm = useForm({
     method: props.paymentMethods[0]?.value ?? 'cash',
@@ -262,11 +264,4 @@ function voidPurchase() {
     router.post(`/purchases/${props.purchase.id}/void`, {}, { preserveScroll: true });
 }
 
-function formatQty(value) {
-    const n = Number(value ?? 0);
-    if (Number.isNaN(n)) {
-        return '0';
-    }
-    return n % 1 === 0 ? String(n) : n.toFixed(2);
-}
 </script>

@@ -60,7 +60,7 @@
                                 <label class="form-label small">{{ t('purchases.batch') }}</label>
                                 <select v-model.number="pendingBatchId" class="form-select form-select-sm">
                                     <option v-for="b in pickBatches" :key="b.id" :value="b.id">
-                                        {{ formatBatchLabel(b) }} — {{ t('purchases.stock_on_hand') }} {{ b.quantity_on_hand }}
+                                        {{ formatBatchLabel(b) }} — {{ t('purchases.stock_on_hand') }} {{ formatQty(b.quantity_on_hand) }}
                                     </option>
                                 </select>
                             </div>
@@ -122,6 +122,7 @@ import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { batchesWithStock, formatBatchLabel } from '@/composables/usePosBatches';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
+import { useQuantity } from '@/composables/useQuantity';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
@@ -132,6 +133,7 @@ const props = defineProps({
 
 const { t } = useLocale();
 const { currencyCode } = useMoney();
+const { formatQty } = useQuantity();
 
 const searchQ = ref('');
 const searchResults = ref([]);

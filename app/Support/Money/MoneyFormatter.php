@@ -2,6 +2,7 @@
 
 namespace App\Support\Money;
 
+use App\Support\Catalog\ProductStockCalculator;
 use NumberFormatter;
 
 final class MoneyFormatter
@@ -31,14 +32,16 @@ final class MoneyFormatter
         $value = (float) ($amount ?? 0);
 
         if (! class_exists(NumberFormatter::class)) {
-            return sprintf('%s %s', $currency, number_format($value, 2));
+            return sprintf('%s %s', $currency, ProductStockCalculator::formatQuantity($value));
         }
 
         $formatter = new NumberFormatter($locale, NumberFormatter::CURRENCY);
+        $formatter->setAttribute(NumberFormatter::MIN_FRACTION_DIGITS, 0);
+        $formatter->setAttribute(NumberFormatter::MAX_FRACTION_DIGITS, 2);
         $formatted = $formatter->formatCurrency($value, $currency);
 
         if ($formatted === false) {
-            return sprintf('%s %s', $currency, number_format($value, 2));
+            return sprintf('%s %s', $currency, ProductStockCalculator::formatQuantity($value));
         }
 
         return $formatted;

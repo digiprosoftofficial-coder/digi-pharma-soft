@@ -71,44 +71,44 @@
                                 <br><small>{{ $line->batch->expiry_date->format('Y-m-d') }}</small>
                             @endif
                         </td>
-                        <td class="num">{{ $line->quantity }} {{ $line->sell_unit }}</td>
-                        <td class="num">{{ number_format((float) $line->unit_price, 2) }}</td>
-                        <td class="num">{{ number_format((float) $line->line_total, 2) }}</td>
+                        <td class="num">{{ display_qty($line->quantity) }} {{ $line->sell_unit }}</td>
+                        <td class="num">{{ display_money($line->unit_price) }}</td>
+                        <td class="num">{{ display_money($line->line_total) }}</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
         <table class="totals">
-            <tr><td>{{ __('sales.subtotal') }}</td><td class="num">{{ number_format((float) $sale->subtotal, 2) }}</td></tr>
+            <tr><td>{{ __('sales.subtotal') }}</td><td class="num">{{ display_money($sale->subtotal) }}</td></tr>
             @if ((float) $sale->discount > 0)
-                <tr><td>{{ __('sales.discount') }}</td><td class="num">−{{ number_format((float) $sale->discount, 2) }}</td></tr>
+                <tr><td>{{ __('sales.discount') }}</td><td class="num">−{{ display_money($sale->discount) }}</td></tr>
             @endif
             @if ((float) $sale->tax > 0)
-                <tr><td>{{ __('sales.tax') }}</td><td class="num">{{ number_format((float) $sale->tax, 2) }}</td></tr>
+                <tr><td>{{ __('sales.tax') }}</td><td class="num">{{ display_money($sale->tax) }}</td></tr>
             @endif
-            <tr class="grand"><td>{{ __('sales.total') }}</td><td class="num">{{ number_format((float) $sale->total, 2) }}</td></tr>
+            <tr class="grand"><td>{{ __('sales.total') }}</td><td class="num">{{ display_money($sale->total) }}</td></tr>
             @if ((float) $sale->round_adjustment != 0)
                 <tr>
                     <td>{{ __('sales.round_adjustment') }}</td>
-                    <td class="num">{{ ((float) $sale->round_adjustment > 0 ? '+' : '') . number_format((float) $sale->round_adjustment, 2) }}</td>
+                    <td class="num">{{ ((float) $sale->round_adjustment > 0 ? '+' : '') . display_money($sale->round_adjustment) }}</td>
                 </tr>
-                <tr style="font-weight:600"><td>{{ __('sales.payable_amount') }}</td><td class="num">{{ number_format((float) $sale->rounded_total, 2) }}</td></tr>
+                <tr style="font-weight:600"><td>{{ __('sales.payable_amount') }}</td><td class="num">{{ display_money($sale->rounded_total) }}</td></tr>
             @endif
             @if ((float) $sale->amount_tendered > 0)
-                <tr><td>{{ __('sales.amount_tendered') }}</td><td class="num">{{ number_format((float) $sale->amount_tendered, 2) }}</td></tr>
+                <tr><td>{{ __('sales.amount_tendered') }}</td><td class="num">{{ display_money($sale->amount_tendered) }}</td></tr>
             @endif
-            <tr><td>{{ __('sales.paid') }}</td><td class="num">{{ number_format((float) $sale->paid, 2) }}</td></tr>
+            <tr><td>{{ __('sales.paid') }}</td><td class="num">{{ display_money($sale->paid) }}</td></tr>
             @if ((float) $sale->change_returned > 0)
-                <tr><td>{{ __('sales.change_returned') }}</td><td class="num">{{ number_format((float) $sale->change_returned, 2) }}</td></tr>
+                <tr><td>{{ __('sales.change_returned') }}</td><td class="num">{{ display_money($sale->change_returned) }}</td></tr>
             @endif
             @if ((float) $sale->due > 0)
-                <tr><td>{{ __('sales.due') }}</td><td class="num">{{ number_format((float) $sale->due, 2) }}</td></tr>
+                <tr><td>{{ __('sales.due') }}</td><td class="num">{{ display_money($sale->due) }}</td></tr>
             @endif
         </table>
         @if ($sale->payments->isNotEmpty())
             <p style="margin-top:1rem"><strong>{{ __('sales.payments') }}:</strong>
                 @foreach ($sale->payments as $p)
-                    {{ $p->method }} {{ number_format((float) $p->amount, 2) }}@if (!$loop->last), @endif
+                    {{ $p->method }} {{ display_money($p->amount) }}@if (!$loop->last), @endif
                 @endforeach
             </p>
         @endif

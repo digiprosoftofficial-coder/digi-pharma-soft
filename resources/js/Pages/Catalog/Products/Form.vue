@@ -376,10 +376,11 @@
                                         v-model="row.purchase_price"
                                         type="number"
                                         min="0"
-                                        step="0.0001"
+                                        step="0.01"
                                         class="form-control form-control-sm"
                                         required
                                         @input="onBaseUnitPriceInput(row)"
+                                        @blur="onUnitPriceBlur(row, 'purchase_price')"
                                     />
                                 </td>
                                 <td>
@@ -387,10 +388,11 @@
                                         v-model="row.sale_price"
                                         type="number"
                                         min="0"
-                                        step="0.0001"
+                                        step="0.01"
                                         class="form-control form-control-sm"
                                         required
                                         @input="onBaseUnitPriceInput(row)"
+                                        @blur="onUnitPriceBlur(row, 'sale_price')"
                                     />
                                 </td>
                                 <td class="text-center">
@@ -444,10 +446,13 @@ import {
     usesStripProductType,
 } from '@/composables/useProductTypeUnits';
 import { useLocale } from '@/composables/useLocale';
+import { useQuantity } from '@/composables/useQuantity';
+import { formatPrice, precisionDecimal } from '@/utils/formatNumber';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 
 const { t } = useLocale();
+const { formatQty } = useQuantity();
 
 const page = usePage();
 const wholesaleEnabled = computed(() => page.props.features?.wholesale_pricing ?? false);
@@ -492,14 +497,6 @@ function unitLabel(u) {
     return u.charAt(0).toUpperCase() + u.slice(1);
 }
 
-function formatQty(n) {
-    const v = Number(n);
-    if (Number.isNaN(v)) {
-        return '0';
-    }
-    return v % 1 === 0 ? String(v) : v.toFixed(2);
-}
-
 function unitRow(sellUnit, conversionFactor, isDefault) {
     return {
         sell_unit: sellUnit,
@@ -531,8 +528,8 @@ function initialUnits() {
         return product.units.map((u) => ({
             sell_unit: u.sell_unit,
             conversion_factor: formatConversionFactor(u.conversion_factor),
-            purchase_price: String(u.purchase_price),
-            sale_price: String(u.sale_price),
+            purchase_price: formatPrice(u.purchase_price),
+            sale_price: formatPrice(u.sale_price),
             is_default: Boolean(u.is_default),
         }));
     }
@@ -781,8 +778,17 @@ function formatDerivedPrice(value) {
     if (Number.isNaN(value) || value < 0) {
         return '0';
     }
-    const rounded = Math.round(value * 10000) / 10000;
-    return Number.isInteger(rounded) ? String(rounded) : String(rounded);
+
+    return formatPrice(value);
+}
+
+function onUnitPriceBlur(row, field) {
+    const n = Number(row[field]);
+    if (Number.isNaN(n) || n < 0) {
+        row[field] = '0';
+        return;
+    }
+    row[field] = formatPrice(n);
 }
 
 function syncDerivedUnitPricesFromBase() {
@@ -796,8 +802,8 @@ function syncDerivedUnitPricesFromBase() {
         return;
     }
 
-    const anchorPurchase = Number(anchorRow.purchase_price);
-    const anchorSale = Number(anchorRow.sale_price);
+    const anchorPurchase = precisionDecimal(anchorRow.purchase_price);
+    const anchorSale = precisionDecimal(anchorRow.sale_price);
     const hasPurchase = anchorRow.purchase_price !== '' && !Number.isNaN(anchorPurchase);
     const hasSale = anchorRow.sale_price !== '' && !Number.isNaN(anchorSale);
 
@@ -813,10 +819,10 @@ function syncDerivedUnitPricesFromBase() {
             return;
         }
         if (pricePerBase !== null) {
-            row.purchase_price = formatDerivedPrice(pricePerBase * factor);
+            row.purchase_price = formatDerivedPrice(precisionDecimal(pricePerBase * factor));
         }
         if (salePerBase !== null) {
-            row.sale_price = formatDerivedPrice(salePerBase * factor);
+            row.sale_price = formatDerivedPrice(precisionDecimal(salePerBase * factor));
         }
     });
 }
@@ -1095,8 +1101,8 @@ function buildPayload() {
             sell_unit: row.sell_unit,
             conversion_factor:
                 row.sell_unit === form.base_unit ? 1 : formatConversionFactor(row.conversion_factor),
-            purchase_price: row.purchase_price,
-            sale_price: row.sale_price,
+            purchase_price: precisionDecimal(row.purchase_price),
+            sale_price: precisionDecimal(row.sale_price),
             is_default: row.is_default,
         })),
     };

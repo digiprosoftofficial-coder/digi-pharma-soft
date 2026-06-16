@@ -281,7 +281,7 @@
                 <ul v-if="tenantInvoices?.length" class="list-unstyled mb-0">
                     <li v-for="inv in tenantInvoices" :key="inv.id" class="d-flex justify-content-between border-top pt-2 mt-2">
                         <span>{{ inv.invoice_no }} — {{ inv.status }}</span>
-                        <span>{{ formatInvoiceMoney(inv) }}</span>
+                        <span>{{ formatCents(inv.amount_cents, inv.currency) }}</span>
                     </li>
                 </ul>
                 <p v-else class="text-muted mb-0">{{ t('platform.billing_no_invoices') }}</p>
@@ -436,6 +436,7 @@ import ConfirmModal from '@/Components/ConfirmModal.vue';
 import TenantStatusBadge from '@/Components/TenantStatusBadge.vue';
 import PlatformShellLayout from '@/Layouts/PlatformShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
+import { useMoney } from '@/composables/useMoney';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
@@ -456,6 +457,7 @@ const props = defineProps({
 });
 
 const { t } = useLocale();
+const { formatCents } = useMoney();
 const showSuspendModal = ref(false);
 const showUnsuspendModal = ref(false);
 const showPurgeModal = ref(false);
@@ -480,18 +482,6 @@ function formatDate(iso) {
     }
 
     return String(iso).slice(0, 10);
-}
-
-function formatInvoiceMoney(inv) {
-    const amount = Number(inv.amount_cents || 0) / 100;
-    const currency = inv.currency ?? 'BDT';
-
-    return new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(amount);
 }
 
 function submitOwner() {

@@ -63,7 +63,7 @@
                                     <li v-for="line in s.lines" :key="line.id" class="mb-1">
                                         <span class="fw-medium">{{ line.product?.name ?? 'Product' }}</span>
                                         <span class="text-muted">
-                                            — {{ line.quantity }} {{ line.sell_unit ?? '' }}
+                                            — {{ formatQty(line.quantity) }} {{ line.sell_unit ?? '' }}
                                             <template v-if="line.batch">
                                                 · {{ batchLineLabel(line.batch) }}
                                             </template>
@@ -95,6 +95,7 @@ import { lineMarginAmount } from '@/composables/useBatchPricing';
 import { formatBatchLabel } from '@/composables/usePosBatches';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
+import { useQuantity } from '@/composables/useQuantity';
 import { Head, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
@@ -105,6 +106,7 @@ defineProps({
 
 const { t } = useLocale();
 const { formatMoney, currencyCode } = useMoney();
+const { formatQty } = useQuantity();
 const expanded = ref(null);
 
 function toggle(id) {

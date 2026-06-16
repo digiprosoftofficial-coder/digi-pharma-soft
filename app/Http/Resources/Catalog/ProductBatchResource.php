@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Catalog;
 
 use App\Support\Catalog\BatchExpiry;
+use App\Support\Catalog\ProductStockCalculator;
 use App\Support\Catalog\BatchSalePricing;
 use App\Support\Catalog\EffectiveStorageLocation;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ class ProductBatchResource extends JsonResource
             'batch_no' => $this->batch_no,
             'expiry_date' => $this->expiry_date?->toDateString(),
             'is_expired' => BatchExpiry::isExpired($this->resource),
-            'quantity_on_hand' => (string) $this->quantity_on_hand,
+            'quantity_on_hand' => ProductStockCalculator::formatQuantity((float) $this->quantity_on_hand),
             'purchase_unit_cost' => (string) $this->purchase_unit_cost,
             'sale_price' => $this->sale_price !== null ? (string) $this->sale_price : null,
             'markup_percent' => $this->markup_percent !== null ? (string) $this->markup_percent : null,

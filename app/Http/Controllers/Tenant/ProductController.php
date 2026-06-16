@@ -9,6 +9,7 @@ use App\Domain\Catalog\Models\StorageLocation;
 use App\Domain\Catalog\Repositories\ProductRepository;
 use App\Domain\Catalog\Services\ProductService;
 use App\Http\Controllers\Controller;
+use App\Support\Catalog\ProductStockCalculator;
 use App\Http\Requests\Catalog\StoreProductRequest;
 use App\Http\Requests\Catalog\UpdateProductRequest;
 use App\Http\Resources\Catalog\ProductResource;
@@ -90,19 +91,19 @@ final class ProductController extends Controller
                 'sell_unit' => $unit->sell_unit,
                 'conversion_factor' => (string) $unit->conversion_factor,
                 'is_default' => (bool) $unit->is_default,
-                'quantity_on_hand' => number_format($baseStock / $factor, 4, '.', ''),
+                'quantity_on_hand' => ProductStockCalculator::formatQuantity($baseStock / $factor),
             ];
         })->values()->all();
 
-        $stockPieces = \App\Support\Catalog\ProductStockCalculator::totalPieces($product, $baseStock);
+        $stockPieces = ProductStockCalculator::totalPieces($product, $baseStock);
 
         return Inertia::render('Catalog/Products/Show', [
             'product' => (new ProductResource($product))->resolve(request()),
-            'stockBase' => number_format($baseStock, 4, '.', ''),
+            'stockBase' => ProductStockCalculator::formatQuantity($baseStock),
             'stockPieces' => $stockPieces !== null
-                ? \App\Support\Catalog\ProductStockCalculator::formatQuantity($stockPieces)
+                ? ProductStockCalculator::formatQuantity($stockPieces)
                 : null,
-            'purchasedQuantity' => number_format($purchasedQuantity, 4, '.', ''),
+            'purchasedQuantity' => ProductStockCalculator::formatQuantity($purchasedQuantity),
             'stockByUnit' => $stockByUnit,
         ]);
     }

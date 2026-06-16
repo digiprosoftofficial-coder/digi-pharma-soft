@@ -81,8 +81,12 @@ final class ProductStockCalculator
 
     public static function formatQuantity(float $qty): string
     {
-        return $qty % 1 === 0.0
-            ? (string) (int) $qty
-            : number_format($qty, 2, '.', '');
+        $rounded = round($qty, 2);
+
+        if (abs($rounded - round($rounded)) < 1e-9) {
+            return (string) (int) round($rounded);
+        }
+
+        return number_format($rounded, 2, '.', '');
     }
 }

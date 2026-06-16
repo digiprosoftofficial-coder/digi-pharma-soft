@@ -69,7 +69,7 @@
                     <ul class="list-group list-group-flush">
                         <li v-for="b in criticalStock" :key="b.id" class="list-group-item d-flex justify-content-between align-items-center">
                             <span>{{ b.product?.name ?? 'Product' }}</span>
-                            <span class="badge bg-danger-subtle text-danger">{{ b.quantity_on_hand }}</span>
+                            <span class="badge bg-danger-subtle text-danger">{{ formatQty(b.quantity_on_hand) }}</span>
                         </li>
                         <li v-if="!criticalStock?.length" class="list-group-item text-muted small">No low-stock batches.</li>
                     </ul>
@@ -107,6 +107,7 @@
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { useMoney } from '@/composables/useMoney';
+import { useQuantity } from '@/composables/useQuantity';
 import { Head } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -118,6 +119,7 @@ const props = defineProps({
 });
 
 const { formatMoney } = useMoney();
+const { formatQty } = useQuantity();
 
 function barHeight(total) {
     const max = Math.max(...props.chartDays.map((d) => d.total), 1);

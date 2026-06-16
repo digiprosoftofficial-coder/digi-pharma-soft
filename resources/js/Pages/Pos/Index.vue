@@ -290,6 +290,7 @@ import {
 import { batchesWithStock, formatBatchLabel, onBatchChange as syncBatchFields, totalBaseStock } from '@/composables/usePosBatches';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
+import { useQuantity } from '@/composables/useQuantity';
 import { defaultSellUnit, stockInSellUnit, unitLabel, unitSalePrice } from '@/composables/useProductUnits';
 import { Head, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
@@ -301,6 +302,7 @@ const props = defineProps({
 
 const { t } = useLocale();
 const { formatMoney, currencyCode } = useMoney();
+const { formatQty } = useQuantity();
 
 const q = ref('');
 const results = ref([]);
@@ -470,14 +472,6 @@ function searchBatchHint(item) {
     }
 
     return t('catalog.pos_fefo_batch_hint', { batch: first, count: batches.length });
-}
-
-function formatQty(value) {
-    const n = Number(value ?? 0);
-    if (Number.isNaN(n)) {
-        return '0';
-    }
-    return n % 1 === 0 ? String(n) : n.toFixed(2);
 }
 
 function normalizeLineQuantity(line) {

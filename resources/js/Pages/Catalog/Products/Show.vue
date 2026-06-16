@@ -187,6 +187,7 @@ import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { suggestedUnitPrice } from '@/composables/useBatchPricing';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
+import { useQuantity } from '@/composables/useQuantity';
 import { defaultSellUnit, unitLabel, unitSalePrice } from '@/composables/useProductUnits';
 import { usePermissions } from '@/composables/usePermissions';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
@@ -205,6 +206,7 @@ const wholesaleEnabled = computed(() => page.props.features?.wholesale_pricing ?
 
 const { t } = useLocale();
 const { formatMoney } = useMoney();
+const { formatQty } = useQuantity();
 const { can } = usePermissions();
 
 const batchMarkups = reactive({});
@@ -243,14 +245,6 @@ const defaultShelfLabel = computed(() =>
 
 function batchShelfLabel(batch) {
     return formatLocation(batch.effective_storage_location ?? batch.storage_location);
-}
-
-function formatQty(value) {
-    const n = Number(value ?? 0);
-    if (Number.isNaN(n)) {
-        return '0';
-    }
-    return n % 1 === 0 ? String(n) : n.toFixed(2);
 }
 
 function displayMarkup(batch) {
