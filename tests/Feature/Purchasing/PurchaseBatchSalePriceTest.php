@@ -88,4 +88,26 @@ class PurchaseBatchSalePriceTest extends TestCase
         $this->assertSame(180.0, BatchSalePricing::batchSalePriceInSellUnit($batch, $product, 'box'));
         $this->assertSame(15.0, BatchSalePricing::batchSalePriceInSellUnit($batch, $product, 'strip'));
     }
+
+    public function test_product_edit_can_update_batch_sale_price_and_markup(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+        $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
+        $batch = ProductBatch::query()->where('product_id', $product->getKey())->firstOrFail();
+
+        $editUrl = "/products/{$product->getKey()}/edit";
+
+        $this->actingAs($user)
+            ->from($editUrl)
+            ->patch("/products/{$product->getKey()}/batches/{$batch->getKey()}/markup", [
+                'sale_price' => 42.5,
+                'markup_percent' => 20,
+            ])
+            ->assertRedirect($editUrl);
+
+        $batch->refresh();
+        $this->assertSame('42.5000', (string) $batch->sale_price);
+        $this->assertSame('20.00', (string) $batch->markup_percent);
+    }
 }

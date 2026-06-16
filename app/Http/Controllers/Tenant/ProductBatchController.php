@@ -17,12 +17,18 @@ final class ProductBatchController extends Controller
     ): RedirectResponse {
         abort_unless((int) $batch->product_id === (int) $product->getKey(), 404);
 
-        $batch->update([
-            'markup_percent' => $request->validated('markup_percent'),
-        ]);
+        $updates = [];
 
-        return redirect()
-            ->route('tenant.products.show', $product)
-            ->with('success', __('catalog.batch_markup_updated'));
+        if ($request->exists('markup_percent')) {
+            $updates['markup_percent'] = $request->validated('markup_percent');
+        }
+
+        if ($request->exists('sale_price')) {
+            $updates['sale_price'] = $request->validated('sale_price');
+        }
+
+        $batch->update($updates);
+
+        return back()->with('success', __('catalog.batch_pricing_updated'));
     }
 }

@@ -327,13 +327,132 @@
                 </div>
             </div>
 
+            <div v-if="existing && batches.length" class="mt-4 card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h2 class="h6 mb-1">{{ t('catalog.batch_pricing_title') }}</h2>
+                    <p class="small text-muted mb-0">{{ t('catalog.batch_markup_help') }}</p>
+                    <p class="small text-muted mb-0">{{ t('catalog.batch_sale_price_hint') }}</p>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Batch</th>
+                                <th>Expiry</th>
+                                <th class="text-end">On hand</th>
+                                <th class="text-end">Unit cost</th>
+                                <th class="text-end">{{ t('catalog.batch_sale_price') }}</th>
+                                <th class="text-end">{{ t('catalog.batch_markup_percent') }}</th>
+                                <th class="text-end">{{ t('catalog.batch_suggested_price') }}</th>
+                                <th style="width: 3rem"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="b in batches" :key="`pricing-${b.id}`">
+                                <td>{{ b.batch_no }}</td>
+                                <td>{{ b.expiry_date || '—' }}</td>
+                                <td class="text-end">{{ formatQty(b.quantity_on_hand) }}</td>
+                                <td class="text-end">
+                                    <div class="fw-medium">
+                                        {{ formatMoney(b.purchase_unit_cost) }}
+                                        <span class="text-muted small fw-normal">
+                                            {{ t('catalog.batch_per_unit', { unit: unitLabel(batchStoredPriceUnit(b, form.base_unit)) }) }}
+                                        </span>
+                                    </div>
+                                    <div
+                                        v-if="batchStoredPriceDiffersFromBase(b, form.base_unit)"
+                                        class="text-muted small"
+                                    >
+                                        {{
+                                            t('catalog.batch_cost_in_base_unit', {
+                                                amount: formatMoney(batchBaseUnitCost(b)),
+                                                unit: unitLabel(form.base_unit),
+                                            })
+                                        }}
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    <input
+                                        v-model="batchSalePrices[b.id]"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        class="form-control form-control-sm text-end"
+                                        style="min-width: 5.5rem"
+                                        :placeholder="batchEffectivePriceLabel(b)"
+                                        @blur="onBatchSalePriceBlur(b.id)"
+                                    />
+                                    <div class="text-muted small mt-1">
+                                        {{ t('catalog.batch_per_unit', { unit: unitLabel(batchStoredPriceUnit(b, form.base_unit)) }) }}
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    <input
+                                        v-model="batchMarkups[b.id]"
+                                        type="number"
+                                        min="0"
+                                        max="1000"
+                                        step="0.01"
+                                        class="form-control form-control-sm text-end"
+                                        style="width: 4.5rem"
+                                        :placeholder="form.default_markup_percent || '—'"
+                                    />
+                                </td>
+                                <td class="text-end text-muted small">
+                                    <div>{{ batchSuggestedLabel(b) }}</div>
+                                    <div class="text-muted">
+                                        {{ t('catalog.batch_per_unit', { unit: unitLabel(defaultSellUnit(productForPricing())) }) }}
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-outline-primary py-0"
+                                        :disabled="batchPricingSaving[b.id]"
+                                        @click="saveBatchPricing(b)"
+                                    >
+                                        ✓
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="mt-4">
-                <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                     <h2 class="h6 mb-0">Sell units &amp; prices</h2>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" @click="addUnitRow">Add unit</button>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <label v-if="batches.length" class="small text-muted mb-0">
+                            {{ t('catalog.lot_price_preview_label') }}
+                        </label>
+                        <select
+                            v-if="batches.length"
+                            v-model="previewBatchId"
+                            class="form-select form-select-sm"
+                            style="width: auto; min-width: 10rem"
+                        >
+                            <option :value="null">{{ t('catalog.unit_prices_product_default') }}</option>
+                            <option v-for="b in batches" :key="`preview-${b.id}`" :value="b.id">
+                                {{ b.batch_no }}
+                            </option>
+                        </select>
+                        <button
+                            v-if="!previewBatchId"
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            @click="addUnitRow"
+                        >
+                            Add unit
+                        </button>
+                    </div>
+                </div>
+                <div v-if="previewBatchId && selectedPreviewBatch" class="alert alert-info small py-2 mb-2">
+                    {{ t('catalog.lot_price_preview_hint', { batch: selectedPreviewBatch.batch_no }) }}
                 </div>
                 <div v-if="form.errors.units" class="text-danger small mb-2">{{ form.errors.units }}</div>
-                <p v-if="priceAutoFillHint" class="small text-muted mb-2">
+                <p v-if="priceAutoFillHint && !previewBatchId" class="small text-muted mb-2">
                     {{ priceAutoFillHint }}
                 </p>
                 <div class="table-responsive">
@@ -349,18 +468,23 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(row, idx) in form.units" :key="idx">
+                            <tr
+                                v-for="(row, idx) in form.units"
+                                :key="idx"
+                                :class="{ 'table-light': previewBatchId }"
+                            >
                                 <td>
                                     <select
                                         v-model="row.sell_unit"
                                         class="form-select form-select-sm"
-                                        :disabled="row.sell_unit === form.base_unit"
+                                        :disabled="previewBatchId || row.sell_unit === form.base_unit"
                                     >
                                         <option v-for="u in availableSellUnits" :key="u" :value="u">{{ unitLabel(u) }}</option>
                                     </select>
                                 </td>
                                 <td>
                                     <input
+                                        v-if="!previewBatchId"
                                         v-model.number="row.conversion_factor"
                                         type="number"
                                         min="0.0001"
@@ -370,9 +494,13 @@
                                         @input="onUnitConversionInput(row)"
                                         @blur="onConversionFactorBlur(row)"
                                     />
+                                    <span v-else class="form-control form-control-sm bg-white text-end">
+                                        {{ formatQty(row.conversion_factor) }}
+                                    </span>
                                 </td>
                                 <td>
                                     <input
+                                        v-if="!previewBatchId"
                                         v-model="row.purchase_price"
                                         type="number"
                                         min="0"
@@ -382,9 +510,13 @@
                                         @input="onBaseUnitPriceInput(row)"
                                         @blur="onUnitPriceBlur(row, 'purchase_price')"
                                     />
+                                    <span v-else class="form-control form-control-sm bg-white text-end">
+                                        {{ lotPreviewPurchase(row.sell_unit) }}
+                                    </span>
                                 </td>
                                 <td>
                                     <input
+                                        v-if="!previewBatchId"
                                         v-model="row.sale_price"
                                         type="number"
                                         min="0"
@@ -394,6 +526,9 @@
                                         @input="onBaseUnitPriceInput(row)"
                                         @blur="onUnitPriceBlur(row, 'sale_price')"
                                     />
+                                    <span v-else class="form-control form-control-sm bg-white text-end">
+                                        {{ lotPreviewSale(row.sell_unit) }}
+                                    </span>
                                 </td>
                                 <td class="text-center">
                                     <input
@@ -401,11 +536,13 @@
                                         type="radio"
                                         name="default_unit"
                                         :checked="row.is_default"
+                                        :disabled="!!previewBatchId"
                                         @change="setDefault(idx)"
                                     />
                                 </td>
                                 <td>
                                     <button
+                                        v-if="!previewBatchId"
                                         type="button"
                                         class="btn btn-sm btn-outline-danger"
                                         :disabled="form.units.length <= 1 || row.sell_unit === form.base_unit"
@@ -445,13 +582,24 @@ import {
     sellUnitsForProductType,
     usesStripProductType,
 } from '@/composables/useProductTypeUnits';
+import {
+    suggestedUnitPrice,
+    batchSalePriceInSellUnit,
+    unitCostInSellUnit,
+    batchStoredPriceUnit,
+    batchBaseUnitCost,
+    batchStoredPriceDiffersFromBase,
+} from '@/composables/useBatchPricing';
 import { useLocale } from '@/composables/useLocale';
+import { useMoney } from '@/composables/useMoney';
 import { useQuantity } from '@/composables/useQuantity';
+import { defaultSellUnit, unitSalePrice } from '@/composables/useProductUnits';
 import { formatPrice, precisionDecimal } from '@/utils/formatNumber';
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 
 const { t } = useLocale();
+const { formatMoney } = useMoney();
 const { formatQty } = useQuantity();
 
 const page = usePage();
@@ -569,6 +717,10 @@ const stripProductTypes = computed(() => props.catalogOptions.stripProductTypes 
 const allSellUnits = computed(() => props.catalogOptions.sellUnits ?? ['piece', 'strip', 'box', 'carton']);
 
 const batchLocationEdits = reactive({});
+const batchMarkups = reactive({});
+const batchSalePrices = reactive({});
+const batchPricingSaving = reactive({});
+const previewBatchId = ref(null);
 
 function locationLabel(loc) {
     if (!loc) {
@@ -579,13 +731,15 @@ function locationLabel(loc) {
 }
 
 const batches = computed(() => {
-    const raw = existing?.batches;
-    if (!raw) {
+    const product = productData();
+    if (!product?.batches) {
         return [];
     }
+    const raw = product.batches;
     if (Array.isArray(raw)) {
         return raw;
     }
+
     return raw.data ?? [];
 });
 
@@ -596,10 +750,154 @@ watch(
             if (!(b.id in batchLocationEdits)) {
                 batchLocationEdits[b.id] = b.storage_location_id ?? null;
             }
+            if (batchMarkups[b.id] === undefined) {
+                batchMarkups[b.id] = b.markup_percent ?? '';
+            }
+            if (batchSalePrices[b.id] === undefined) {
+                batchSalePrices[b.id] =
+                    b.sale_price != null && b.sale_price !== '' ? formatPrice(b.sale_price) : '';
+            }
         });
     },
     { immediate: true },
 );
+
+function productForPricing() {
+    return {
+        default_markup_percent: form.default_markup_percent,
+        sale_price: productData()?.sale_price,
+        units: form.units,
+        base_unit: form.base_unit,
+    };
+}
+
+const selectedPreviewBatch = computed(() => {
+    if (!previewBatchId.value) {
+        return null;
+    }
+
+    return batches.value.find((b) => b.id === previewBatchId.value) ?? null;
+});
+
+watch(batches, (list) => {
+    if (previewBatchId.value && !list.some((b) => b.id === previewBatchId.value)) {
+        previewBatchId.value = null;
+    }
+});
+
+function batchForPreview(batch) {
+    const saleDraft = batchSalePrices[batch.id];
+    const markupDraft = batchMarkups[batch.id];
+
+    return {
+        ...batch,
+        sale_price:
+            saleDraft !== undefined && saleDraft !== '' && saleDraft !== null
+                ? saleDraft
+                : batch.sale_price,
+        markup_percent:
+            markupDraft !== undefined && markupDraft !== '' && markupDraft !== null
+                ? markupDraft
+                : batch.markup_percent,
+    };
+}
+
+function lotPreviewPurchase(sellUnit) {
+    const batch = selectedPreviewBatch.value;
+    if (!batch) {
+        return '—';
+    }
+
+    return formatPrice(unitCostInSellUnit(batchForPreview(batch), sellUnit, form.units));
+}
+
+function lotPreviewSale(sellUnit) {
+    const batch = selectedPreviewBatch.value;
+    if (!batch) {
+        return '—';
+    }
+
+    const previewBatch = batchForPreview(batch);
+    const product = productForPricing();
+    const mrp = batchSalePriceInSellUnit(previewBatch, sellUnit, form.units);
+    if (mrp !== null) {
+        return formatPrice(mrp);
+    }
+
+    const suggested = suggestedUnitPrice(previewBatch, product, sellUnit, form.units);
+    if (suggested !== null) {
+        return formatPrice(suggested);
+    }
+
+    return formatPrice(unitSalePrice(product, sellUnit));
+}
+
+function batchSuggestedLabel(batch) {
+    const previewBatch = batchForPreview(batch);
+    const sellUnit = defaultSellUnit(productForPricing());
+    const mrp = batchSalePriceInSellUnit(previewBatch, sellUnit, form.units);
+    if (mrp !== null) {
+        return formatMoney(mrp);
+    }
+
+    const suggested = suggestedUnitPrice(previewBatch, productForPricing(), sellUnit, form.units);
+    if (suggested !== null) {
+        return formatMoney(suggested);
+    }
+
+    return formatMoney(unitSalePrice(productForPricing(), sellUnit));
+}
+
+function batchEffectivePriceLabel(batch) {
+    const sellUnit = defaultSellUnit(productForPricing());
+    const batchPrice = batchSalePriceInSellUnit(batch, sellUnit, form.units);
+    if (batchPrice !== null) {
+        return formatMoney(batchPrice);
+    }
+
+    return '—';
+}
+
+function onBatchSalePriceBlur(batchId) {
+    const value = batchSalePrices[batchId];
+    if (value === '' || value === null || value === undefined) {
+        return;
+    }
+    batchSalePrices[batchId] = formatPrice(value);
+}
+
+function saveBatchPricing(batch) {
+    const product = productData();
+    if (!product?.id) {
+        return;
+    }
+
+    batchPricingSaving[batch.id] = true;
+    const saleRaw = batchSalePrices[batch.id];
+    const markupRaw = batchMarkups[batch.id];
+
+    router.patch(
+        `/products/${product.id}/batches/${batch.id}/markup`,
+        {
+            markup_percent: markupRaw === '' || markupRaw === null || markupRaw === undefined ? null : markupRaw,
+            sale_price:
+                saleRaw === '' || saleRaw === null || saleRaw === undefined ? null : precisionDecimal(saleRaw),
+        },
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                if (saleRaw === '' || saleRaw === null || saleRaw === undefined) {
+                    batchSalePrices[batch.id] = '';
+                } else {
+                    batchSalePrices[batch.id] = formatPrice(precisionDecimal(saleRaw));
+                }
+            },
+            onFinish: () => {
+                batchPricingSaving[batch.id] = false;
+            },
+        },
+    );
+}
 
 const totalStock = computed(() =>
     batches.value.reduce((sum, b) => sum + Number(b.quantity_on_hand ?? 0), 0),

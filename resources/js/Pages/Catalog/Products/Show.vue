@@ -6,7 +6,15 @@
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
             <div>
                 <Link href="/products" class="small text-decoration-none">← Products</Link>
-                <h1 class="h4 mb-1">{{ product.name }}</h1>
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                    <h1 class="h4 mb-0">{{ product.name }}</h1>
+                    <span
+                        class="badge"
+                        :class="product.is_active ? 'text-bg-success' : 'text-bg-secondary'"
+                    >
+                        {{ product.is_active ? t('common.active') : t('common.inactive') }}
+                    </span>
+                </div>
                 <p v-if="product.generic_name || product.strength" class="text-muted small mb-1">
                     <span v-if="product.generic_name">{{ product.generic_name }}</span>
                     <span v-if="product.generic_name && product.strength"> · </span>
@@ -15,9 +23,6 @@
                 <p class="text-muted small mb-0">
                     SKU <strong>{{ product.sku }}</strong>
                     <span v-if="product.barcode" class="ms-2">· Barcode {{ product.barcode }}</span>
-                    <span v-if="product.default_markup_percent" class="ms-2">
-                        · {{ t('catalog.default_markup_percent') }} {{ product.default_markup_percent }}%
-                    </span>
                 </p>
             </div>
             <div class="d-flex flex-wrap gap-2">
@@ -78,23 +83,56 @@
         <div class="row g-3 mb-4">
             <div class="col-lg-8">
                 <div class="card border-0 shadow-sm h-100">
-                    <div class="card-header bg-white fw-semibold">Details</div>
+                    <div class="card-header bg-white fw-semibold">{{ t('catalog.product_details') }}</div>
                     <div class="card-body small">
                         <dl class="row mb-0">
-                            <dt class="col-sm-4">Type</dt>
+                            <dt class="col-sm-4">{{ t('catalog.product_type') }}</dt>
                             <dd class="col-sm-8"><ProductTypeLabel :type="product.product_type" /></dd>
-                            <dt class="col-sm-4">Default shelf</dt>
+
+                            <dt class="col-sm-4">{{ t('catalog.category') }}</dt>
+                            <dd class="col-sm-8">{{ product.category?.name ?? '—' }}</dd>
+
+                            <dt class="col-sm-4">{{ t('catalog.manufacturer') }}</dt>
+                            <dd class="col-sm-8">{{ product.manufacturer?.name ?? '—' }}</dd>
+
+                            <dt class="col-sm-4">{{ t('catalog.base_unit') }}</dt>
+                            <dd class="col-sm-8 text-capitalize">{{ unitLabel(product.base_unit) }}</dd>
+
+                            <dt v-if="product.pieces_per_strip" class="col-sm-4">{{ t('catalog.pieces_per_strip') }}</dt>
+                            <dd v-if="product.pieces_per_strip" class="col-sm-8">{{ formatQty(product.pieces_per_strip) }}</dd>
+
+                            <dt v-if="product.strips_per_box" class="col-sm-4">{{ t('catalog.strips_per_box') }}</dt>
+                            <dd v-if="product.strips_per_box" class="col-sm-8">{{ formatQty(product.strips_per_box) }}</dd>
+
+                            <dt v-if="product.boxes_per_carton" class="col-sm-4">{{ t('catalog.boxes_per_carton') }}</dt>
+                            <dd v-if="product.boxes_per_carton" class="col-sm-8">{{ formatQty(product.boxes_per_carton) }}</dd>
+
+                            <dt class="col-sm-4">{{ t('catalog.default_storage_location') }}</dt>
                             <dd class="col-sm-8">{{ defaultShelfLabel }}</dd>
-                            <dt class="col-sm-4">Sell units</dt>
+
+                            <dt class="col-sm-4">{{ t('catalog.default_markup_percent') }}</dt>
                             <dd class="col-sm-8">
-                                <span v-for="u in product.units" :key="u.sell_unit" class="me-2">
-                                    {{ unitLabel(u.sell_unit) }}: {{ formatMoney(u.sale_price) }}
-                                    <span v-if="u.is_default" class="text-muted">(default)</span>
-                                </span>
+                                {{ product.default_markup_percent != null && product.default_markup_percent !== '' ? `${product.default_markup_percent}%` : '—' }}
                             </dd>
+
+                            <dt class="col-sm-4">{{ t('catalog.min_stock_alert') }}</dt>
+                            <dd class="col-sm-8">
+                                {{ product.min_stock != null && product.min_stock !== '' ? formatQty(product.min_stock) : '—' }}
+                            </dd>
+
                             <dt v-if="wholesaleEnabled && product.wholesale_price" class="col-sm-4">Wholesale</dt>
                             <dd v-if="wholesaleEnabled && product.wholesale_price" class="col-sm-8">
                                 {{ formatMoney(product.wholesale_price) }}
+                            </dd>
+
+                            <dt v-if="advancedCatalogEnabled && product.vat_percent" class="col-sm-4">{{ t('catalog.vat_percent') }}</dt>
+                            <dd v-if="advancedCatalogEnabled && product.vat_percent" class="col-sm-8">
+                                {{ product.vat_percent }}%
+                            </dd>
+
+                            <dt v-if="advancedCatalogEnabled && product.short_description" class="col-sm-4">{{ t('catalog.short_description') }}</dt>
+                            <dd v-if="advancedCatalogEnabled && product.short_description" class="col-sm-8">
+                                {{ product.short_description }}
                             </dd>
                         </dl>
                     </div>
@@ -117,10 +155,56 @@
             </div>
         </div>
 
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <div class="fw-semibold">{{ t('catalog.sell_units') }}</div>
+                <p class="small text-muted mb-0 mt-1">{{ t('catalog.unit_prices_product_default') }}</p>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-striped mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>{{ t('catalog.sell_unit') }}</th>
+                            <th class="text-end">{{ t('catalog.conversion_factor', { unit: unitLabel(product.base_unit) }) }}</th>
+                            <th class="text-end">{{ t('catalog.purchase_price') }}</th>
+                            <th class="text-end">{{ t('catalog.sale_price') }}</th>
+                            <th>{{ t('catalog.default_unit') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="u in product.units" :key="u.sell_unit">
+                            <td class="text-capitalize">{{ unitLabel(u.sell_unit) }}</td>
+                            <td class="text-end">{{ formatQty(u.conversion_factor) }}</td>
+                            <td class="text-end">
+                                <div>{{ formatMoney(u.purchase_price) }}</div>
+                                <div class="text-muted small">
+                                    {{ t('catalog.batch_per_unit', { unit: unitLabel(u.sell_unit) }) }}
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <div>{{ formatMoney(u.sale_price) }}</div>
+                                <div class="text-muted small">
+                                    {{ t('catalog.batch_per_unit', { unit: unitLabel(u.sell_unit) }) }}
+                                </div>
+                            </td>
+                            <td>
+                                <span v-if="u.is_default" class="badge text-bg-primary">{{ t('catalog.default_unit') }}</span>
+                                <span v-else class="text-muted">—</span>
+                            </td>
+                        </tr>
+                        <tr v-if="!product.units?.length">
+                            <td colspan="5" class="text-muted text-center py-3">No sell units configured.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white">
-                <div class="fw-semibold">Batches</div>
+                <div class="fw-semibold">{{ t('catalog.batch_pricing_title') }}</div>
                 <p class="small text-muted mb-0 mt-1">{{ t('catalog.batch_markup_help') }}</p>
+                <p class="small text-muted mb-0">{{ t('catalog.batch_sale_price_hint') }}</p>
             </div>
             <div class="table-responsive">
                 <table class="table table-sm table-striped mb-0">
@@ -131,17 +215,48 @@
                             <th>{{ t('catalog.storage_location_shelf') }}</th>
                             <th class="text-end">On hand ({{ unitLabel(product.base_unit) }})</th>
                             <th class="text-end">Unit cost</th>
+                            <th class="text-end">{{ t('catalog.batch_sale_price') }}</th>
                             <th class="text-end">{{ t('catalog.batch_markup_percent') }}</th>
                             <th class="text-end">{{ t('catalog.batch_suggested_price') }}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="b in batches" :key="b.id">
+                        <tr v-for="b in batches" :key="b.id" :class="{ 'table-warning': b.is_expired }">
                             <td>{{ b.batch_no }}</td>
-                            <td>{{ b.expiry_date || '—' }}</td>
+                            <td>
+                                <span>{{ b.expiry_date || '—' }}</span>
+                                <span v-if="b.is_expired" class="badge text-bg-danger ms-1">{{ t('catalog.batch_expired') }}</span>
+                            </td>
                             <td class="small">{{ batchShelfLabel(b) }}</td>
                             <td class="text-end fw-semibold">{{ formatQty(b.quantity_on_hand) }}</td>
-                            <td class="text-end">{{ formatMoney(b.purchase_unit_cost) }}</td>
+                            <td class="text-end">
+                                <div class="fw-medium">
+                                    {{ formatMoney(b.purchase_unit_cost) }}
+                                    <span class="text-muted small fw-normal">
+                                        {{ t('catalog.batch_per_unit', { unit: unitLabel(batchStoredPriceUnit(b, product.base_unit)) }) }}
+                                    </span>
+                                </div>
+                                <div
+                                    v-if="batchStoredPriceDiffersFromBase(b, product.base_unit)"
+                                    class="text-muted small"
+                                >
+                                    {{
+                                        t('catalog.batch_cost_in_base_unit', {
+                                            amount: formatMoney(batchBaseUnitCost(b)),
+                                            unit: unitLabel(product.base_unit),
+                                        })
+                                    }}
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <div v-if="hasBatchSalePrice(b)">
+                                    {{ formatMoney(b.sale_price) }}
+                                    <span class="text-muted small d-block">
+                                        {{ t('catalog.batch_per_unit', { unit: unitLabel(batchStoredPriceUnit(b, product.base_unit)) }) }}
+                                    </span>
+                                </div>
+                                <span v-else class="text-muted small">{{ t('catalog.uses_markup_or_catalog') }}</span>
+                            </td>
                             <td class="text-end">
                                 <form
                                     v-if="can('products.manage')"
@@ -162,17 +277,22 @@
                                 </form>
                                 <span v-else>{{ displayMarkup(b) }}</span>
                             </td>
-                            <td class="text-end text-muted">{{ batchSuggestedLabel(b) }}</td>
+                            <td class="text-end text-muted">
+                                <div>{{ batchSuggestedLabel(b) }}</div>
+                                <div class="small">
+                                    {{ t('catalog.batch_per_unit', { unit: unitLabel(defaultSellUnit(product)) }) }}
+                                </div>
+                            </td>
                         </tr>
                         <tr v-if="!batches.length">
-                            <td colspan="7" class="text-muted text-center py-4">No batches in stock yet.</td>
+                            <td colspan="8" class="text-muted text-center py-4">No batches in stock yet.</td>
                         </tr>
                     </tbody>
                     <tfoot v-if="batches.length" class="table-light">
                         <tr>
                             <th colspan="3">Total</th>
                             <th class="text-end">{{ formatQty(stockBase) }}</th>
-                            <th colspan="3"></th>
+                            <th colspan="4"></th>
                         </tr>
                     </tfoot>
                 </table>
@@ -184,7 +304,13 @@
 <script setup>
 import ProductTypeLabel from '@/Components/Catalog/ProductTypeLabel.vue';
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
-import { suggestedUnitPrice } from '@/composables/useBatchPricing';
+import {
+    suggestedUnitPrice,
+    batchSalePriceInSellUnit,
+    batchStoredPriceUnit,
+    batchBaseUnitCost,
+    batchStoredPriceDiffersFromBase,
+} from '@/composables/useBatchPricing';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { useQuantity } from '@/composables/useQuantity';
@@ -203,6 +329,7 @@ const props = defineProps({
 
 const page = usePage();
 const wholesaleEnabled = computed(() => page.props.features?.wholesale_pricing ?? false);
+const advancedCatalogEnabled = computed(() => page.props.features?.advanced_catalog ?? true);
 
 const { t } = useLocale();
 const { formatMoney } = useMoney();
@@ -252,8 +379,17 @@ function displayMarkup(batch) {
     return value != null && value !== '' ? `${value}%` : '—';
 }
 
+function hasBatchSalePrice(batch) {
+    return batch.sale_price !== null && batch.sale_price !== undefined && batch.sale_price !== '';
+}
+
 function batchSuggestedLabel(batch) {
     const sellUnit = defaultSellUnit(props.product);
+    const mrp = batchSalePriceInSellUnit(batch, sellUnit, props.product.units);
+    if (mrp !== null) {
+        return formatMoney(mrp);
+    }
+
     const suggested = suggestedUnitPrice(batch, props.product, sellUnit, props.product.units);
     if (suggested !== null) {
         return formatMoney(suggested);

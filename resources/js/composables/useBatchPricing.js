@@ -28,6 +28,30 @@ export function salePricePerBaseUnit(batch) {
     return price;
 }
 
+/** Unit in which purchase_unit_cost / sale_price were recorded for this batch. */
+export function batchStoredPriceUnit(batch, baseUnit = 'strip') {
+    if (batch?.pack_sell_unit) {
+        return batch.pack_sell_unit;
+    }
+
+    return baseUnit || 'strip';
+}
+
+export function batchBaseUnitCost(batch) {
+    if (batch?.cost_per_base_unit != null && batch.cost_per_base_unit !== '') {
+        const fromApi = Number(batch.cost_per_base_unit);
+        if (!Number.isNaN(fromApi)) {
+            return fromApi;
+        }
+    }
+
+    return costPerBaseUnit(batch);
+}
+
+export function batchStoredPriceDiffersFromBase(batch, baseUnit = 'strip') {
+    return batchStoredPriceUnit(batch, baseUnit) !== (baseUnit || 'strip');
+}
+
 export function conversionFactorForBatchLine(batch, sellUnit, unitOptions) {
     if (batch?.pack_sell_unit === sellUnit && batch?.pack_conversion_factor) {
         const packFactor = Number(batch.pack_conversion_factor);

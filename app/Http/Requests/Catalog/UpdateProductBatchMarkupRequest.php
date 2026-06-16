@@ -11,6 +11,10 @@ class UpdateProductBatchMarkupRequest extends FormRequest
         if ($this->has('markup_percent') && $this->input('markup_percent') === '') {
             $this->merge(['markup_percent' => null]);
         }
+
+        if ($this->has('sale_price') && $this->input('sale_price') === '') {
+            $this->merge(['sale_price' => null]);
+        }
     }
 
     public function authorize(): bool
@@ -24,7 +28,8 @@ class UpdateProductBatchMarkupRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'markup_percent' => ['nullable', 'numeric', 'min:0', 'max:1000'],
+            'markup_percent' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:1000'],
+            'sale_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
         ];
     }
 }
