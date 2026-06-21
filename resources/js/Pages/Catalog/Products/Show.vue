@@ -110,9 +110,12 @@
                             <dt class="col-sm-4">{{ t('catalog.default_storage_location') }}</dt>
                             <dd class="col-sm-8">{{ defaultShelfLabel }}</dd>
 
-                            <dt class="col-sm-4">{{ t('catalog.default_markup_percent') }}</dt>
+                            <dt class="col-sm-4">{{ t('catalog.unit_price_markup_percent') }}</dt>
                             <dd class="col-sm-8">
-                                {{ product.default_markup_percent != null && product.default_markup_percent !== '' ? `${product.default_markup_percent}%` : '—' }}
+                                <div>{{ productMarkupPercentLabel }}</div>
+                                <div v-if="productMarkupPercentDerived" class="text-muted small">
+                                    {{ t('catalog.unit_price_markup_hint', { unit: unitLabel(productMarkupSellUnit) }) }}
+                                </div>
                             </dd>
 
                             <dt class="col-sm-4">{{ t('catalog.min_stock_alert') }}</dt>
@@ -165,27 +168,33 @@
                     <thead class="table-light">
                         <tr>
                             <th>{{ t('catalog.sell_unit') }}</th>
-                            <th class="text-end">{{ t('catalog.conversion_factor', { unit: unitLabel(product.base_unit) }) }}</th>
+                            <th>{{ t('catalog.pack_relation') }}</th>
                             <th class="text-end">{{ t('catalog.purchase_price') }}</th>
                             <th class="text-end">{{ t('catalog.sale_price') }}</th>
+                            <th class="text-end">{{ t('catalog.batch_markup_percent') }}</th>
                             <th>{{ t('catalog.default_unit') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="u in product.units" :key="u.sell_unit">
                             <td class="text-capitalize">{{ unitLabel(u.sell_unit) }}</td>
-                            <td class="text-end">{{ formatQty(u.conversion_factor) }}</td>
+                            <td>
+                                <div class="fw-medium">{{ unitRelationLabel(u) }}</div>
+                            </td>
                             <td class="text-end">
-                                <div>{{ formatMoney(u.purchase_price) }}</div>
+                                <div>{{ formatMoneyAfterCode(u.purchase_price) }}</div>
                                 <div class="text-muted small">
                                     {{ t('catalog.batch_per_unit', { unit: unitLabel(u.sell_unit) }) }}
                                 </div>
                             </td>
                             <td class="text-end">
-                                <div>{{ formatMoney(u.sale_price) }}</div>
+                                <div>{{ formatMoneyAfterCode(u.sale_price) }}</div>
                                 <div class="text-muted small">
                                     {{ t('catalog.batch_per_unit', { unit: unitLabel(u.sell_unit) }) }}
                                 </div>
+                            </td>
+                            <td class="text-end">
+                                <span class="badge text-bg-light border">{{ unitMarkupLabel(u) }}</span>
                             </td>
                             <td>
                                 <span v-if="u.is_default" class="badge text-bg-primary">{{ t('catalog.default_unit') }}</span>
@@ -193,7 +202,7 @@
                             </td>
                         </tr>
                         <tr v-if="!product.units?.length">
-                            <td colspan="5" class="text-muted text-center py-3">No sell units configured.</td>
+                            <td colspan="6" class="text-muted text-center py-3">No sell units configured.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -231,7 +240,7 @@
                             <td class="text-end fw-semibold">{{ formatQty(b.quantity_on_hand) }}</td>
                             <td class="text-end">
                                 <div class="fw-medium">
-                                    {{ formatMoney(b.purchase_unit_cost) }}
+                                    {{ formatMoneyAfterCode(b.purchase_unit_cost) }}
                                     <span class="text-muted small fw-normal">
                                         {{ t('catalog.batch_per_unit', { unit: unitLabel(batchStoredPriceUnit(b, product.base_unit)) }) }}
                                     </span>
@@ -242,15 +251,15 @@
                                 >
                                     {{
                                         t('catalog.batch_cost_in_base_unit', {
-                                            amount: formatMoney(batchBaseUnitCost(b)),
+                                            amount: formatMoneyAfterCode(batchBaseUnitCost(b)),
                                             unit: unitLabel(product.base_unit),
                                         })
                                     }}
                                 </div>
                             </td>
                             <td class="text-end">
-                                <div v-if="hasBatchSalePrice(b)">
-                                    {{ formatMoney(b.sale_price) }}
+                                <div v-if="batchEffectiveStoredSalePrice(b) !== null">
+                                    {{ formatMoneyAfterCode(batchEffectiveStoredSalePrice(b)) }}
                                     <span class="text-muted small d-block">
                                         {{ t('catalog.batch_per_unit', { unit: unitLabel(batchStoredPriceUnit(b, product.base_unit)) }) }}
                                     </span>
@@ -271,7 +280,7 @@
                                         step="0.01"
                                         class="form-control form-control-sm text-end"
                                         style="width: 4.5rem"
-                                        :placeholder="product.default_markup_percent ?? '—'"
+                                        placeholder="—"
                                     />
                                     <button type="submit" class="btn btn-sm btn-outline-primary py-0">✓</button>
                                 </form>
@@ -314,7 +323,7 @@ import {
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { useQuantity } from '@/composables/useQuantity';
-import { defaultSellUnit, unitLabel, unitSalePrice } from '@/composables/useProductUnits';
+import { defaultSellUnit, unitLabel, unitPurchasePrice, unitSalePrice } from '@/composables/useProductUnits';
 import { usePermissions } from '@/composables/usePermissions';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, reactive, watch } from 'vue';
@@ -332,7 +341,7 @@ const wholesaleEnabled = computed(() => page.props.features?.wholesale_pricing ?
 const advancedCatalogEnabled = computed(() => page.props.features?.advanced_catalog ?? true);
 
 const { t } = useLocale();
-const { formatMoney } = useMoney();
+const { formatMoney, currencyCode } = useMoney();
 const { formatQty } = useQuantity();
 const { can } = usePermissions();
 
@@ -351,7 +360,7 @@ watch(
     (list) => {
         for (const b of list) {
             if (batchMarkups[b.id] === undefined) {
-                batchMarkups[b.id] = b.markup_percent ?? '';
+                batchMarkups[b.id] = batchMarkupInputValue(b);
             }
         }
     },
@@ -370,39 +379,176 @@ const defaultShelfLabel = computed(() =>
     formatLocation(props.product.storage_location ?? props.product.effective_storage_location),
 );
 
+const productMarkupSellUnit = computed(() => defaultSellUnit(props.product));
+
+const productHasConfiguredMarkup = computed(() =>
+    props.product.default_markup_percent !== null && props.product.default_markup_percent !== '',
+);
+
+const productMarkupPercent = computed(() => {
+    if (productHasConfiguredMarkup.value) {
+        const configuredMarkup = Number(props.product.default_markup_percent);
+        return Number.isNaN(configuredMarkup) ? null : configuredMarkup;
+    }
+
+    const purchasePrice = unitPurchasePrice(props.product, productMarkupSellUnit.value);
+    const salePrice = unitSalePrice(props.product, productMarkupSellUnit.value);
+
+    if (purchasePrice <= 0 || salePrice <= 0) {
+        return null;
+    }
+
+    return ((salePrice - purchasePrice) / purchasePrice) * 100;
+});
+
+const productMarkupPercentDerived = computed(() =>
+    !productHasConfiguredMarkup.value && productMarkupPercent.value !== null,
+);
+
+const productMarkupPercentLabel = computed(() => {
+    if (productMarkupPercent.value === null) {
+        return '—';
+    }
+
+    return `${formatQty(productMarkupPercent.value)}%`;
+});
+
+function formatMoneyAfterCode(amount) {
+    return `${formatQty(amount)} ${currencyCode()}`;
+}
+
+function unitRelationLabel(unit) {
+    const factor = Number(unit.conversion_factor ?? 0);
+    const sellUnit = unitLabel(unit.sell_unit);
+    const baseUnit = unitLabel(props.product.base_unit);
+
+    if (unit.sell_unit === props.product.base_unit || factor === 1) {
+        return t('catalog.base_unit_relation');
+    }
+
+    if (unit.sell_unit === 'piece' && props.product.base_unit === 'strip' && factor > 0 && factor < 1) {
+        return t('catalog.piece_unit_relation', {
+            pieces: formatQty(1 / factor),
+            base: baseUnit,
+        });
+    }
+
+    return t('catalog.sell_unit_relation', {
+        sell_unit: sellUnit,
+        qty: formatQty(factor),
+        base: baseUnit,
+    });
+}
+
+function unitMarkupLabel(unit) {
+    const purchasePrice = Number(unit.purchase_price ?? 0);
+    const salePrice = Number(unit.sale_price ?? 0);
+
+    if (purchasePrice <= 0 || salePrice <= 0) {
+        return '—';
+    }
+
+    return `${formatPercentInput(((salePrice - purchasePrice) / purchasePrice) * 100)}%`;
+}
+
 function batchShelfLabel(batch) {
     return formatLocation(batch.effective_storage_location ?? batch.storage_location);
 }
 
 function displayMarkup(batch) {
-    const value = batch.markup_percent ?? props.product.default_markup_percent;
-    return value != null && value !== '' ? `${value}%` : '—';
+    const value = batch.markup_percent ?? batchCalculatedMarkupPercent(batch) ?? props.product.default_markup_percent;
+    const formatted = formatPercentInput(value);
+    return formatted !== '' ? `${formatted}%` : '—';
+}
+
+function batchMarkupInputValue(batch) {
+    return batch.markup_percent ?? formatPercentInput(batchCalculatedMarkupPercent(batch));
+}
+
+function batchCalculatedMarkupPercent(batch) {
+    if (!hasBatchSalePrice(batch)) {
+        return null;
+    }
+
+    const cost = Number(batch.purchase_unit_cost ?? 0);
+    const salePrice = Number(batch.sale_price ?? 0);
+
+    if (cost <= 0 || salePrice <= 0) {
+        return null;
+    }
+
+    return ((salePrice - cost) / cost) * 100;
+}
+
+function formatPercentInput(value) {
+    if (value === null || value === undefined || value === '') {
+        return '';
+    }
+
+    const number = Number(value);
+    if (Number.isNaN(number)) {
+        return '';
+    }
+
+    return Number(number.toFixed(2)).toString();
 }
 
 function hasBatchSalePrice(batch) {
     return batch.sale_price !== null && batch.sale_price !== undefined && batch.sale_price !== '';
 }
 
+function batchSalePriceFromMarkupInput(batch) {
+    const markup = batchMarkups[batch.id];
+    if (markup === '' || markup === null || markup === undefined) {
+        return null;
+    }
+
+    const markupNumber = Number(markup);
+    const cost = Number(batch.purchase_unit_cost ?? 0);
+
+    if (Number.isNaN(markupNumber) || cost <= 0) {
+        return null;
+    }
+
+    return Math.round(cost * (1 + markupNumber / 100) * 10000) / 10000;
+}
+
+function batchEffectiveStoredSalePrice(batch) {
+    return batchSalePriceFromMarkupInput(batch) ?? (hasBatchSalePrice(batch) ? Number(batch.sale_price) : null);
+}
+
 function batchSuggestedLabel(batch) {
     const sellUnit = defaultSellUnit(props.product);
-    const mrp = batchSalePriceInSellUnit(batch, sellUnit, props.product.units);
+    const effectiveBatch = {
+        ...batch,
+        sale_price: batchEffectiveStoredSalePrice(batch),
+    };
+    const mrp = batchSalePriceInSellUnit(effectiveBatch, sellUnit, props.product.units);
     if (mrp !== null) {
-        return formatMoney(mrp);
+        return formatMoneyAfterCode(mrp);
     }
 
-    const suggested = suggestedUnitPrice(batch, props.product, sellUnit, props.product.units);
+    const suggested = suggestedUnitPrice(effectiveBatch, props.product, sellUnit, props.product.units);
     if (suggested !== null) {
-        return formatMoney(suggested);
+        return formatMoneyAfterCode(suggested);
     }
 
-    return formatMoney(unitSalePrice(props.product, sellUnit));
+    return formatMoneyAfterCode(unitSalePrice(props.product, sellUnit));
 }
 
 function saveBatchMarkup(batch) {
     const value = batchMarkups[batch.id];
+    const payload = {
+        markup_percent: value === '' || value === null ? null : value,
+    };
+    const salePrice = batchSalePriceFromMarkupInput(batch);
+    if (salePrice !== null) {
+        payload.sale_price = salePrice;
+    }
+
     router.patch(
         `/products/${props.product.id}/batches/${batch.id}/markup`,
-        { markup_percent: value === '' || value === null ? null : value },
+        payload,
         { preserveScroll: true },
     );
 }
