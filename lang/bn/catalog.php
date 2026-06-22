@@ -161,4 +161,5 @@ return [
     'products_view_grid' => 'গ্রিড',
     'products_view_compact' => 'কম্প্যাক্ট',
     'products_view_mode' => 'ভিউ',
+    'products_all_categories' => 'সব ক্যাটাগরি',
 ];

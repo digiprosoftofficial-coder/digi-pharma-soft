@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 final class ProductRepository
 {
     /**
-     * @param  array{q?:string,product_type?:string,is_active?:string,storage_location_id?:string,per_page?:int}  $filters
+     * @param  array{q?:string,product_type?:string,category_id?:string,is_active?:string,storage_location_id?:string,per_page?:int}  $filters
      */
     public function paginateForTenant(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
@@ -32,6 +32,10 @@ final class ProductRepository
 
         if (! empty($filters['product_type'])) {
             $query->where('product_type', $filters['product_type']);
+        }
+
+        if (! empty($filters['category_id'])) {
+            $query->where('category_id', (int) $filters['category_id']);
         }
 
         if (isset($filters['is_active']) && $filters['is_active'] !== '') {

@@ -36,7 +36,7 @@ final class ProductController extends Controller
         );
 
         $filters = array_merge(
-            $request->only(['q', 'product_type', 'is_active', 'storage_location_id']),
+            $request->only(['q', 'product_type', 'category_id', 'is_active', 'storage_location_id']),
             ['per_page' => $perPage],
         );
 
@@ -46,6 +46,7 @@ final class ProductController extends Controller
             ),
             'filters' => $filters,
             'productTypes' => ProductCatalogOptions::productTypes(),
+            'categories' => $this->categoryOptions(),
             'storageLocations' => $this->storageLocationOptions(),
             'perPageOptions' => ProductListPagination::options(),
         ]);

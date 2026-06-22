@@ -45,6 +45,17 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
             <p class="small text-muted mb-0">{{ resultsSummary }}</p>
             <div class="d-flex flex-wrap align-items-center gap-2">
+                <select
+                    v-model="filterForm.category_id"
+                    class="form-select form-select-sm"
+                    style="width: auto; min-width: 11rem"
+                    @change="applyFilters"
+                >
+                    <option value="">{{ t('catalog.products_all_categories') }}</option>
+                    <option v-for="category in categories" :key="category.id" :value="String(category.id)">
+                        {{ category.name }}
+                    </option>
+                </select>
                 <div class="btn-group btn-group-sm" role="group" :aria-label="t('catalog.products_view_mode')">
                     <button
                         type="button"
@@ -283,6 +294,7 @@ const props = defineProps({
     products: { type: Object, required: true },
     filters: { type: Object, default: () => ({}) },
     productTypes: { type: Array, default: () => [] },
+    categories: { type: Array, default: () => [] },
     storageLocations: { type: Array, default: () => [] },
     perPageOptions: { type: Array, default: () => [15, 25, 50, 100] },
 });
@@ -394,6 +406,7 @@ function cardImage(product) {
 const filterForm = reactive({
     q: props.filters.q ?? '',
     product_type: props.filters.product_type ?? '',
+    category_id: props.filters.category_id ?? '',
     is_active: props.filters.is_active ?? '',
     storage_location_id: props.filters.storage_location_id ?? '',
     per_page: Number(props.filters.per_page) || 25,
@@ -418,6 +431,7 @@ function applyFilters() {
 function clearFilters() {
     filterForm.q = '';
     filterForm.product_type = '';
+    filterForm.category_id = '';
     filterForm.is_active = '';
     filterForm.storage_location_id = '';
     filterForm.per_page = 25;

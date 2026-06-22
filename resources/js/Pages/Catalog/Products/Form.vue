@@ -459,8 +459,8 @@
                     <table class="table table-sm align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th>Unit</th>
-                                <th style="width: 8rem">{{ conversionColumnLabel }}</th>
+                                <th style="width: 9rem">Unit</th>
+                                <th style="width: 18rem">{{ t('catalog.pack_relation') }}</th>
                                 <th style="width: 9rem">Purchase</th>
                                 <th style="width: 9rem">Sale</th>
                                 <th>Default</th>
@@ -477,25 +477,31 @@
                                     <select
                                         v-model="row.sell_unit"
                                         class="form-select form-select-sm"
+                                        style="max-width: 8.5rem"
                                         :disabled="previewBatchId || row.sell_unit === form.base_unit"
                                     >
                                         <option v-for="u in availableSellUnits" :key="u" :value="u">{{ unitLabel(u) }}</option>
                                     </select>
                                 </td>
                                 <td>
-                                    <input
-                                        v-if="!previewBatchId"
-                                        v-model.number="row.conversion_factor"
-                                        type="number"
-                                        min="0.0001"
-                                        step="any"
-                                        class="form-control form-control-sm"
-                                        :disabled="row.sell_unit === form.base_unit"
-                                        @input="onUnitConversionInput(row)"
-                                        @blur="onConversionFactorBlur(row)"
-                                    />
-                                    <span v-else class="form-control form-control-sm bg-white text-end">
-                                        {{ formatQty(row.conversion_factor) }}
+                                    <div v-if="!previewBatchId" class="d-flex align-items-center gap-2">
+                                        <input
+                                            v-model.number="row.conversion_factor"
+                                            type="number"
+                                            min="0.0001"
+                                            step="any"
+                                            class="form-control form-control-sm flex-shrink-0"
+                                            style="width: 5.75rem"
+                                            :disabled="row.sell_unit === form.base_unit"
+                                            @input="onUnitConversionInput(row)"
+                                            @blur="onConversionFactorBlur(row)"
+                                        />
+                                        <span class="small text-muted text-nowrap">
+                                            {{ unitRelationLabel(row) }}
+                                        </span>
+                                    </div>
+                                    <span v-else class="small text-muted">
+                                        {{ unitRelationLabel(row) }}
                                     </span>
                                 </td>
                                 <td>
@@ -531,14 +537,15 @@
                                     </span>
                                 </td>
                                 <td class="text-center">
-                                    <input
-                                        :id="`default-${idx}`"
-                                        type="radio"
-                                        name="default_unit"
-                                        :checked="row.is_default"
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm rounded-pill px-3 py-0"
+                                        :class="row.is_default ? 'btn-primary' : 'btn-outline-secondary'"
                                         :disabled="!!previewBatchId"
-                                        @change="setDefault(idx)"
-                                    />
+                                        @click="setDefault(idx)"
+                                    >
+                                        {{ row.is_default ? t('catalog.default_unit') : 'Set' }}
+                                    </button>
                                 </td>
                                 <td>
                                     <button
@@ -911,11 +918,6 @@ const showPiecesPerStrip = computed(() => {
     return units.includes('piece') || units.includes('strip') || form.base_unit === 'piece' || form.base_unit === 'strip';
 });
 
-const conversionColumnLabel = computed(() => {
-    const base = unitLabel(form.base_unit);
-    return `${base} per 1 unit`;
-});
-
 const showStripsPerBox = computed(() => {
     if (!usesStripForType.value) {
         return false;
@@ -1059,6 +1061,29 @@ function unitRowFactor(row) {
     }
     const factor = Number(row.conversion_factor);
     return Number.isNaN(factor) || factor <= 0 ? 0 : factor;
+}
+
+function unitRelationLabel(row) {
+    const factor = unitRowFactor(row);
+    const sellUnit = unitLabel(row.sell_unit);
+    const baseUnit = unitLabel(form.base_unit);
+
+    if (row.sell_unit === form.base_unit || factor === 1) {
+        return t('catalog.base_unit_relation');
+    }
+
+    if (row.sell_unit === 'piece' && form.base_unit === 'strip' && factor > 0 && factor < 1) {
+        return t('catalog.piece_unit_relation', {
+            pieces: formatQty(1 / factor),
+            base: baseUnit,
+        });
+    }
+
+    return t('catalog.sell_unit_relation', {
+        sell_unit: sellUnit,
+        qty: formatQty(factor),
+        base: baseUnit,
+    });
 }
 
 const CONVERSION_FACTOR_DECIMALS = 4;

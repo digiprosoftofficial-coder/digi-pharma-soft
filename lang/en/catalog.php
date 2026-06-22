@@ -161,4 +161,5 @@ return [
     'products_view_grid' => 'Grid',
     'products_view_compact' => 'Compact',
     'products_view_mode' => 'View',
+    'products_all_categories' => 'All categories',
 ];
