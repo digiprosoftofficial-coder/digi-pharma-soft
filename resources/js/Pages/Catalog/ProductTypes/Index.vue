@@ -2,6 +2,9 @@
     <TenantShellLayout page-title="Product types">
         <Head title="Product types" />
         <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
+        <div v-if="$page.props.errors?.product_type" class="alert alert-danger small">
+            {{ $page.props.errors.product_type }}
+        </div>
         <div class="d-flex justify-content-between mb-3">
             <h1 class="h4 mb-0">Product types</h1>
             <Link href="/product-types/create" class="btn btn-primary btn-sm">Add product type</Link>
@@ -14,7 +17,7 @@
                         <th>Slug</th>
                         <th class="text-end">Sort</th>
                         <th class="text-end">Products</th>
-                        <th></th>
+                        <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -24,10 +27,33 @@
                         </td>
                         <td><code>{{ t.slug }}</code></td>
                         <td class="text-end">{{ t.sort_order }}</td>
-                        <td class="text-end">{{ t.products_count }}</td>
                         <td class="text-end">
-                            <Link :href="`/product-types/${t.id}/edit`" class="btn btn-sm btn-outline-secondary me-1">Edit</Link>
-                            <button type="button" class="btn btn-sm btn-outline-danger" @click="remove(t)">Delete</button>
+                            <Link
+                                v-if="t.products_count > 0"
+                                :href="`/products?product_type=${t.slug}`"
+                                class="badge text-bg-light border text-decoration-none"
+                                :title="tr('catalog.product_type_view_products')"
+                            >
+                                {{ t.products_count }}
+                            </Link>
+                            <span v-else class="text-muted">0</span>
+                        </td>
+                        <td class="text-end">
+                            <div class="d-inline-flex align-items-center justify-content-end gap-2">
+                                <span v-if="t.products_count > 0" class="small text-muted">
+                                    {{ tr('catalog.product_type_delete_blocked') }}
+                                </span>
+                                <Link :href="`/product-types/${t.id}/edit`" class="btn btn-sm btn-outline-secondary">Edit</Link>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-danger"
+                                :disabled="t.products_count > 0"
+                                :title="t.products_count > 0 ? tr('catalog.product_type_delete_blocked') : ''"
+                                @click="remove(t)"
+                            >
+                                Delete
+                            </button>
+                            </div>
                         </td>
                     </tr>
                     <tr v-if="!productTypes.data?.length">
@@ -42,11 +68,15 @@
 <script setup>
 import ProductTypeLabel from '@/Components/Catalog/ProductTypeLabel.vue';
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useLocale } from '@/composables/useLocale';
 import { Head, Link, router } from '@inertiajs/vue3';
 
 defineProps({ productTypes: { type: Object, required: true } });
 
+const { t: tr } = useLocale();
+
 function remove(type) {
+    if (type.products_count > 0) return;
     if (!window.confirm(`Delete product type "${type.name}"?`)) return;
     router.delete(`/product-types/${type.id}`);
 }

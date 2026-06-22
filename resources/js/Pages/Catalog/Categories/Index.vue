@@ -2,6 +2,9 @@
     <TenantShellLayout page-title="Categories">
         <Head title="Categories" />
         <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
+        <div v-if="$page.props.errors?.category" class="alert alert-danger small">
+            {{ $page.props.errors.category }}
+        </div>
         <div class="d-flex justify-content-between mb-3">
             <h1 class="h4 mb-0">Categories</h1>
             <Link href="/categories/create" class="btn btn-primary btn-sm">Add category</Link>
@@ -20,10 +23,31 @@
                     <tr v-for="c in categories.data" :key="c.id">
                         <td>{{ c.name }}</td>
                         <td><code>{{ c.slug }}</code></td>
-                        <td class="text-end">{{ c.products_count }}</td>
+                        <td class="text-end">
+                            <Link
+                                v-if="c.products_count > 0"
+                                :href="`/products?category_id=${c.id}`"
+                                class="badge text-bg-light border text-decoration-none"
+                                :title="t('catalog.category_view_products')"
+                            >
+                                {{ c.products_count }}
+                            </Link>
+                            <span v-else class="text-muted">0</span>
+                        </td>
                         <td class="text-end">
                             <Link :href="`/categories/${c.id}/edit`" class="btn btn-sm btn-outline-secondary me-1">Edit</Link>
-                            <button type="button" class="btn btn-sm btn-outline-danger" @click="remove(c)">Delete</button>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-danger"
+                                :disabled="c.products_count > 0"
+                                :title="c.products_count > 0 ? t('catalog.category_delete_blocked') : ''"
+                                @click="remove(c)"
+                            >
+                                Delete
+                            </button>
+                            <div v-if="c.products_count > 0" class="small text-muted mt-1">
+                                {{ t('catalog.category_delete_blocked') }}
+                            </div>
                         </td>
                     </tr>
                     <tr v-if="!categories.data?.length">
@@ -37,11 +61,15 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useLocale } from '@/composables/useLocale';
 import { Head, Link, router } from '@inertiajs/vue3';
 
 defineProps({ categories: { type: Object, required: true } });
 
+const { t } = useLocale();
+
 function remove(category) {
+    if (category.products_count > 0) return;
     if (!window.confirm(`Delete category "${category.name}"?`)) return;
     router.delete(`/categories/${category.id}`);
 }
