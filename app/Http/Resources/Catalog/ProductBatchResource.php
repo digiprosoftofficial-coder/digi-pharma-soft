@@ -6,6 +6,7 @@ use App\Support\Catalog\BatchExpiry;
 use App\Support\Catalog\ProductStockCalculator;
 use App\Support\Catalog\BatchSalePricing;
 use App\Support\Catalog\EffectiveStorageLocation;
+use App\Support\Tenant\TenantFeatures;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -25,7 +26,9 @@ class ProductBatchResource extends JsonResource
             'quantity_on_hand' => ProductStockCalculator::formatQuantity((float) $this->quantity_on_hand),
             'purchase_unit_cost' => (string) $this->purchase_unit_cost,
             'sale_price' => $this->sale_price !== null ? (string) $this->sale_price : null,
-            'markup_percent' => $this->markup_percent !== null ? (string) $this->markup_percent : null,
+            'markup_percent' => TenantFeatures::markupPricingEnabled(tenant()) && $this->markup_percent !== null
+                ? (string) $this->markup_percent
+                : null,
             'cost_per_base_unit' => (string) BatchSalePricing::costPerBaseUnit($this->resource),
             'pack_sell_unit' => $this->pack_sell_unit,
             'pack_conversion_factor' => $this->pack_conversion_factor !== null

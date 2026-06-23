@@ -8,6 +8,8 @@ final class TenantFeatures
 {
     public const WHOLESALE_PRICING = 'wholesale_pricing';
 
+    public const MARKUP_PRICING = 'markup_pricing';
+
     public const BULK_IMPORT = 'bulk_import';
 
     public const ADVANCED_CATALOG = 'advanced_catalog';
@@ -37,6 +39,11 @@ final class TenantFeatures
     public static function wholesalePricingEnabled(?Tenant $tenant): bool
     {
         return self::enabled($tenant, self::WHOLESALE_PRICING);
+    }
+
+    public static function markupPricingEnabled(?Tenant $tenant): bool
+    {
+        return self::enabled($tenant, self::MARKUP_PRICING);
     }
 
     public static function bulkImportEnabled(?Tenant $tenant): bool
@@ -221,6 +228,7 @@ final class TenantFeatures
     {
         return [
             'wholesale_pricing' => self::wholesalePricingEnabled($tenant),
+            'markup_pricing' => self::markupPricingEnabled($tenant),
             'bulk_import' => self::bulkImportEnabled($tenant),
             'advanced_catalog' => self::advancedCatalogEnabled($tenant),
             'multi_branch' => self::multiBranchEnabled($tenant),

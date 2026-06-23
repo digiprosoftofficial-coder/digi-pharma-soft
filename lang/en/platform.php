@@ -64,6 +64,8 @@ return [
     'internal_notes_help' => 'Visible only to platform operators, not pharmacy staff.',
     'feature_wholesale_pricing' => 'Wholesale pricing',
     'feature_wholesale_pricing_help' => 'Product wholesale prices and wholesale POS mode (for larger pharmacies).',
+    'feature_markup_pricing' => 'Markup pricing',
+    'feature_markup_pricing_help' => 'Calculate sell prices from purchase cost plus product or batch markup percentages.',
     'feature_multi_branch' => 'Multi-branch (chain outlets)',
     'feature_multi_branch_help' => 'Allow pharmacy owners to manage multiple branches with separate stock.',
     'feature_supplier_branch_ledger' => 'Branch-wise supplier ledger',

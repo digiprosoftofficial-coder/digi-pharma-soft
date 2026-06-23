@@ -39,6 +39,11 @@
                 </div>
                 <p class="form-text small mb-2">{{ t('platform.feature_wholesale_pricing_help') }}</p>
                 <div class="form-check">
+                    <input id="fmarkup" v-model="form.features.markup_pricing" type="checkbox" class="form-check-input" />
+                    <label class="form-check-label" for="fmarkup">{{ t('platform.feature_markup_pricing') }}</label>
+                </div>
+                <p class="form-text small mb-2">{{ t('platform.feature_markup_pricing_help') }}</p>
+                <div class="form-check">
                     <input id="fbulkimport" v-model="form.features.bulk_import" type="checkbox" class="form-check-input" />
                     <label class="form-check-label" for="fbulkimport">{{ t('platform.feature_bulk_import') }}</label>
                 </div>
@@ -161,6 +166,7 @@ const form = useForm({
         pos: props.plan?.features?.pos ?? true,
         reports: props.plan?.features?.reports ?? true,
         wholesale_pricing: props.plan?.features?.wholesale_pricing ?? false,
+        markup_pricing: props.plan?.features?.markup_pricing ?? false,
         bulk_import: props.plan?.features?.bulk_import ?? true,
         advanced_catalog: props.plan?.features?.advanced_catalog ?? true,
         multi_branch: props.plan?.features?.multi_branch ?? false,

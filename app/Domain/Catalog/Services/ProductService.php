@@ -63,7 +63,9 @@ final class ProductService
                 'unit' => $default['sell_unit'],
                 'purchase_price' => $default['purchase_price'],
                 'sale_price' => $default['sale_price'],
-                'default_markup_percent' => $this->normalizeOptionalDecimal($data['default_markup_percent'] ?? null),
+                'default_markup_percent' => TenantFeatures::markupPricingEnabled(tenant())
+                    ? $this->normalizeOptionalDecimal($data['default_markup_percent'] ?? null)
+                    : null,
                 'wholesale_price' => TenantFeatures::wholesalePricingEnabled(tenant())
                     ? $this->normalizeOptionalDecimal($data['wholesale_price'] ?? null)
                     : null,
@@ -193,7 +195,7 @@ final class ProductService
                 'unit' => $default['sell_unit'] ?? $product->unit,
                 'purchase_price' => $default['purchase_price'] ?? $product->purchase_price,
                 'sale_price' => $default['sale_price'] ?? $product->sale_price,
-                'default_markup_percent' => array_key_exists('default_markup_percent', $data)
+                'default_markup_percent' => TenantFeatures::markupPricingEnabled(tenant()) && array_key_exists('default_markup_percent', $data)
                     ? $this->normalizeOptionalDecimal($data['default_markup_percent'])
                     : $product->default_markup_percent,
                 'wholesale_price' => TenantFeatures::wholesalePricingEnabled(tenant()) && array_key_exists('wholesale_price', $data)

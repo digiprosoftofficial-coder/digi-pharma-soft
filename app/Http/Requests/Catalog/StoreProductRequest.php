@@ -33,6 +33,10 @@ class StoreProductRequest extends FormRequest
             $this->offsetUnset('wholesale_price');
         }
 
+        if (! TenantFeatures::markupPricingEnabled(tenant())) {
+            $this->offsetUnset('default_markup_percent');
+        }
+
         if (! TenantFeatures::advancedCatalogEnabled(tenant())) {
             foreach (TenantFeatures::ADVANCED_CATALOG_FIELDS as $field) {
                 $this->offsetUnset($field);
@@ -86,7 +90,9 @@ class StoreProductRequest extends FormRequest
                 ? ['nullable', 'numeric', 'min:0']
                 : ['prohibited'],
             'vat_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'default_markup_percent' => ['nullable', 'numeric', 'min:0', 'max:1000'],
+            'default_markup_percent' => TenantFeatures::markupPricingEnabled(tenant())
+                ? ['nullable', 'numeric', 'min:0', 'max:1000']
+                : ['prohibited'],
             'short_description' => ['nullable', 'string', 'max:2000'],
             'image' => ['nullable', 'image', 'max:5120'],
             'product_type' => ['required', ProductCatalogOptions::productTypeRule()],

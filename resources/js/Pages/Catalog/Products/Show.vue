@@ -110,8 +110,8 @@
                             <dt class="col-sm-4">{{ t('catalog.default_storage_location') }}</dt>
                             <dd class="col-sm-8">{{ defaultShelfLabel }}</dd>
 
-                            <dt class="col-sm-4">{{ t('catalog.unit_price_markup_percent') }}</dt>
-                            <dd class="col-sm-8">
+                            <dt v-if="markupPricingEnabled" class="col-sm-4">{{ t('catalog.unit_price_markup_percent') }}</dt>
+                            <dd v-if="markupPricingEnabled" class="col-sm-8">
                                 <div>{{ productMarkupPercentLabel }}</div>
                                 <div v-if="productMarkupPercentDerived" class="text-muted small">
                                     {{ t('catalog.unit_price_markup_hint', { unit: unitLabel(productMarkupSellUnit) }) }}
@@ -191,7 +191,7 @@
                             <th>{{ t('catalog.pack_relation') }}</th>
                             <th class="text-end">{{ t('catalog.purchase_price') }}</th>
                             <th class="text-end">{{ t('catalog.sale_price') }}</th>
-                            <th class="text-end">{{ t('catalog.batch_markup_percent') }}</th>
+                            <th v-if="markupPricingEnabled" class="text-end">{{ t('catalog.batch_markup_percent') }}</th>
                             <th>{{ t('catalog.default_unit') }}</th>
                         </tr>
                     </thead>
@@ -213,7 +213,7 @@
                                     {{ t('catalog.batch_per_unit', { unit: unitLabel(u.sell_unit) }) }}
                                 </div>
                             </td>
-                            <td class="text-end">
+                            <td v-if="markupPricingEnabled" class="text-end">
                                 <span class="badge text-bg-light border">{{ unitMarkupLabel(u) }}</span>
                             </td>
                             <td>
@@ -222,7 +222,7 @@
                             </td>
                         </tr>
                         <tr v-if="!product.units?.length">
-                            <td colspan="6" class="text-muted text-center py-3">No sell units configured.</td>
+                            <td :colspan="markupPricingEnabled ? 6 : 5" class="text-muted text-center py-3">No sell units configured.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -232,7 +232,7 @@
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white">
                 <div class="fw-semibold">{{ t('catalog.batch_pricing_title') }}</div>
-                <p class="small text-muted mb-0 mt-1">{{ t('catalog.batch_markup_help') }}</p>
+                <p v-if="markupPricingEnabled" class="small text-muted mb-0 mt-1">{{ t('catalog.batch_markup_help') }}</p>
                 <p class="small text-muted mb-0">{{ t('catalog.batch_sale_price_hint') }}</p>
             </div>
             <div class="table-responsive">
@@ -245,8 +245,8 @@
                             <th class="text-end">On hand ({{ unitLabel(product.base_unit) }})</th>
                             <th class="text-end">Unit cost</th>
                             <th class="text-end">{{ t('catalog.batch_sale_price') }}</th>
-                            <th class="text-end">{{ t('catalog.batch_markup_percent') }}</th>
-                            <th class="text-end">{{ t('catalog.batch_suggested_price') }}</th>
+                            <th v-if="markupPricingEnabled" class="text-end">{{ t('catalog.batch_markup_percent') }}</th>
+                            <th v-if="markupPricingEnabled" class="text-end">{{ t('catalog.batch_suggested_price') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -286,10 +286,10 @@
                                 </div>
                                 <span v-else class="text-muted small">{{ t('catalog.uses_markup_or_catalog') }}</span>
                             </td>
-                            <td class="text-end">
+                            <td v-if="markupPricingEnabled" class="text-end">
                                 <span>{{ displayMarkup(b) }}</span>
                             </td>
-                            <td class="text-end text-muted">
+                            <td v-if="markupPricingEnabled" class="text-end text-muted">
                                 <div>{{ batchSuggestedLabel(b) }}</div>
                                 <div class="small">
                                     {{ t('catalog.batch_per_unit', { unit: unitLabel(defaultSellUnit(product)) }) }}
@@ -297,14 +297,14 @@
                             </td>
                         </tr>
                         <tr v-if="!batches.length">
-                            <td colspan="8" class="text-muted text-center py-4">No batches in stock yet.</td>
+                            <td :colspan="markupPricingEnabled ? 8 : 7" class="text-muted text-center py-4">No batches in stock yet.</td>
                         </tr>
                     </tbody>
                     <tfoot v-if="batches.length" class="table-light">
                         <tr>
                             <th colspan="3">Total</th>
                             <th class="text-end">{{ formatQty(stockBase) }}</th>
-                            <th colspan="4"></th>
+                            <th :colspan="markupPricingEnabled ? 4 : 3"></th>
                         </tr>
                     </tfoot>
                 </table>
@@ -343,6 +343,7 @@ const props = defineProps({
 const page = usePage();
 const wholesaleEnabled = computed(() => page.props.features?.wholesale_pricing ?? false);
 const advancedCatalogEnabled = computed(() => page.props.features?.advanced_catalog ?? true);
+const markupPricingEnabled = computed(() => page.props.features?.markup_pricing ?? false);
 
 const { t } = useLocale();
 const { formatMoney, currencyCode } = useMoney();
@@ -495,7 +496,9 @@ function unitSaleDisplay(unit) {
         return batchPrice;
     }
 
-    const suggested = suggestedUnitPrice(effectiveBatch, props.product, unit.sell_unit, props.product.units);
+    const suggested = markupPricingEnabled.value
+        ? suggestedUnitPrice(effectiveBatch, props.product, unit.sell_unit, props.product.units)
+        : null;
     if (suggested !== null) {
         return suggested;
     }
@@ -566,7 +569,8 @@ function batchSalePriceFromMarkupInput(batch) {
 }
 
 function batchEffectiveStoredSalePrice(batch) {
-    return batchSalePriceFromMarkupInput(batch) ?? (hasBatchSalePrice(batch) ? Number(batch.sale_price) : null);
+    return (markupPricingEnabled.value ? batchSalePriceFromMarkupInput(batch) : null)
+        ?? (hasBatchSalePrice(batch) ? Number(batch.sale_price) : null);
 }
 
 function batchSuggestedLabel(batch) {
@@ -580,7 +584,9 @@ function batchSuggestedLabel(batch) {
         return formatMoneyAfterCode(mrp);
     }
 
-    const suggested = suggestedUnitPrice(effectiveBatch, props.product, sellUnit, props.product.units);
+    const suggested = markupPricingEnabled.value
+        ? suggestedUnitPrice(effectiveBatch, props.product, sellUnit, props.product.units)
+        : null;
     if (suggested !== null) {
         return formatMoneyAfterCode(suggested);
     }

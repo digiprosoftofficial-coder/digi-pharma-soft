@@ -32,7 +32,7 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Professional',
                 'price_cents' => 4900,
                 'trial_days' => 14,
-                'features' => ['pos' => true, 'reports' => true, 'multi_branch' => false],
+                'features' => ['pos' => true, 'reports' => true, 'markup_pricing' => true, 'multi_branch' => false],
                 'limits' => ['max_branches' => 1],
             ],
         );

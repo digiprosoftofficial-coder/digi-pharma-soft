@@ -4,6 +4,7 @@ namespace Tests\Unit\Catalog;
 
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductBatch;
+use App\Domain\Billing\Models\TenantSubscription;
 use App\Support\Catalog\BatchSalePricing;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -19,7 +20,7 @@ class BatchSalePricingTest extends TestCase
         $product->update(['default_markup_percent' => 20]);
 
         $batch = ProductBatch::query()->where('product_id', $product->getKey())->firstOrFail();
-        $batch->update(['purchase_unit_cost' => 50]);
+        $batch->update(['purchase_unit_cost' => 50, 'markup_percent' => null]);
 
         $suggested = BatchSalePricing::suggestedUnitPrice($batch, $product, 'strip');
 
@@ -56,6 +57,31 @@ class BatchSalePricingTest extends TestCase
 
         $this->assertSame(25.0, BatchSalePricing::resolveMarkupPercent($product, $batch));
         $this->assertSame(125.0, BatchSalePricing::suggestedUnitPrice($batch, $product, 'strip'));
+    }
+
+    public function test_markup_is_ignored_when_plan_feature_is_disabled(): void
+    {
+        $this->seed();
+        $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
+        $product->update(['default_markup_percent' => 10]);
+        TenantSubscription::query()
+            ->where('tenant_id', $product->tenant_id)
+            ->where('status', 'active')
+            ->firstOrFail()
+            ->plan()
+            ->update([
+                'features' => [
+                    'pos' => true,
+                    'reports' => true,
+                    'markup_pricing' => false,
+                ],
+            ]);
+
+        $batch = ProductBatch::query()->where('product_id', $product->getKey())->firstOrFail();
+        $batch->update(['purchase_unit_cost' => 100, 'markup_percent' => 25]);
+
+        $this->assertNull(BatchSalePricing::resolveMarkupPercent($product, $batch));
+        $this->assertNull(BatchSalePricing::suggestedUnitPrice($batch, $product, 'strip'));
     }
 
     public function test_batch_sale_price_in_sell_unit(): void

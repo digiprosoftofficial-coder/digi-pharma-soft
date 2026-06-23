@@ -64,6 +64,8 @@ return [
     'internal_notes_help' => 'শুধু প্ল্যাটফর্ম অপারেটর দেখবে, ফার্মেসি স্টাফ নয়।',
     'feature_wholesale_pricing' => 'পাইকারি মূল্য',
     'feature_wholesale_pricing_help' => 'পণ্যের পাইকারি মূল্য ও পাইকারি POS মোড (বড় ফার্মেসির জন্য)।',
+    'feature_markup_pricing' => 'মার্কআপ প্রাইসিং',
+    'feature_markup_pricing_help' => 'ক্রয়মূল্যের সাথে পণ্য বা ব্যাচের মার্কআপ শতাংশ যোগ করে বিক্রয়মূল্য হিসাব করুন।',
     'feature_multi_branch' => 'মাল্টি-ব্রাঞ্চ (শাখা)',
     'feature_multi_branch_help' => 'ফার্মেসি মালিক একাধিক শাখা ও আলাদা স্টক পরিচালনা করতে পারবেন।',
     'feature_supplier_branch_ledger' => 'শাখা-ভিত্তিক সাপ্লায়ার লেজার',

@@ -32,6 +32,10 @@ class UpdateProductRequest extends FormRequest
             $this->offsetUnset('wholesale_price');
         }
 
+        if (! TenantFeatures::markupPricingEnabled(tenant())) {
+            $this->offsetUnset('default_markup_percent');
+        }
+
         if (! TenantFeatures::advancedCatalogEnabled(tenant())) {
             foreach (TenantFeatures::ADVANCED_CATALOG_FIELDS as $field) {
                 $this->offsetUnset($field);
@@ -121,7 +125,9 @@ class UpdateProductRequest extends FormRequest
                 ? ['sometimes', 'nullable', 'numeric', 'min:0']
                 : ['prohibited'],
             'vat_percent' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
-            'default_markup_percent' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:1000'],
+            'default_markup_percent' => TenantFeatures::markupPricingEnabled(tenant())
+                ? ['sometimes', 'nullable', 'numeric', 'min:0', 'max:1000']
+                : ['prohibited'],
             'short_description' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'image' => ['nullable', 'image', 'max:5120'],
             'remove_image' => ['sometimes', 'boolean'],

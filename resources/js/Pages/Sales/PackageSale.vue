@@ -116,11 +116,13 @@ import { batchesWithStock, formatBatchLabel, onBatchChange as syncBatchFields } 
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { defaultSellUnit, unitSalePrice } from '@/composables/useProductUnits';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 const { t } = useLocale();
 const { formatMoney, currencyCode } = useMoney();
+const page = usePage();
+const markupPricingEnabled = computed(() => page.props.features?.markup_pricing ?? false);
 
 const q = ref('');
 const results = ref([]);
@@ -193,7 +195,9 @@ function refreshLinePricing(line) {
         return;
     }
 
-    const suggested = suggestedUnitPrice(batch, product, line.sell_unit, line.unit_options);
+    const suggested = markupPricingEnabled.value
+        ? suggestedUnitPrice(batch, product, line.sell_unit, line.unit_options)
+        : null;
     line.price_from_batch = false;
     line.uses_markup_pricing = suggested !== null;
     line.unit_price =
@@ -209,7 +213,7 @@ function linePriceSourceHint(line) {
     if (line.price_from_batch) {
         return t('catalog.pos_price_from_batch', { price: formatMoney(line.unit_price) });
     }
-    if (line.uses_markup_pricing) {
+    if (markupPricingEnabled.value && line.uses_markup_pricing) {
         const markup = resolveMarkupPercent(batch, { default_markup_percent: line.default_markup_percent });
 
         return t('catalog.pos_price_from_markup', {

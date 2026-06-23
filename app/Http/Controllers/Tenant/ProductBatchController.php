@@ -6,6 +6,7 @@ use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductBatch;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Catalog\UpdateProductBatchMarkupRequest;
+use App\Support\Tenant\TenantFeatures;
 use Illuminate\Http\RedirectResponse;
 
 final class ProductBatchController extends Controller
@@ -19,7 +20,7 @@ final class ProductBatchController extends Controller
 
         $updates = [];
 
-        if ($request->exists('markup_percent')) {
+        if (TenantFeatures::markupPricingEnabled(tenant()) && $request->exists('markup_percent')) {
             $updates['markup_percent'] = $request->validated('markup_percent');
         }
 

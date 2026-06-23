@@ -141,7 +141,7 @@
                         </span>
                     </p>
                 </div>
-                <div class="col-md-4">
+                <div v-if="markupPricingEnabled" class="col-md-4">
                     <label class="form-label">{{ t('catalog.default_markup_percent') }}</label>
                     <input
                         v-model="form.default_markup_percent"
@@ -342,8 +342,8 @@
                                 <th class="text-end">On hand</th>
                                 <th class="text-end">Unit cost</th>
                                 <th class="text-end">{{ t('catalog.batch_sale_price') }}</th>
-                                <th class="text-end">{{ t('catalog.batch_markup_percent') }}</th>
-                                <th class="text-end">{{ t('catalog.batch_suggested_price') }}</th>
+                                <th v-if="markupPricingEnabled" class="text-end">{{ t('catalog.batch_markup_percent') }}</th>
+                                <th v-if="markupPricingEnabled" class="text-end">{{ t('catalog.batch_suggested_price') }}</th>
                                 <th style="width: 3rem"></th>
                             </tr>
                         </thead>
@@ -388,7 +388,7 @@
                                         {{ t('catalog.batch_per_unit', { unit: unitLabel(batchStoredPriceUnit(b, form.base_unit)) }) }}
                                     </div>
                                 </td>
-                                <td class="text-end">
+                                <td v-if="markupPricingEnabled" class="text-end">
                                     <input
                                         v-model="batchMarkups[b.id]"
                                         type="number"
@@ -402,7 +402,7 @@
                                         @input="onBatchMarkupInput(b)"
                                     />
                                 </td>
-                                <td class="text-end text-muted small">
+                                <td v-if="markupPricingEnabled" class="text-end text-muted small">
                                     <div>{{ batchSuggestedLabel(b) }}</div>
                                     <div class="text-muted">
                                         {{ t('catalog.batch_per_unit', { unit: unitLabel(defaultSellUnit(productForPricing())) }) }}
@@ -616,6 +616,7 @@ const { formatQty } = useQuantity();
 const page = usePage();
 const wholesaleEnabled = computed(() => page.props.features?.wholesale_pricing ?? false);
 const advancedCatalogEnabled = computed(() => page.props.features?.advanced_catalog ?? true);
+const markupPricingEnabled = computed(() => page.props.features?.markup_pricing ?? false);
 
 const props = defineProps({
     product: { type: Object, default: null },
@@ -775,7 +776,7 @@ watch(
 
 function productForPricing() {
     return {
-        default_markup_percent: form.default_markup_percent,
+        default_markup_percent: markupPricingEnabled.value ? form.default_markup_percent : null,
         sale_price: productData()?.sale_price,
         units: form.units,
         base_unit: form.base_unit,
@@ -807,9 +808,11 @@ function batchForPreview(batch) {
                 ? saleDraft
                 : batch.sale_price,
         markup_percent:
-            markupDraft !== undefined && markupDraft !== '' && markupDraft !== null
+            markupPricingEnabled.value && markupDraft !== undefined && markupDraft !== '' && markupDraft !== null
                 ? markupDraft
-                : batch.markup_percent,
+                : markupPricingEnabled.value
+                    ? batch.markup_percent
+                    : null,
     };
 }
 
@@ -903,7 +906,10 @@ function saveBatchPricing(batch) {
     router.patch(
         `/products/${product.id}/batches/${batch.id}/markup`,
         {
-            markup_percent: markupRaw === '' || markupRaw === null || markupRaw === undefined ? null : markupRaw,
+            markup_percent:
+                markupPricingEnabled.value && markupRaw !== '' && markupRaw !== null && markupRaw !== undefined
+                    ? markupRaw
+                    : null,
             sale_price:
                 saleRaw === '' || saleRaw === null || saleRaw === undefined ? null : precisionDecimal(saleRaw),
         },

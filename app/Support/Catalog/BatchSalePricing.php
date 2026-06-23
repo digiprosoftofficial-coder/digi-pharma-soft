@@ -4,6 +4,8 @@ namespace App\Support\Catalog;
 
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductBatch;
+use App\Domain\Tenant\Models\Tenant;
+use App\Support\Tenant\TenantFeatures;
 
 final class BatchSalePricing
 {
@@ -74,6 +76,10 @@ final class BatchSalePricing
 
     public static function resolveMarkupPercent(Product $product, ProductBatch $batch): ?float
     {
+        if (! self::markupPricingEnabled($product)) {
+            return null;
+        }
+
         if ($batch->markup_percent !== null) {
             return (float) $batch->markup_percent;
         }
@@ -106,5 +112,19 @@ final class BatchSalePricing
     public static function lineProfit(float $quantity, float $unitPrice, float $unitCostAtSale): float
     {
         return round(($unitPrice - $unitCostAtSale) * $quantity, 4);
+    }
+
+    private static function markupPricingEnabled(Product $product): bool
+    {
+        $currentTenant = tenant();
+        if ($currentTenant !== null && (int) $currentTenant->getKey() === (int) $product->tenant_id) {
+            return TenantFeatures::markupPricingEnabled($currentTenant);
+        }
+
+        $tenant = $product->tenant_id
+            ? Tenant::query()->with('activeSubscription.plan')->find($product->tenant_id)
+            : null;
+
+        return TenantFeatures::markupPricingEnabled($tenant);
     }
 }

@@ -6,6 +6,7 @@ use App\Support\Catalog\EffectiveStorageLocation;
 use App\Support\Catalog\ProductImageStorage;
 use App\Support\Catalog\ProductStockCalculator;
 use App\Support\Catalog\ProductTypeIconResolver;
+use App\Support\Tenant\TenantFeatures;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -43,7 +44,7 @@ class ProductResource extends JsonResource
             ),
             'purchase_price' => (string) $this->purchase_price,
             'sale_price' => (string) $this->sale_price,
-            'default_markup_percent' => $this->default_markup_percent !== null
+            'default_markup_percent' => TenantFeatures::markupPricingEnabled(tenant()) && $this->default_markup_percent !== null
                 ? (string) $this->default_markup_percent
                 : null,
             'wholesale_price' => $this->wholesale_price !== null ? (string) $this->wholesale_price : null,
