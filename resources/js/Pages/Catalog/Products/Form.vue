@@ -380,6 +380,8 @@
                                         class="form-control form-control-sm text-end"
                                         style="min-width: 5.5rem"
                                         :placeholder="batchEffectivePriceLabel(b)"
+                                        @focus="previewBatchId = b.id"
+                                        @input="previewBatchId = b.id"
                                         @blur="onBatchSalePriceBlur(b.id)"
                                     />
                                     <div class="text-muted small mt-1">
@@ -396,6 +398,8 @@
                                         class="form-control form-control-sm text-end"
                                         style="width: 4.5rem"
                                         :placeholder="form.default_markup_percent || '—'"
+                                        @focus="previewBatchId = b.id"
+                                        @input="onBatchMarkupInput(b)"
                                     />
                                 </td>
                                 <td class="text-end text-muted small">
@@ -873,12 +877,25 @@ function onBatchSalePriceBlur(batchId) {
     batchSalePrices[batchId] = formatPrice(value);
 }
 
+function onBatchMarkupInput(batch) {
+    previewBatchId.value = batch.id;
+
+    const markup = Number(batchMarkups[batch.id]);
+    const cost = Number(batch.purchase_unit_cost ?? 0);
+    if (Number.isNaN(markup) || cost <= 0) {
+        return;
+    }
+
+    batchSalePrices[batch.id] = formatPrice(cost * (1 + markup / 100));
+}
+
 function saveBatchPricing(batch) {
     const product = productData();
     if (!product?.id) {
         return;
     }
 
+    previewBatchId.value = batch.id;
     batchPricingSaving[batch.id] = true;
     const saleRaw = batchSalePrices[batch.id];
     const markupRaw = batchMarkups[batch.id];

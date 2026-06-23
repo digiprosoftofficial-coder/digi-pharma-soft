@@ -160,8 +160,28 @@
 
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white">
-                <div class="fw-semibold">{{ t('catalog.sell_units') }}</div>
-                <p class="small text-muted mb-0 mt-1">{{ t('catalog.unit_prices_product_default') }}</p>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <div class="fw-semibold">{{ t('catalog.sell_units') }}</div>
+                        <p class="small text-muted mb-0 mt-1">{{ t('catalog.unit_prices_product_default') }}</p>
+                    </div>
+                    <div v-if="batches.length" class="d-flex flex-wrap align-items-center gap-2">
+                        <label class="small text-muted mb-0">{{ t('catalog.lot_price_preview_label') }}</label>
+                        <select
+                            v-model="activeMarkupBatchId"
+                            class="form-select form-select-sm"
+                            style="width: auto; min-width: 10rem"
+                        >
+                            <option :value="null">{{ t('catalog.unit_prices_product_default') }}</option>
+                            <option v-for="b in batches" :key="`preview-${b.id}`" :value="b.id">
+                                {{ b.batch_no }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <p v-if="activeMarkupBatch" class="small text-muted mb-0 mt-2">
+                    {{ t('catalog.lot_price_preview_hint', { batch: activeMarkupBatch.batch_no }) }}
+                </p>
             </div>
             <div class="table-responsive">
                 <table class="table table-sm table-striped mb-0">
@@ -182,13 +202,13 @@
                                 <div class="fw-medium">{{ unitRelationLabel(u) }}</div>
                             </td>
                             <td class="text-end">
-                                <div>{{ formatMoneyAfterCode(u.purchase_price) }}</div>
+                                <div>{{ formatMoneyAfterCode(unitPurchaseDisplay(u)) }}</div>
                                 <div class="text-muted small">
                                     {{ t('catalog.batch_per_unit', { unit: unitLabel(u.sell_unit) }) }}
                                 </div>
                             </td>
                             <td class="text-end">
-                                <div>{{ formatMoneyAfterCode(u.sale_price) }}</div>
+                                <div>{{ formatMoneyAfterCode(unitSaleDisplay(u)) }}</div>
                                 <div class="text-muted small">
                                     {{ t('catalog.batch_per_unit', { unit: unitLabel(u.sell_unit) }) }}
                                 </div>
@@ -267,24 +287,7 @@
                                 <span v-else class="text-muted small">{{ t('catalog.uses_markup_or_catalog') }}</span>
                             </td>
                             <td class="text-end">
-                                <form
-                                    v-if="can('products.manage')"
-                                    class="d-inline-flex gap-1 justify-content-end align-items-center"
-                                    @submit.prevent="saveBatchMarkup(b)"
-                                >
-                                    <input
-                                        v-model="batchMarkups[b.id]"
-                                        type="number"
-                                        min="0"
-                                        max="1000"
-                                        step="0.01"
-                                        class="form-control form-control-sm text-end"
-                                        style="width: 4.5rem"
-                                        placeholder="—"
-                                    />
-                                    <button type="submit" class="btn btn-sm btn-outline-primary py-0">✓</button>
-                                </form>
-                                <span v-else>{{ displayMarkup(b) }}</span>
+                                <span>{{ displayMarkup(b) }}</span>
                             </td>
                             <td class="text-end text-muted">
                                 <div>{{ batchSuggestedLabel(b) }}</div>
@@ -319,6 +322,7 @@ import {
     batchStoredPriceUnit,
     batchBaseUnitCost,
     batchStoredPriceDiffersFromBase,
+    unitCostInSellUnit,
 } from '@/composables/useBatchPricing';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
@@ -326,7 +330,7 @@ import { useQuantity } from '@/composables/useQuantity';
 import { defaultSellUnit, unitLabel, unitPurchasePrice, unitSalePrice } from '@/composables/useProductUnits';
 import { usePermissions } from '@/composables/usePermissions';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { computed, reactive, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 
 const props = defineProps({
     product: { type: Object, required: true },
@@ -346,6 +350,7 @@ const { formatQty } = useQuantity();
 const { can } = usePermissions();
 
 const batchMarkups = reactive({});
+const activeMarkupBatchId = ref(null);
 
 const batches = computed(() => {
     const raw = props.product.batches;
@@ -366,6 +371,14 @@ watch(
     },
     { immediate: true },
 );
+
+const activeMarkupBatch = computed(() => {
+    if (!activeMarkupBatchId.value) {
+        return null;
+    }
+
+    return batches.value.find((batch) => batch.id === activeMarkupBatchId.value) ?? null;
+});
 
 function formatLocation(loc) {
     if (!loc) {
@@ -441,6 +454,15 @@ function unitRelationLabel(unit) {
 }
 
 function unitMarkupLabel(unit) {
+    if (activeMarkupBatch.value) {
+        const value = batchMarkups[activeMarkupBatch.value.id] ?? activeMarkupBatch.value.markup_percent;
+        const formatted = formatPercentInput(value);
+
+        if (formatted !== '') {
+            return `${formatted}%`;
+        }
+    }
+
     const purchasePrice = Number(unit.purchase_price ?? 0);
     const salePrice = Number(unit.sale_price ?? 0);
 
@@ -449,6 +471,36 @@ function unitMarkupLabel(unit) {
     }
 
     return `${formatPercentInput(((salePrice - purchasePrice) / purchasePrice) * 100)}%`;
+}
+
+function unitPurchaseDisplay(unit) {
+    if (!activeMarkupBatch.value) {
+        return unit.purchase_price;
+    }
+
+    return unitCostInSellUnit(activeMarkupBatch.value, unit.sell_unit, props.product.units);
+}
+
+function unitSaleDisplay(unit) {
+    if (!activeMarkupBatch.value) {
+        return unit.sale_price;
+    }
+
+    const effectiveBatch = {
+        ...activeMarkupBatch.value,
+        sale_price: batchEffectiveStoredSalePrice(activeMarkupBatch.value),
+    };
+    const batchPrice = batchSalePriceInSellUnit(effectiveBatch, unit.sell_unit, props.product.units);
+    if (batchPrice !== null) {
+        return batchPrice;
+    }
+
+    const suggested = suggestedUnitPrice(effectiveBatch, props.product, unit.sell_unit, props.product.units);
+    if (suggested !== null) {
+        return suggested;
+    }
+
+    return unitSalePrice(props.product, unit.sell_unit);
 }
 
 function batchShelfLabel(batch) {
@@ -534,23 +586,6 @@ function batchSuggestedLabel(batch) {
     }
 
     return formatMoneyAfterCode(unitSalePrice(props.product, sellUnit));
-}
-
-function saveBatchMarkup(batch) {
-    const value = batchMarkups[batch.id];
-    const payload = {
-        markup_percent: value === '' || value === null ? null : value,
-    };
-    const salePrice = batchSalePriceFromMarkupInput(batch);
-    if (salePrice !== null) {
-        payload.sale_price = salePrice;
-    }
-
-    router.patch(
-        `/products/${props.product.id}/batches/${batch.id}/markup`,
-        payload,
-        { preserveScroll: true },
-    );
 }
 
 function confirmDelete() {

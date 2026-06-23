@@ -68,36 +68,6 @@
                 <label class="form-label">{{ t('purchases.notes') }}</label>
                 <textarea v-model="form.notes" class="form-control" rows="2" :placeholder="t('purchases.notes_placeholder')" />
             </div>
-            <div class="row g-2 mb-3">
-                <div class="col-md-4">
-                    <label class="form-label">Tax ({{ currencyCode() }})</label>
-                    <div class="input-group">
-                        <span class="input-group-text">{{ currencySymbol() }}</span>
-                        <input v-model.number="form.tax" type="number" min="0" step="0.01" class="form-control" />
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Discount ({{ currencyCode() }})</label>
-                    <div class="input-group">
-                        <span class="input-group-text">{{ currencySymbol() }}</span>
-                        <input v-model.number="form.discount" type="number" min="0" step="0.01" class="form-control" />
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Paid ({{ currencyCode() }})</label>
-                    <div class="input-group">
-                        <span class="input-group-text">{{ currencySymbol() }}</span>
-                        <input v-model.number="form.paid" type="number" min="0" step="0.01" class="form-control" />
-                    </div>
-                </div>
-                <div v-if="Number(form.paid) > 0" class="col-md-4">
-                    <label class="form-label">{{ t('purchases.payment_method') }}</label>
-                    <select v-model="form.payment_method" class="form-select" required>
-                        <option v-for="m in paymentMethods" :key="m.value" :value="m.value">{{ m.label }}</option>
-                    </select>
-                    <div v-if="form.errors.payment_method" class="text-danger small">{{ form.errors.payment_method }}</div>
-                </div>
-            </div>
 
             <div class="card border bg-light mb-3">
                 <div class="card-body py-3">
@@ -271,6 +241,78 @@
                 </div>
             </div>
 
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-header bg-white fw-semibold">Purchase summary</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-lg-7">
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label class="form-label">Tax ({{ currencyCode() }})</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">{{ currencySymbol() }}</span>
+                                        <input v-model.number="form.tax" type="number" min="0" step="0.01" class="form-control" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Discount ({{ currencyCode() }})</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">{{ currencySymbol() }}</span>
+                                        <input v-model.number="form.discount" type="number" min="0" step="0.01" class="form-control" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Paid ({{ currencyCode() }})</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">{{ currencySymbol() }}</span>
+                                        <input v-model.number="form.paid" type="number" min="0" step="0.01" class="form-control" />
+                                    </div>
+                                </div>
+                                <div v-if="Number(form.paid) > 0" class="col-md-4">
+                                    <label class="form-label">{{ t('purchases.payment_method') }}</label>
+                                    <select v-model="form.payment_method" class="form-select" required>
+                                        <option v-for="m in paymentMethods" :key="m.value" :value="m.value">{{ m.label }}</option>
+                                    </select>
+                                    <div v-if="form.errors.payment_method" class="text-danger small">{{ form.errors.payment_method }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-5">
+                            <table class="table table-sm mb-0">
+                                <tbody>
+                                    <tr>
+                                        <td class="text-muted">Subtotal</td>
+                                        <td class="text-end">{{ formatMoney(purchaseSubtotal) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Discount</td>
+                                        <td class="text-end">-{{ formatMoney(normalizedDiscount) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Tax</td>
+                                        <td class="text-end">{{ formatMoney(normalizedTax) }}</td>
+                                    </tr>
+                                    <tr class="fw-semibold border-top">
+                                        <td>Total</td>
+                                        <td class="text-end">{{ formatMoney(purchaseTotal) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Paid</td>
+                                        <td class="text-end">{{ formatMoney(normalizedPaid) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Due</td>
+                                        <td class="text-end fw-semibold" :class="{ 'text-danger': purchaseDue > 0 }">
+                                            {{ formatMoney(purchaseDue) }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="mt-3">
                 <button type="submit" class="btn btn-primary" :disabled="form.processing || !form.lines.length">Save purchase</button>
                 <Link href="/purchases" class="btn btn-link">Cancel</Link>
@@ -341,6 +383,24 @@ const form = useForm({
     payment_method: props.paymentMethods[0]?.value ?? 'cash',
     lines: [],
 });
+
+const purchaseSubtotal = computed(() =>
+    form.lines.reduce((sum, line) => {
+        const quantity = Number(line.quantity);
+        const unitCost = Number(line.unit_cost);
+
+        if (Number.isNaN(quantity) || Number.isNaN(unitCost)) {
+            return sum;
+        }
+
+        return sum + quantity * unitCost;
+    }, 0)
+);
+const normalizedTax = computed(() => Math.max(0, Number(form.tax) || 0));
+const normalizedDiscount = computed(() => Math.max(0, Number(form.discount) || 0));
+const normalizedPaid = computed(() => Math.max(0, Number(form.paid) || 0));
+const purchaseTotal = computed(() => Math.max(0, purchaseSubtotal.value + normalizedTax.value - normalizedDiscount.value));
+const purchaseDue = computed(() => Math.max(0, purchaseTotal.value - normalizedPaid.value));
 
 function debouncedSupplierSearch() {
     clearTimeout(supplierSearchTimer);
