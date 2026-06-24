@@ -2,6 +2,7 @@
 
 namespace App\Domain\Catalog\Models;
 
+use App\Domain\Tenant\Models\Branch;
 use App\Support\Models\TenantModel;
 use App\Support\Traits\BranchScoped;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,6 +33,11 @@ class ProductBatch extends TenantModel
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function storageLocation(): BelongsTo

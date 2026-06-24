@@ -1,0 +1,29 @@
+<?php
+
+namespace App\Exports\Reports;
+
+use Maatwebsite\Excel\Concerns\FromArray;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+
+final readonly class ArrayReportExport implements FromArray, ShouldAutoSize, WithHeadings
+{
+    /**
+     * @param  array<int, string>  $headings
+     * @param  array<int, array<int, mixed>>  $rows
+     */
+    public function __construct(
+        private array $headings,
+        private array $rows,
+    ) {}
+
+    public function headings(): array
+    {
+        return $this->headings;
+    }
+
+    public function array(): array
+    {
+        return $this->rows;
+    }
+}

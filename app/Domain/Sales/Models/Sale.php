@@ -2,6 +2,7 @@
 
 namespace App\Domain\Sales\Models;
 
+use App\Domain\Tenant\Models\Branch;
 use App\Support\Models\TenantModel;
 use App\Support\Traits\BranchScoped;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -45,6 +46,11 @@ class Sale extends TenantModel
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function lines(): HasMany

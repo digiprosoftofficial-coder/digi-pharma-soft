@@ -46,7 +46,10 @@ use App\Http\Controllers\Tenant\PurchaseExportController;
 use App\Http\Controllers\Tenant\PurchaseInvoiceController;
 use App\Http\Controllers\Tenant\PurchasePaymentController;
 use App\Http\Controllers\Tenant\PurchaseReturnController;
-use App\Http\Controllers\Tenant\ReportController;
+use App\Http\Controllers\Tenant\Reports\DueReportController;
+use App\Http\Controllers\Tenant\Reports\InventoryReportController;
+use App\Http\Controllers\Tenant\Reports\PurchaseReportController;
+use App\Http\Controllers\Tenant\Reports\SalesReportController;
 use App\Http\Controllers\Tenant\ReportsHubController;
 use App\Http\Controllers\Tenant\SaleController;
 use App\Http\Controllers\Tenant\SaleInvoiceController;
@@ -133,8 +136,16 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
             Route::resource('customers', CustomerController::class)->except(['show']);
 
             Route::get('/reports', [ReportsHubController::class, 'index'])->name('reports.hub');
-            Route::get('/reports/summary', [ReportController::class, 'summary'])->name('reports.summary');
-            Route::get('/reports/export', [ReportController::class, 'exportCsv'])->name('reports.export');
+            Route::get('/reports/summary', [SalesReportController::class, 'summary'])->name('reports.summary');
+            Route::get('/reports/export', [SalesReportController::class, 'export'])->name('reports.export');
+            Route::get('/reports/sales/summary', [SalesReportController::class, 'summary'])->name('reports.sales.summary');
+            Route::get('/reports/sales/export', [SalesReportController::class, 'export'])->name('reports.sales.export');
+            Route::get('/reports/purchases/summary', [PurchaseReportController::class, 'summary'])->name('reports.purchases.summary');
+            Route::get('/reports/purchases/export', [PurchaseReportController::class, 'export'])->name('reports.purchases.export');
+            Route::get('/reports/inventory/health', [InventoryReportController::class, 'health'])->name('reports.inventory.health');
+            Route::get('/reports/inventory/export', [InventoryReportController::class, 'export'])->name('reports.inventory.export');
+            Route::get('/reports/dues', [DueReportController::class, 'index'])->name('reports.dues');
+            Route::get('/reports/dues/export', [DueReportController::class, 'export'])->name('reports.dues.export');
 
             Route::get('/branches', [BranchController::class, 'index'])->name('branches.index');
             Route::get('/branches/create', [BranchController::class, 'create'])->name('branches.create');

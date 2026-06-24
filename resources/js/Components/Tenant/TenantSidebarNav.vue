@@ -13,50 +13,67 @@
                 </Link>
             </li>
 
-            <li v-for="section in visibleSections" :key="section.id" class="tenant-nav-group">
-                <button
-                    type="button"
-                    class="tenant-nav-item tenant-nav-item--toggle"
-                    :class="{
-                        'tenant-nav-item--active': isSectionActive(section),
-                        'tenant-nav-item--inactive': !isSectionActive(section),
-                    }"
-                    :aria-expanded="open[section.id]"
-                    @click="toggle(section.id)"
-                >
-                    <TenantNavIcon :name="section.icon" />
-                    <span class="tenant-nav-label">{{ section.label }}</span>
-                    <svg
-                        class="tenant-nav-chevron"
-                        :class="{ 'tenant-nav-chevron--open': open[section.id] }"
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        aria-hidden="true"
+            <template v-for="section in visibleSections" :key="section.id">
+                <li class="tenant-nav-group">
+                    <button
+                        type="button"
+                        class="tenant-nav-item tenant-nav-item--toggle"
+                        :class="{
+                            'tenant-nav-item--active': isSectionActive(section),
+                            'tenant-nav-item--inactive': !isSectionActive(section),
+                        }"
+                        :aria-expanded="open[section.id]"
+                        @click="toggle(section.id)"
                     >
-                        <path d="M6 9l6 6 6-6" />
-                    </svg>
-                </button>
-                <ul v-show="open[section.id]" class="tenant-nav-children list-unstyled mb-0">
-                    <li v-for="child in section.children" :key="child.href">
-                        <Link
-                            :href="child.href"
-                            class="tenant-nav-child"
-                            :class="{
-                                'tenant-nav-child--active': isChildActive(child),
-                                'tenant-nav-child--inactive': !isChildActive(child),
-                            }"
+                        <TenantNavIcon :name="section.icon" />
+                        <span class="tenant-nav-label">{{ section.label }}</span>
+                        <svg
+                            class="tenant-nav-chevron"
+                            :class="{ 'tenant-nav-chevron--open': open[section.id] }"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            aria-hidden="true"
                         >
-                            <TenantNavIcon :name="child.icon" />
-                            <span>{{ child.label }}</span>
-                        </Link>
-                    </li>
-                </ul>
-            </li>
+                            <path d="M6 9l6 6 6-6" />
+                        </svg>
+                    </button>
+                    <ul v-show="open[section.id]" class="tenant-nav-children list-unstyled mb-0">
+                        <li v-for="child in section.children" :key="child.href">
+                            <Link
+                                :href="child.href"
+                                class="tenant-nav-child"
+                                :class="{
+                                    'tenant-nav-child--active': isChildActive(child),
+                                    'tenant-nav-child--inactive': !isChildActive(child),
+                                }"
+                            >
+                                <TenantNavIcon :name="child.icon" />
+                                <span>{{ child.label }}</span>
+                            </Link>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Report Hub -->
+                <li v-if="section.id === 'inventory' && can('reports.view')">
+                    <Link
+                        href="/reports"
+                        class="tenant-nav-item"
+                        :class="{
+                            'tenant-nav-item--active': pathStarts('/reports'),
+                            'tenant-nav-item--inactive': !pathStarts('/reports'),
+                        }"
+                    >
+                        <TenantNavIcon name="report" />
+                        <span class="tenant-nav-label">Report Hub</span>
+                    </Link>
+                </li>
+            </template>
         </ul>
 
         <div class="tenant-nav-footer border-top pt-2 mt-2">
@@ -232,10 +249,9 @@ const sectionsConfig = computed(() => [
         id: 'admin',
         icon: 'settings',
         label: t('tenant_nav.administration'),
-        show: can('reports.view') || can('settings.view') || can('team.users.view') || (can('branches.view') && multiBranchEnabled.value),
-        paths: ['/reports', '/settings', '/team/users', '/branches'],
+        show: can('settings.view') || can('team.users.view') || (can('branches.view') && multiBranchEnabled.value),
+        paths: ['/settings', '/team/users', '/branches'],
         children: [
-            { href: '/reports', icon: 'report', label: t('tenant_nav.reports'), show: can('reports.view'), match: 'prefix' },
             { href: '/settings', icon: 'settings', label: t('tenant_nav.settings'), show: can('settings.view'), match: 'prefix' },
             { href: '/branches', icon: 'inventory', label: t('tenant_nav.branches'), show: can('branches.view') && multiBranchEnabled.value, match: 'prefix' },
             { href: '/team/users', icon: 'users', label: t('tenant_nav.users'), show: can('team.users.view'), match: 'prefix' },
