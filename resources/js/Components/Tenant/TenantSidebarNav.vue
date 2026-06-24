@@ -70,7 +70,7 @@
                         }"
                     >
                         <TenantNavIcon name="report" />
-                        <span class="tenant-nav-label">Report Hub</span>
+                        <span class="tenant-nav-label">{{ t('reports.hub') }}</span>
                     </Link>
                 </li>
             </template>
