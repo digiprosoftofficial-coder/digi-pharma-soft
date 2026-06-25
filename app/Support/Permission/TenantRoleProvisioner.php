@@ -28,7 +28,8 @@ final class TenantRoleProvisioner
             'manufacturers.view', 'manufacturers.manage',
             'storage_locations.view', 'storage_locations.manage',
             'inventory.view', 'inventory.manage',
-            'customers.view', 'reports.view', 'reports.sales', 'reports.inventory', 'reports.print', 'sales.view', 'returns.manage',
+            'customers.view', 'reports.view', 'reports.sales', 'reports.inventory', 'reports.expiry',
+            'reports.customer', 'reports.supplier', 'reports.print', 'sales.view', 'returns.manage',
             'stock_transfers.view', 'suppliers.view', 'purchases.view',
             'branches.view',
         ])->get();

@@ -42,7 +42,7 @@
         </div>
 
         <div class="row g-3 mb-4">
-            <div v-for="quick in quickLinks" :key="quick.titleKey" class="col-md-6 col-xl-3">
+            <div v-for="quick in visibleQuickLinks" :key="quick.titleKey" class="col-md-6 col-xl-3">
                 <Link :href="quick.href" class="quick-card card border-0 shadow-sm h-100 text-decoration-none">
                     <div class="card-body">
                         <div class="d-flex align-items-center justify-content-between mb-2">
@@ -164,7 +164,7 @@
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const props = defineProps({
@@ -173,6 +173,7 @@ const props = defineProps({
 
 const { formatMoney } = useMoney();
 const { t } = useLocale();
+const page = usePage();
 
 const quickLinks = [
     {
@@ -199,7 +200,48 @@ const quickLinks = [
         href: '/reports/dues',
         helpKey: 'reports.quick_dues_help',
     },
+    {
+        titleKey: 'reports.quick_expiry_title',
+        short: 'E',
+        href: '/reports/expiry',
+        helpKey: 'reports.quick_expiry_help',
+    },
+    {
+        titleKey: 'reports.quick_supplier_title',
+        short: 'SR',
+        href: '/reports/suppliers',
+        helpKey: 'reports.quick_supplier_help',
+    },
+    {
+        titleKey: 'reports.quick_customer_title',
+        short: 'CR',
+        href: '/reports/customers',
+        helpKey: 'reports.quick_customer_help',
+    },
+    {
+        titleKey: 'reports.quick_finance_title',
+        short: 'F',
+        href: '/reports/finance',
+        helpKey: 'reports.quick_finance_help',
+    },
+    {
+        titleKey: 'reports.quick_branch_title',
+        short: 'B',
+        href: '/reports/branches',
+        helpKey: 'reports.quick_branch_help',
+        feature: 'multi_branch',
+    },
+    {
+        titleKey: 'reports.quick_activity_title',
+        short: 'A',
+        href: '/reports/user-activity',
+        helpKey: 'reports.quick_activity_help',
+    },
 ];
+
+const visibleQuickLinks = computed(() =>
+    quickLinks.filter((link) => !link.feature || page.props.features?.[link.feature]),
+);
 
 const roadmapReports = [
     {
@@ -219,14 +261,14 @@ const roadmapReports = [
     },
     {
         titleKey: 'reports.roadmap_cashflow_title',
-        short: 'F',
+        short: 'CF',
         helpKey: 'reports.roadmap_cashflow_help',
     },
 ];
 
 const stats = computed(() => {
     return [
-        { label: t('reports.ready_reports'), value: quickLinks.length },
+        { label: t('reports.ready_reports'), value: visibleQuickLinks.value.length },
         { label: t('reports.roadmap_reports'), value: roadmapReports.length },
         { label: t('reports.output_formats'), value: 4 },
         { label: t('reports.scopes'), value: 2 },
