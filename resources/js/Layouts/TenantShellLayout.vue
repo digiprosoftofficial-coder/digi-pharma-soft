@@ -41,8 +41,60 @@
             <div class="flex-grow-1 d-flex flex-column min-vh-100 min-w-0">
                 <header class="tenant-topbar border-bottom bg-white px-3 py-2 d-flex flex-wrap align-items-center gap-2">
                     <h1 class="h5 mb-0 text-primary me-auto">{{ pageTitle }}</h1>
-                    <form class="flex-grow-1" style="max-width: 320px" @submit.prevent="runSearch">
-                        <input v-model="searchQ" type="search" class="form-control form-control-sm" placeholder="Search products…" />
+                    <form class="topbar-search flex-grow-1 position-relative" style="max-width: 390px" @submit.prevent="runSearch">
+                        <div class="input-group input-group-sm">
+                            <input
+                                v-model="searchQ"
+                                type="search"
+                                class="form-control"
+                                :placeholder="t('common.search_products_placeholder')"
+                                autocomplete="off"
+                                @input="debouncedProductSearch"
+                                @focus="openSearchSuggestions"
+                                @blur="closeSearchSuggestionsSoon"
+                                @keydown.down.prevent="moveSearchHighlight(1)"
+                                @keydown.up.prevent="moveSearchHighlight(-1)"
+                                @keydown.enter.prevent="onSearchEnter"
+                                @keydown.esc.prevent="closeSearchSuggestions"
+                            />
+                            <button class="btn btn-outline-secondary topbar-search__button" type="submit" :title="t('common.search')" :aria-label="t('common.search')">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <circle cx="11" cy="11" r="7" />
+                                    <path d="m20 20-3.5-3.5" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div
+                            v-if="showSearchDropdown"
+                            class="topbar-search__dropdown bg-white border rounded-3 shadow-sm overflow-hidden"
+                        >
+                            <div v-if="searchLoading" class="px-3 py-2 small text-muted">{{ t('common.searching') }}</div>
+                            <template v-else-if="searchResults.length">
+                                <button
+                                    v-for="(product, index) in searchResults"
+                                    :key="product.id"
+                                    type="button"
+                                    class="topbar-search__item w-100 border-0 bg-white text-start px-3 py-2"
+                                    :class="{ 'topbar-search__item--active': index === highlightedSearchIndex }"
+                                    @mousedown.prevent="selectSearchResult(product)"
+                                >
+                                    <span class="d-block fw-semibold text-truncate">{{ product.name }}</span>
+                                    <span class="d-flex flex-wrap gap-2 small text-muted">
+                                        <span v-if="product.sku">{{ product.sku }}</span>
+                                        <span v-if="product.barcode">{{ product.barcode }}</span>
+                                        <span>{{ t('common.stock') }}: {{ product.stock_on_hand ?? '0' }}</span>
+                                    </span>
+                                </button>
+                                <button
+                                    type="button"
+                                    class="topbar-search__item w-100 border-0 bg-light text-start px-3 py-2 small fw-semibold text-primary"
+                                    @mousedown.prevent="runSearch"
+                                >
+                                    {{ t('common.view_all_results') }}
+                                </button>
+                            </template>
+                            <div v-else-if="searchQ.trim().length >= 1" class="px-3 py-2 small text-muted">{{ t('common.no_results') }}</div>
+                        </div>
                     </form>
                     <form
                         v-if="multiBranch && branches.length > 1"
@@ -78,7 +130,7 @@ import LocaleSwitcher from '@/Components/LocaleSwitcher.vue';
 import { useLocale } from '@/composables/useLocale';
 import { usePermissions } from '@/composables/usePermissions';
 import { Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 
 const { t } = useLocale();
 
@@ -122,14 +174,106 @@ const announcementAlertClass = computed(() => {
 });
 
 const searchQ = ref('');
+const searchResults = ref([]);
+const searchLoading = ref(false);
+const searchOpen = ref(false);
+const highlightedSearchIndex = ref(-1);
+let searchTimer;
+let closeSearchTimer;
+
+const showSearchDropdown = computed(() =>
+    searchOpen.value
+    && (searchLoading.value || searchResults.value.length > 0 || searchQ.value.trim().length >= 1),
+);
+
+function debouncedProductSearch() {
+    clearTimeout(searchTimer);
+    highlightedSearchIndex.value = -1;
+    searchTimer = setTimeout(runProductSuggestSearch, 250);
+}
+
+async function runProductSuggestSearch() {
+    const q = searchQ.value.trim();
+    if (q.length < 1) {
+        searchResults.value = [];
+        searchLoading.value = false;
+        return;
+    }
+
+    searchOpen.value = true;
+    searchLoading.value = true;
+    try {
+        const { data } = await window.axios.get('/catalog/product-search', { params: { q } });
+        searchResults.value = (data.data ?? []).slice(0, 6);
+    } catch {
+        searchResults.value = [];
+    } finally {
+        searchLoading.value = false;
+    }
+}
+
+function openSearchSuggestions() {
+    clearTimeout(closeSearchTimer);
+    if (searchQ.value.trim().length >= 1) {
+        searchOpen.value = true;
+        if (!searchResults.value.length) {
+            debouncedProductSearch();
+        }
+    }
+}
+
+function closeSearchSuggestionsSoon() {
+    clearTimeout(closeSearchTimer);
+    closeSearchTimer = setTimeout(closeSearchSuggestions, 150);
+}
+
+function closeSearchSuggestions() {
+    searchOpen.value = false;
+    highlightedSearchIndex.value = -1;
+}
+
+function moveSearchHighlight(direction) {
+    if (!searchResults.value.length) {
+        return;
+    }
+
+    searchOpen.value = true;
+    highlightedSearchIndex.value = (highlightedSearchIndex.value + direction + searchResults.value.length) % searchResults.value.length;
+}
+
+function onSearchEnter() {
+    if (searchOpen.value && highlightedSearchIndex.value >= 0 && searchResults.value[highlightedSearchIndex.value]) {
+        selectSearchResult(searchResults.value[highlightedSearchIndex.value]);
+        return;
+    }
+
+    runSearch();
+}
+
+function selectSearchResult(product) {
+    if (!product?.id) {
+        return;
+    }
+
+    searchQ.value = product.name ?? '';
+    closeSearchSuggestions();
+    router.visit(`/products/${product.id}`);
+}
+
 function runSearch() {
     const q = searchQ.value?.trim();
+    closeSearchSuggestions();
     if (!q) {
         router.visit('/products');
         return;
     }
     router.visit('/products', { data: { q }, preserveState: true });
 }
+
+onBeforeUnmount(() => {
+    clearTimeout(searchTimer);
+    clearTimeout(closeSearchTimer);
+});
 </script>
 
 <style scoped>
@@ -145,5 +289,48 @@ function runSearch() {
     height: 2.25rem;
     border-radius: 0.5rem;
     background: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+.topbar-search__dropdown {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    right: 0;
+    left: 0;
+    z-index: 1040;
+    max-height: 22rem;
+    overflow-y: auto;
+}
+
+.topbar-search :deep(.form-control:focus) {
+    border-color: var(--bs-border-color);
+    box-shadow: none;
+    outline: 0;
+}
+
+.topbar-search :deep(.btn:focus),
+.topbar-search :deep(.btn:active),
+.topbar-search :deep(.btn:focus-visible) {
+    box-shadow: none;
+    outline: 0;
+}
+
+.topbar-search__button {
+    color: var(--bs-secondary-color);
+    border-color: var(--bs-border-color);
+}
+
+.topbar-search__button:hover {
+    color: var(--bs-body-color);
+    background: var(--bs-tertiary-bg);
+    border-color: var(--bs-border-color);
+}
+
+.topbar-search__item {
+    transition: background-color 0.12s ease;
+}
+
+.topbar-search__item:hover,
+.topbar-search__item--active {
+    background: #f1f5f9 !important;
 }
 </style>
