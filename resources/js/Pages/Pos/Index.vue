@@ -2,12 +2,18 @@
     <TenantShellLayout page-title="Point of sale">
         <Head title="POS" />
         <h1 class="h4 mb-3 d-lg-none">Point of sale</h1>
-        <div v-if="$page.props.errors?.checkout" class="alert alert-danger">{{ $page.props.errors.checkout }}</div>
-        <div v-if="lastSaleId" class="alert alert-success d-flex flex-wrap justify-content-between align-items-center gap-2">
-            <span>{{ $page.props.flash?.success || 'Sale completed.' }}</span>
-            <a :href="`/sales/${lastSaleId}/print`" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success">
-                {{ t('sales.pos_print_last') }}
-            </a>
+        <div v-if="checkoutError" class="alert alert-danger">{{ checkoutError }}</div>
+        <div v-if="showSaleSuccessAlert" class="alert alert-success pos-sale-alert">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <span>{{ saleSuccessMessage }}</span>
+                <div class="d-flex align-items-center gap-2">
+                    <a :href="`/sales/${lastSaleId}/print`" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success">
+                        {{ t('sales.pos_print_last') }}
+                    </a>
+                    <button type="button" class="btn-close" aria-label="Close" @click="closeSaleSuccessAlert"></button>
+                </div>
+            </div>
+            <div :key="saleSuccessAlertKey" class="pos-sale-alert__timer" aria-hidden="true"></div>
         </div>
         <div class="row g-3">
             <div class="col-lg-5">
@@ -39,6 +45,52 @@
                             <span class="text-muted">{{ item.sku }}</span>
                         </li>
                     </ul>
+                    <div v-if="showQuickProducts" class="mt-3">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                            <div class="small fw-semibold text-muted">{{ t('sales.pos_quick_products') }}</div>
+                            <div class="btn-group btn-group-sm" role="group" :aria-label="t('sales.pos_quick_products')">
+                                <button
+                                    v-for="tab in quickProductTabs"
+                                    :key="tab.key"
+                                    type="button"
+                                    class="btn"
+                                    :class="activeQuickProductTab === tab.key ? 'btn-primary' : 'btn-outline-secondary'"
+                                    @click="activeQuickProductTab = tab.key"
+                                >
+                                    {{ tab.label }}
+                                </button>
+                            </div>
+                        </div>
+                        <div v-if="activeQuickProducts.length" class="pos-product-grid">
+                            <button
+                                v-for="product in activeQuickProducts"
+                                :key="product.id"
+                                type="button"
+                                class="pos-product-card text-start"
+                                :disabled="!hasSellableStock(product)"
+                                @click="addLine(product)"
+                            >
+                                <span class="pos-product-card__image-wrap">
+                                    <img
+                                        class="pos-product-card__image"
+                                        :src="product.image_url || '/images/product-placeholder.png'"
+                                        :alt="product.name"
+                                        loading="lazy"
+                                    />
+                                </span>
+                                <span class="pos-product-card__name">{{ product.name }}</span>
+                                <span class="pos-product-card__meta">
+                                    <span v-if="product.strength">{{ product.strength }}</span>
+                                    <span v-if="product.sku">{{ product.sku }}</span>
+                                </span>
+                                <span class="d-flex justify-content-between align-items-end gap-2 mt-auto">
+                                    <span class="small text-muted">{{ t('sales.pos_stock') }} {{ product.stock_on_hand ?? '0' }}</span>
+                                    <strong class="small">{{ formatMoney(product.sale_price) }}</strong>
+                                </span>
+                            </button>
+                        </div>
+                        <p v-else class="text-muted small mb-0">{{ t('sales.pos_no_quick_products') }}</p>
+                    </div>
                 </div>
             </div>
             <div class="col-lg-7">
@@ -293,11 +345,12 @@ import { useMoney } from '@/composables/useMoney';
 import { useQuantity } from '@/composables/useQuantity';
 import { defaultSellUnit, stockInSellUnit, unitLabel, unitSalePrice } from '@/composables/useProductUnits';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 
 const props = defineProps({
     lastSaleId: { type: Number, default: null },
     roundingMode: { type: String, default: 'none' },
+    quickProducts: { type: Object, default: () => ({ popular: [], latest: [], lastSold: [] }) },
 });
 
 const { t } = useLocale();
@@ -305,10 +358,16 @@ const { formatMoney, currencyCode } = useMoney();
 const { formatQty } = useQuantity();
 const page = usePage();
 const markupPricingEnabled = computed(() => page.props.features?.markup_pricing ?? false);
+const checkoutError = computed(() => page.props.errors?.checkout ?? null);
+const saleSuccessMessage = computed(() => page.props.flash?.success || 'Sale completed.');
+const showSaleSuccessAlert = ref(Boolean(props.lastSaleId));
+const saleSuccessAlertKey = ref(0);
+let saleSuccessTimer = null;
 
 const q = ref('');
 const results = ref([]);
 const cart = ref([]);
+const activeQuickProductTab = ref('popular');
 
 // Customer selection
 const customerQuery = ref('');
@@ -362,6 +421,43 @@ const changePreview = computed(() => Math.max(0, Number(amountPaid.value || 0) -
 const hasCustomer = computed(() => selectedCustomer.value || (showNewCustomerForm.value && newCustomerName.value.trim()));
 
 const needsCustomerForDue = computed(() => duePreview.value > 0.001 && !hasCustomer.value);
+
+const quickProductTabs = computed(() => [
+    { key: 'popular', label: t('sales.pos_popular_products') },
+    { key: 'latest', label: t('sales.pos_latest_products') },
+    { key: 'lastSold', label: t('sales.pos_last_sold_products') },
+]);
+
+const activeQuickProducts = computed(() => props.quickProducts?.[activeQuickProductTab.value] ?? []);
+const showQuickProducts = computed(() => q.value.trim().length === 0 && !results.value.length);
+
+function startSaleSuccessAlert() {
+    clearTimeout(saleSuccessTimer);
+    saleSuccessAlertKey.value += 1;
+    showSaleSuccessAlert.value = true;
+    saleSuccessTimer = setTimeout(() => {
+        showSaleSuccessAlert.value = false;
+    }, 15000);
+}
+
+function closeSaleSuccessAlert() {
+    showSaleSuccessAlert.value = false;
+    clearTimeout(saleSuccessTimer);
+}
+
+onBeforeUnmount(() => {
+    clearTimeout(saleSuccessTimer);
+});
+
+watch(
+    () => props.lastSaleId,
+    (lastSaleId) => {
+        if (lastSaleId) {
+            startSaleSuccessAlert();
+        }
+    },
+    { immediate: true },
+);
 
 watch([cartSubtotal, cartDiscountPercent, payableAmount], () => {
     if (payFullAmount.value) {
@@ -474,6 +570,10 @@ function searchBatchHint(item) {
     }
 
     return t('catalog.pos_fefo_batch_hint', { batch: first, count: batches.length });
+}
+
+function hasSellableStock(item) {
+    return batchesWithStock(item).length > 0;
 }
 
 function normalizeLineQuantity(line) {
@@ -674,6 +774,13 @@ function submitSale() {
             onFinish: () => {
                 submitting.value = false;
                 cart.value = [];
+                q.value = '';
+                results.value = [];
+                amountPaid.value = 0;
+                payFullAmount.value = true;
+                cartDiscountPercent.value = 0;
+                paymentMethod.value = 'cash';
+                couponCode.value = '';
                 selectedCustomer.value = null;
                 showNewCustomerForm.value = false;
                 newCustomerName.value = '';
@@ -683,3 +790,111 @@ function submitSale() {
     );
 }
 </script>
+
+<style scoped>
+.pos-sale-alert {
+    position: relative;
+    overflow: hidden;
+    padding-bottom: 1rem;
+}
+
+.pos-sale-alert__timer {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 0.2rem;
+    background: rgba(25, 135, 84, 0.2);
+}
+
+.pos-sale-alert__timer::after {
+    display: block;
+    width: 100%;
+    height: 100%;
+    content: '';
+    background: var(--bs-success);
+    animation: pos-sale-alert-timer 15s linear forwards;
+    transform-origin: left center;
+}
+
+@keyframes pos-sale-alert-timer {
+    from {
+        transform: scaleX(1);
+    }
+
+    to {
+        transform: scaleX(0);
+    }
+}
+
+.pos-product-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.pos-product-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 10.25rem;
+    padding: 0.65rem;
+    color: var(--bs-body-color);
+    background: #ffffff;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.35rem;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
+}
+
+.pos-product-card:hover:not(:disabled) {
+    border-color: #adb5bd;
+    box-shadow: 0 0.5rem 1rem rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
+}
+
+.pos-product-card:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.pos-product-card__image-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 4.75rem;
+    margin-bottom: 0.55rem;
+    overflow: hidden;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    border-radius: 0.3rem;
+}
+
+.pos-product-card__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.pos-product-card__name {
+    display: -webkit-box;
+    overflow: hidden;
+    font-weight: 600;
+    line-height: 1.25;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.pos-product-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.25rem;
+    color: var(--bs-secondary-color);
+    font-size: 0.76rem;
+}
+
+@media (max-width: 575.98px) {
+    .pos-product-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+</style>

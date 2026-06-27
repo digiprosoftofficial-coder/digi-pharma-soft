@@ -1,5 +1,7 @@
 export function batchesWithStock(item) {
-    return (item?.batches ?? []).filter(
+    const batches = Array.isArray(item?.batches) ? item.batches : (item?.batches?.data ?? []);
+
+    return batches.filter(
         (b) => Number(b.quantity_on_hand ?? 0) > 0 && !b.is_expired,
     );
 }
