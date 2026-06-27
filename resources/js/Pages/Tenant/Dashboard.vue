@@ -174,6 +174,7 @@ import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { useQuantity } from '@/composables/useQuantity';
+import { formatHumanDateTime as formatDate } from '@/utils/dates';
 import { Head } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
@@ -333,12 +334,6 @@ function formatNumber(value) {
     return new Intl.NumberFormat().format(Number(value || 0));
 }
 
-function formatDate(iso) {
-    if (!iso) {
-        return '';
-    }
-    return new Date(iso).toLocaleString();
-}
 </script>
 
 <style scoped>

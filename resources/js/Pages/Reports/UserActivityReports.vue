@@ -55,6 +55,7 @@ import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import PaginationLinks from '@/Pages/Reports/Partials/PaginationLinks.vue';
 import SmartReportFilters from '@/Pages/Reports/Partials/SmartReportFilters.vue';
 import SummaryCards from '@/Pages/Reports/Partials/SummaryCards.vue';
+import { formatHumanDateTime as formatDate } from '@/utils/dates';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
@@ -74,7 +75,4 @@ const summaryCards = computed(() => [
     { label: 'Imports', value: props.summary.imports, money: false },
 ]);
 
-function formatDate(value) {
-    return value ? String(value).slice(0, 16).replace('T', ' ') : '—';
-}
 </script>

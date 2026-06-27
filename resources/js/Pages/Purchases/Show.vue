@@ -102,8 +102,8 @@
                                 </div>
                             </td>
                             <td>{{ line.batch_no }}</td>
-                            <td>{{ line.expiry_date || '—' }}</td>
-                            <td>{{ line.manufactured_at || '—' }}</td>
+                            <td>{{ formatHumanDate(line.expiry_date) }}</td>
+                            <td>{{ formatHumanDate(line.manufactured_at) }}</td>
                             <td class="text-end text-nowrap">{{ formatQty(line.quantity) }} {{ unitLabel(line.sell_unit) }}</td>
                             <td class="text-end">{{ line.sale_price != null ? formatMoney(line.sale_price) : '—' }}</td>
                             <td class="text-end text-nowrap">
@@ -228,6 +228,7 @@ import { unitLabel } from '@/composables/useProductUnits';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { useQuantity } from '@/composables/useQuantity';
+import { formatHumanDate } from '@/utils/dates';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 
 const props = defineProps({

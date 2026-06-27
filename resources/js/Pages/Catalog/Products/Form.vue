@@ -272,7 +272,7 @@
                             <tbody>
                                 <tr v-for="b in batches" :key="b.id">
                                     <td>{{ b.batch_no }}</td>
-                                    <td>{{ b.expiry_date || '—' }}</td>
+                                    <td>{{ formatHumanDate(b.expiry_date) }}</td>
                                     <td class="text-end">{{ formatQty(b.quantity_on_hand) }}</td>
                                     <td>
                                         <select
@@ -350,7 +350,7 @@
                         <tbody>
                             <tr v-for="b in batches" :key="`pricing-${b.id}`">
                                 <td>{{ b.batch_no }}</td>
-                                <td>{{ b.expiry_date || '—' }}</td>
+                                <td>{{ formatHumanDate(b.expiry_date) }}</td>
                                 <td class="text-end">{{ formatQty(b.quantity_on_hand) }}</td>
                                 <td class="text-end">
                                     <div class="fw-medium">
@@ -605,6 +605,7 @@ import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { useQuantity } from '@/composables/useQuantity';
 import { defaultSellUnit, unitSalePrice } from '@/composables/useProductUnits';
+import { formatHumanDate } from '@/utils/dates';
 import { formatPrice, precisionDecimal } from '@/utils/formatNumber';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';

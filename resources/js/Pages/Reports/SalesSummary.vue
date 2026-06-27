@@ -91,6 +91,7 @@ import { useMoney } from '@/composables/useMoney';
 import PaginationLinks from '@/Pages/Reports/Partials/PaginationLinks.vue';
 import ReportControls from '@/Pages/Reports/Partials/ReportControls.vue';
 import SummaryCards from '@/Pages/Reports/Partials/SummaryCards.vue';
+import { formatHumanDateTime as formatDate } from '@/utils/dates';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
@@ -116,7 +117,4 @@ const summaryCards = computed(() => [
     { label: 'Return count', value: props.summary.returnCount, money: false },
 ]);
 
-function formatDate(value) {
-    return value ? String(value).slice(0, 16).replace('T', ' ') : '—';
-}
 </script>

@@ -437,6 +437,7 @@ import TenantStatusBadge from '@/Components/TenantStatusBadge.vue';
 import PlatformShellLayout from '@/Layouts/PlatformShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
+import { formatHumanDate as formatDate } from '@/utils/dates';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
@@ -475,14 +476,6 @@ const ownerForm = useForm({
     owner_password: '',
     owner_password_confirmation: '',
 });
-
-function formatDate(iso) {
-    if (!iso) {
-        return '—';
-    }
-
-    return String(iso).slice(0, 10);
-}
 
 function submitOwner() {
     ownerForm.post(`/platform/tenants/${props.tenant.id}/owner`, {

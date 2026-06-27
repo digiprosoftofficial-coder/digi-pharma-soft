@@ -1,3 +1,5 @@
+import { formatHumanDate } from '@/utils/dates';
+
 export function batchesWithStock(item) {
     const batches = Array.isArray(item?.batches) ? item.batches : (item?.batches?.data ?? []);
 
@@ -11,7 +13,7 @@ export function formatBatchLabel(batch) {
         return '';
     }
     const no = batch.batch_no ?? '—';
-    const exp = batch.expiry_date ? ` · exp ${batch.expiry_date}` : '';
+    const exp = batch.expiry_date ? ` · exp ${formatHumanDate(batch.expiry_date)}` : '';
 
     return `${no}${exp}`;
 }

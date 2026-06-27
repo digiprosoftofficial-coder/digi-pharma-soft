@@ -30,7 +30,7 @@
                                 </button>
                             </td>
                             <td>{{ s.invoice_no }}</td>
-                            <td>{{ s.sold_at }}</td>
+                            <td>{{ formatHumanDateTime(s.sold_at) }}</td>
                             <td>
                                 <span v-if="s.status === 'voided'" class="badge text-bg-secondary">{{ t('sales.status_voided') }}</span>
                                 <span v-else class="badge text-bg-success">{{ t('sales.status_posted') }}</span>
@@ -96,6 +96,7 @@ import { formatBatchLabel } from '@/composables/usePosBatches';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { useQuantity } from '@/composables/useQuantity';
+import { formatHumanDateTime } from '@/utils/dates';
 import { Head, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
@@ -114,12 +115,7 @@ function toggle(id) {
 }
 
 function batchLineLabel(batch) {
-    const label = formatBatchLabel(batch);
-    if (batch.expiry_date) {
-        return `${label} (${t('catalog.sale_line_expiry', { date: batch.expiry_date })})`;
-    }
-
-    return label;
+    return formatBatchLabel(batch);
 }
 
 function lineCostProfitLabel(line) {

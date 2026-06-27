@@ -253,7 +253,7 @@
                         <tr v-for="b in batches" :key="b.id" :class="{ 'table-warning': b.is_expired }">
                             <td>{{ b.batch_no }}</td>
                             <td>
-                                <span>{{ b.expiry_date || '—' }}</span>
+                                <span>{{ formatHumanDate(b.expiry_date) }}</span>
                                 <span v-if="b.is_expired" class="badge text-bg-danger ms-1">{{ t('catalog.batch_expired') }}</span>
                             </td>
                             <td class="small">{{ batchShelfLabel(b) }}</td>
@@ -329,6 +329,7 @@ import { useMoney } from '@/composables/useMoney';
 import { useQuantity } from '@/composables/useQuantity';
 import { defaultSellUnit, unitLabel, unitPurchasePrice, unitSalePrice } from '@/composables/useProductUnits';
 import { usePermissions } from '@/composables/usePermissions';
+import { formatHumanDate } from '@/utils/dates';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, reactive, ref, watch } from 'vue';
 

@@ -50,19 +50,12 @@
 <script setup>
 import PlatformShellLayout from '@/Layouts/PlatformShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
+import { formatHumanDateTime as formatWhen } from '@/utils/dates';
 import { Head, Link, router } from '@inertiajs/vue3';
 
 defineProps({ announcements: { type: Array, required: true } });
 
 const { t } = useLocale();
-
-function formatWhen(iso) {
-    if (!iso) {
-        return '—';
-    }
-
-    return String(iso).slice(0, 16).replace('T', ' ');
-}
 
 function destroy(announcement) {
     if (!confirm(t('platform.announcement_delete_confirm', { title: announcement.title }))) {

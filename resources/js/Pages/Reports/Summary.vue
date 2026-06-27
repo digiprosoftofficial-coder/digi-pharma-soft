@@ -51,7 +51,7 @@
                 <tbody>
                     <tr v-for="s in salesInRange.data" :key="s.id">
                         <td>{{ s.invoice_no }}</td>
-                        <td>{{ s.sold_at }}</td>
+                        <td>{{ formatHumanDateTime(s.sold_at) }}</td>
                         <td class="text-end">{{ formatMoney(s.total) }}</td>
                         <td class="text-end">{{ formatMoney(s.due) }}</td>
                         <td>{{ s.status }}</td>
@@ -77,6 +77,7 @@
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
+import { formatHumanDateTime } from '@/utils/dates';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, reactive } from 'vue';
 

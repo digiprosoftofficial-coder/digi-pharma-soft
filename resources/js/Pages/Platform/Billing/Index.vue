@@ -264,6 +264,7 @@ import ConfirmModal from '@/Components/ConfirmModal.vue';
 import PlatformShellLayout from '@/Layouts/PlatformShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
+import { formatHumanDate as formatDate } from '@/utils/dates';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { onMounted, onUnmounted, ref } from 'vue';
 
@@ -369,10 +370,6 @@ onUnmounted(() => {
     window.removeEventListener('scroll', onViewportChange, true);
     window.removeEventListener('resize', onViewportChange);
 });
-
-function formatDate(iso) {
-    return iso ? String(iso).slice(0, 10) : '—';
-}
 
 function statusBadgeClass(status) {
     const map = {

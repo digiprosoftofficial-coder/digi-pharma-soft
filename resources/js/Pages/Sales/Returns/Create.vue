@@ -7,7 +7,7 @@
                 <label class="form-label">Link original sale (optional)</label>
                 <select v-model="form.sale_id" class="form-select">
                     <option :value="null">— Walk-in return —</option>
-                    <option v-for="s in sales" :key="s.id" :value="s.id">{{ s.invoice_no }} ({{ s.sold_at }})</option>
+                    <option v-for="s in sales" :key="s.id" :value="s.id">{{ s.invoice_no }} ({{ formatHumanDateTime(s.sold_at) }})</option>
                 </select>
             </div>
             <div class="mb-2">
@@ -117,6 +117,7 @@ import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { useQuantity } from '@/composables/useQuantity';
 import { defaultSellUnit, unitSalePrice } from '@/composables/useProductUnits';
+import { formatHumanDateTime } from '@/utils/dates';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 

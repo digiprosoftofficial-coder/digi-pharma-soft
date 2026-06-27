@@ -74,7 +74,7 @@
                                 <tr v-for="b in section.items" :key="b.id">
                                     <td>{{ b.product?.name }}</td>
                                     <td>{{ b.batch_no }}</td>
-                                    <td :class="section.dateClass">{{ b.expiry_date }}</td>
+                                    <td :class="section.dateClass">{{ formatHumanDate(b.expiry_date) }}</td>
                                     <td class="text-end">{{ formatQty(b.quantity_on_hand) }}</td>
                                 </tr>
                                 <tr v-if="!section.items.length">
@@ -104,7 +104,7 @@
                         <td>{{ b.product?.name }}</td>
                         <td>{{ b.batch_no }}</td>
                         <td class="small">{{ shelfLabel(b) }}</td>
-                        <td>{{ b.expiry_date }}</td>
+                        <td>{{ formatHumanDate(b.expiry_date) }}</td>
                         <td class="text-end">{{ formatQty(b.quantity_on_hand) }}</td>
                     </tr>
                 </tbody>
@@ -116,6 +116,7 @@
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { useQuantity } from '@/composables/useQuantity';
+import { formatHumanDate } from '@/utils/dates';
 import { Head } from '@inertiajs/vue3';
 import { computed } from 'vue';
 

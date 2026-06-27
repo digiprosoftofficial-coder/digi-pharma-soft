@@ -66,6 +66,7 @@ import { useMoney } from '@/composables/useMoney';
 import PaginationLinks from '@/Pages/Reports/Partials/PaginationLinks.vue';
 import SmartReportFilters from '@/Pages/Reports/Partials/SmartReportFilters.vue';
 import SummaryCards from '@/Pages/Reports/Partials/SummaryCards.vue';
+import { formatHumanDateTime as formatDate } from '@/utils/dates';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed, h } from 'vue';
 
@@ -106,7 +107,4 @@ const BreakdownCard = {
     },
 };
 
-function formatDate(value) {
-    return value ? String(value).slice(0, 16).replace('T', ' ') : '—';
-}
 </script>

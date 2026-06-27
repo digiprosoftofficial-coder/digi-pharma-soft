@@ -128,6 +128,7 @@
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
+import { formatHumanDateTime as formatDate } from '@/utils/dates';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { reactive, watch } from 'vue';
 
@@ -167,11 +168,6 @@ watch(
     () => ensurePaymentForms(),
     { deep: true },
 );
-
-function formatDate(value) {
-    if (!value) return '—';
-    return String(value).slice(0, 10);
-}
 
 function paymentMethodLabel(method) {
     return props.paymentMethods.find((m) => m.value === method)?.label ?? method;

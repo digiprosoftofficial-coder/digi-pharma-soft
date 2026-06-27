@@ -49,7 +49,7 @@
                                 {{ batch.product?.name }}
                                 <span class="d-block small text-muted">{{ batch.branch?.name ?? '—' }} | Batch {{ batch.batch_no }}</span>
                             </span>
-                            <span class="text-danger fw-medium">{{ batch.expiry_date }}</span>
+                            <span class="text-danger fw-medium">{{ formatHumanDate(batch.expiry_date) }}</span>
                         </li>
                         <li v-if="!expiryRisk.length" class="list-group-item small text-muted">No batches expiring within 30 days.</li>
                     </ul>
@@ -82,7 +82,7 @@
                             <td>{{ batch.storage_location?.name ?? '—' }}</td>
                             <td class="text-end">{{ formatNumber(batch.quantity_on_hand) }}</td>
                             <td class="text-end">{{ formatMoney(Number(batch.quantity_on_hand || 0) * Number(batch.purchase_unit_cost || 0)) }}</td>
-                            <td>{{ batch.expiry_date ?? '—' }}</td>
+                            <td>{{ formatHumanDate(batch.expiry_date) }}</td>
                         </tr>
                         <tr v-if="!batches.data?.length">
                             <td colspan="7" class="text-center text-muted py-4">No stock found.</td>
@@ -101,6 +101,7 @@ import { useMoney } from '@/composables/useMoney';
 import PaginationLinks from '@/Pages/Reports/Partials/PaginationLinks.vue';
 import ReportControls from '@/Pages/Reports/Partials/ReportControls.vue';
 import SummaryCards from '@/Pages/Reports/Partials/SummaryCards.vue';
+import { formatHumanDate } from '@/utils/dates';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 

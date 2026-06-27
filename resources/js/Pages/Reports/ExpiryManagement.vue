@@ -39,7 +39,7 @@
                             <td>{{ row.branch?.name ?? '—' }}</td>
                             <td>{{ row.storage_location?.name ?? '—' }}</td>
                             <td class="text-end">{{ number(row.quantity_on_hand) }}</td>
-                            <td>{{ row.expiry_date ?? '—' }}</td>
+                            <td>{{ formatHumanDate(row.expiry_date) }}</td>
                         </tr>
                         <tr v-if="!rows.data?.length">
                             <td colspan="6" class="text-center text-muted py-4">No expiry records found.</td>
@@ -57,6 +57,7 @@ import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import PaginationLinks from '@/Pages/Reports/Partials/PaginationLinks.vue';
 import SmartReportFilters from '@/Pages/Reports/Partials/SmartReportFilters.vue';
 import SummaryCards from '@/Pages/Reports/Partials/SummaryCards.vue';
+import { formatHumanDate } from '@/utils/dates';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
