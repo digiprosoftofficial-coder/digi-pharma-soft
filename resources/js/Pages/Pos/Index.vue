@@ -20,16 +20,21 @@
                 <div class="card card-body">
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
                         <label class="form-label mb-0">{{ t('sales.pos_search_product') }}</label>
-                        <button
-                            v-if="barcodeCameraScanEnabled"
-                            type="button"
-                            class="btn btn-sm"
-                            :class="cameraScanActive ? 'btn-outline-danger' : 'btn-outline-primary'"
-                            :disabled="cameraScanStarting"
-                            @click="cameraScanActive ? stopBarcodeScanner() : startBarcodeScanner()"
-                        >
-                            {{ cameraScanActive ? t('sales.pos_camera_scan_stop') : t('sales.pos_camera_scan_start') }}
-                        </button>
+                        <div class="pos-product-search-actions d-flex flex-wrap gap-2">
+                            <a href="/products" class="btn btn-sm btn-outline-secondary pos-all-products-button">
+                                {{ t('tenant_nav.product_list', 'All Products') }}
+                            </a>
+                            <button
+                                v-if="barcodeCameraScanEnabled"
+                                type="button"
+                                class="btn btn-sm"
+                                :class="cameraScanActive ? 'btn-outline-danger' : 'btn-outline-primary'"
+                                :disabled="cameraScanStarting"
+                                @click="cameraScanActive ? stopBarcodeScanner() : startBarcodeScanner()"
+                            >
+                                {{ cameraScanActive ? t('sales.pos_camera_scan_stop') : t('sales.pos_camera_scan_start') }}
+                            </button>
+                        </div>
                     </div>
                     <input
                         ref="searchInput"
@@ -118,7 +123,102 @@
                 <div class="card card-body pos-cart-card">
                     <h2 class="h6">{{ t('sales.cart') }}</h2>
                     <p v-if="!cart.length" class="text-muted small">{{ t('sales.cart_empty_hint') }}</p>
-                    <div v-else class="pos-cart-table table-responsive">
+                    <template v-else>
+                    <div class="pos-cart-cards d-lg-none">
+                        <div v-for="(line, idx) in cart" :key="idx" class="pos-cart-line-card border rounded bg-white p-2 mb-2">
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                <div class="min-w-0">
+                                    <div class="fw-semibold text-truncate">{{ line.name }}</div>
+                                    <div class="small text-muted">{{ lineStockHint(line) }}</div>
+                                    <div v-if="linePriceSourceHint(line)" class="small" :class="line.uses_markup_pricing ? 'text-primary' : 'text-muted'">
+                                        {{ linePriceSourceHint(line) }}
+                                    </div>
+                                    <div v-if="linePricingHint(line)" class="small text-muted">{{ linePricingHint(line) }}</div>
+                                    <div v-if="selectedBatch(line)?.is_expired" class="small text-danger">
+                                        {{ t('catalog.pos_batch_expired') }}
+                                    </div>
+                                    <div v-if="lineMaySplit(line)" class="small text-warning">{{ t('catalog.pos_may_split_batches') }}</div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger pos-cart-line-card__remove" @click="cart.splice(idx, 1)">
+                                    ×
+                                </button>
+                            </div>
+
+                            <div class="mb-2">
+                                <label class="form-label small mb-1">{{ line.batches?.length > 1 ? 'Batch' : t('catalog.batch') }}</label>
+                                <select
+                                    v-if="line.batches?.length > 1"
+                                    v-model.number="line.product_batch_id"
+                                    class="form-select form-select-sm"
+                                    @change="onBatchChange(line)"
+                                >
+                                    <option v-for="b in line.batches" :key="b.id" :value="b.id">
+                                        {{ formatBatchLabel(b) }}
+                                    </option>
+                                </select>
+                                <div v-else class="form-control form-control-sm bg-light text-muted">
+                                    {{ lineBatchLabel(line) }}
+                                </div>
+                            </div>
+
+                            <div class="pos-cart-line-card__fields">
+                                <div>
+                                    <label class="form-label small mb-1">{{ t('catalog.sell_unit') }}</label>
+                                    <select v-model="line.sell_unit" class="form-select form-select-sm" @change="onUnitChange(line)">
+                                        <option v-for="u in line.unit_options" :key="u.sell_unit" :value="u.sell_unit">
+                                            {{ unitLabel(u.sell_unit) }}
+                                        </option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label small mb-1">{{ t('sales.qty') }}</label>
+                                    <input
+                                        v-model.number="line.quantity"
+                                        type="number"
+                                        min="1"
+                                        step="1"
+                                        class="form-control form-control-sm"
+                                        @change="normalizeLineQuantity(line)"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="form-label small mb-1">{{ t('sales.unit_price') }}</label>
+                                    <input v-model.number="line.unit_price" type="number" min="0" step="0.0001" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center border-top mt-2 pt-2">
+                                <span class="small text-muted">{{ t('sales.line_total') }}</span>
+                                <strong>{{ formatMoney(Number(line.quantity || 0) * Number(line.unit_price || 0)) }}</strong>
+                            </div>
+                        </div>
+
+                        <div class="pos-cart-mobile-summary border rounded bg-light p-2 mt-2">
+                            <div class="d-flex justify-content-between gap-2">
+                                <span>{{ t('sales.subtotal') }}</span>
+                                <strong>{{ formatMoney(cartSubtotal) }}</strong>
+                            </div>
+                            <div v-if="cartDiscountAmount > 0" class="d-flex justify-content-between gap-2 text-danger">
+                                <span>{{ t('sales.pos_discount') }} ({{ cartDiscountPercent }}%)</span>
+                                <strong>−{{ formatMoney(cartDiscountAmount) }}</strong>
+                            </div>
+                            <div v-if="cartDiscountAmount > 0 || roundAdjustment !== 0" class="d-flex justify-content-between gap-2">
+                                <span>{{ t('sales.total') }}</span>
+                                <strong>{{ formatMoney(totalAfterDiscount) }}</strong>
+                            </div>
+                            <div v-if="roundAdjustment !== 0" class="d-flex justify-content-between gap-2">
+                                <span>{{ t('sales.round_adjustment') }}</span>
+                                <strong :class="roundAdjustment > 0 ? 'text-success' : 'text-danger'">
+                                    {{ roundAdjustment > 0 ? '+' : '' }}{{ formatMoney(roundAdjustment) }}
+                                </strong>
+                            </div>
+                            <div v-if="roundAdjustment !== 0" class="d-flex justify-content-between gap-2 border-top mt-1 pt-1 text-primary">
+                                <span class="fw-bold">{{ t('sales.payable_amount') }}</span>
+                                <strong>{{ formatMoney(payableAmount) }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pos-cart-table table-responsive d-none d-lg-block">
                         <table class="table table-sm align-middle">
                             <thead class="table-light">
                                 <tr>
@@ -213,6 +313,7 @@
                             </tfoot>
                         </table>
                     </div>
+                    </template>
                     <form class="mt-3 pos-checkout-form" @submit.prevent="submitSale">
                         <div class="mb-2">
                             <label class="form-label">{{ t('sales.pos_customer') }}</label>
@@ -947,8 +1048,36 @@ function submitSale() {
     gap: 0.75rem;
 }
 
+.pos-product-search-actions {
+    justify-content: flex-end;
+}
+
 .pos-cart-table table {
     min-width: 760px;
+}
+
+.pos-cart-line-card {
+    overflow: hidden;
+}
+
+.pos-cart-line-card__remove {
+    flex: 0 0 auto;
+    min-width: 2.15rem;
+}
+
+.pos-cart-line-card__fields {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.pos-cart-line-card__fields .form-control,
+.pos-cart-line-card__fields .form-select {
+    min-width: 0;
+}
+
+.pos-cart-mobile-summary {
+    font-size: 0.92rem;
 }
 
 .pos-product-card {
@@ -1037,9 +1166,26 @@ function submitSale() {
         margin-left: -0.75rem;
     }
 
+    .pos-cart-line-card__fields {
+        grid-template-columns: 1fr 0.85fr 1fr;
+        gap: 0.4rem;
+    }
+
+    .pos-cart-line-card__fields .form-label {
+        font-size: 0.72rem;
+    }
+
     .pos-product-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 0.5rem;
+    }
+
+    .pos-product-search-actions {
+        width: 100%;
+    }
+
+    .pos-product-search-actions .btn {
+        flex: 1 1 auto;
     }
 
     .pos-product-card {
