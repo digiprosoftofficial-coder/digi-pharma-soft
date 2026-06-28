@@ -1,31 +1,31 @@
 <template>
-    <TenantShellLayout page-title="Supplier">
-        <Head :title="supplier ? 'Edit supplier' : 'New supplier'" />
+    <TenantShellLayout :page-title="t('purchases.supplier')">
+        <Head :title="supplier ? t('suppliers.edit_supplier') : t('suppliers.new_supplier')" />
         <div v-if="formError" class="alert alert-danger small">{{ formError }}</div>
-        <h1 class="h4 mb-3">{{ supplier ? 'Edit supplier' : 'New supplier' }}</h1>
+        <h1 class="h4 mb-3">{{ supplier ? t('suppliers.edit_supplier') : t('suppliers.new_supplier') }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="mb-2">
-                <label class="form-label">Name</label>
+                <label class="form-label">{{ t('common.name') }}</label>
                 <input v-model="form.name" class="form-control" required />
             </div>
             <div class="mb-2">
-                <label class="form-label">Phone</label>
+                <label class="form-label">{{ t('customers.phone_label') }}</label>
                 <input v-model="form.phone" class="form-control" />
             </div>
             <div class="mb-2">
-                <label class="form-label">Email</label>
+                <label class="form-label">{{ t('customers.email') }}</label>
                 <input v-model="form.email" type="email" class="form-control" />
             </div>
             <div class="d-flex flex-wrap gap-2 align-items-center">
-                <button type="submit" class="btn btn-primary" :disabled="form.processing">Save</button>
-                <Link href="/suppliers" class="btn btn-link">Cancel</Link>
+                <button type="submit" class="btn btn-primary" :disabled="form.processing">{{ t('common.save') }}</button>
+                <Link href="/suppliers" class="btn btn-link">{{ t('common.cancel') }}</Link>
                 <button
                     v-if="supplier"
                     type="button"
                     class="btn btn-outline-danger ms-auto"
                     @click="remove"
                 >
-                    Delete
+                    {{ t('common.delete') }}
                 </button>
             </div>
         </form>

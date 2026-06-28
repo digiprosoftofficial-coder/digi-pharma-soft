@@ -1,21 +1,21 @@
 <template>
-    <TenantShellLayout page-title="Categories">
-        <Head title="Categories" />
+    <TenantShellLayout :page-title="t('tenant_nav.categories')">
+        <Head :title="t('tenant_nav.categories')" />
         <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
         <div v-if="$page.props.errors?.category" class="alert alert-danger small">
             {{ $page.props.errors.category }}
         </div>
         <div class="d-flex justify-content-between mb-3">
-            <h1 class="h4 mb-0">Categories</h1>
-            <Link href="/categories/create" class="btn btn-primary btn-sm">Add category</Link>
+            <h1 class="h4 mb-0">{{ t('tenant_nav.categories') }}</h1>
+            <Link href="/categories/create" class="btn btn-primary btn-sm">{{ t('catalog.add_category') }}</Link>
         </div>
         <div class="card border-0 shadow-sm table-responsive">
             <table class="table table-sm mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>Name</th>
-                        <th>Slug</th>
-                        <th class="text-end">Products</th>
+                        <th>{{ t('common.name') }}</th>
+                        <th>{{ t('common.slug') }}</th>
+                        <th class="text-end">{{ t('tenant_nav.products') }}</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -35,7 +35,7 @@
                             <span v-else class="text-muted">0</span>
                         </td>
                         <td class="text-end">
-                            <Link :href="`/categories/${c.id}/edit`" class="btn btn-sm btn-outline-secondary me-1">Edit</Link>
+                            <Link :href="`/categories/${c.id}/edit`" class="btn btn-sm btn-outline-secondary me-1">{{ t('common.edit') }}</Link>
                             <button
                                 type="button"
                                 class="btn btn-sm btn-outline-danger"
@@ -43,7 +43,7 @@
                                 :title="c.products_count > 0 ? t('catalog.category_delete_blocked') : ''"
                                 @click="remove(c)"
                             >
-                                Delete
+                                {{ t('common.delete') }}
                             </button>
                             <div v-if="c.products_count > 0" class="small text-muted mt-1">
                                 {{ t('catalog.category_delete_blocked') }}
@@ -51,7 +51,7 @@
                         </td>
                     </tr>
                     <tr v-if="!categories.data?.length">
-                        <td colspan="4" class="text-muted text-center py-3">No categories yet.</td>
+                        <td colspan="4" class="text-muted text-center py-3">{{ t('catalog.no_categories') }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -70,7 +70,7 @@ const { t } = useLocale();
 
 function remove(category) {
     if (category.products_count > 0) return;
-    if (!window.confirm(`Delete category "${category.name}"?`)) return;
+    if (!window.confirm(t('catalog.category_delete_confirm', { name: category.name }))) return;
     router.delete(`/categories/${category.id}`);
 }
 </script>

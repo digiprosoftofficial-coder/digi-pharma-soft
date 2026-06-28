@@ -1,12 +1,12 @@
 <template>
-    <TenantShellLayout page-title="Customer and supplier dues">
-        <Head title="Customer and supplier dues" />
+    <TenantShellLayout :page-title="t('reports.quick_dues_title')">
+        <Head :title="t('reports.quick_dues_title')" />
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
-                <h1 class="h4 mb-0">Customer and supplier dues</h1>
-                <p class="small text-muted mb-0">Receivables and payables for tenant-wide or selected branch scope.</p>
+                <h1 class="h4 mb-0">{{ t('reports.quick_dues_title') }}</h1>
+                <p class="small text-muted mb-0">{{ t('reports.quick_dues_help') }}</p>
             </div>
-            <Link href="/reports" class="btn btn-sm btn-outline-secondary">Reports hub</Link>
+            <Link href="/reports" class="btn btn-sm btn-outline-secondary">{{ t('reports.hub') }}</Link>
         </div>
 
         <ReportControls
@@ -22,10 +22,10 @@
 
         <div class="row g-3">
             <div class="col-xl-6">
-                <DueTable title="Customer receivables" empty-text="No customer dues found." :rows="customers" />
+                <DueTable :title="t('reports.customer_receivables')" :empty-text="t('reports.no_customer_dues')" :rows="customers" />
             </div>
             <div class="col-xl-6">
-                <DueTable title="Supplier payables" empty-text="No supplier dues found." :rows="suppliers" />
+                <DueTable :title="t('reports.supplier_payables')" :empty-text="t('reports.no_supplier_dues')" :rows="suppliers" />
             </div>
         </div>
     </TenantShellLayout>
@@ -33,6 +33,7 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import ReportControls from '@/Pages/Reports/Partials/ReportControls.vue';
 import SummaryCards from '@/Pages/Reports/Partials/SummaryCards.vue';
@@ -50,12 +51,13 @@ const props = defineProps({
 });
 
 const { formatMoney } = useMoney();
+const { t } = useLocale();
 
 const summaryCards = computed(() => [
-    { label: 'Customer due', value: props.summary.customerDue, money: true },
-    { label: 'Supplier due', value: props.summary.supplierDue, money: true },
-    { label: 'Customers', value: props.summary.customerCount, money: false },
-    { label: 'Suppliers', value: props.summary.supplierCount, money: false },
+    { label: t('reports.customer_due'), value: props.summary.customerDue, money: true },
+    { label: t('reports.supplier_due'), value: props.summary.supplierDue, money: true },
+    { label: t('reports.customers'), value: props.summary.customerCount, money: false },
+    { label: t('reports.suppliers'), value: props.summary.supplierCount, money: false },
 ]);
 
 const DueTable = {
@@ -72,10 +74,10 @@ const DueTable = {
                     h('table', { class: 'table table-sm mb-0' }, [
                         h('thead', { class: 'table-light' }, [
                             h('tr', [
-                                h('th', 'Name'),
-                                h('th', 'Phone'),
-                                h('th', 'Scope'),
-                                h('th', { class: 'text-end' }, 'Due'),
+                                h('th', t('common.name')),
+                                h('th', t('customers.phone_label')),
+                                h('th', t('reports.scope')),
+                                h('th', { class: 'text-end' }, t('sales.due')),
                             ]),
                         ]),
                         h('tbody', [

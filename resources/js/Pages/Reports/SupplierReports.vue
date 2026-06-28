@@ -1,12 +1,12 @@
 <template>
-    <TenantShellLayout page-title="Supplier Reports">
-        <Head title="Supplier Reports" />
+    <TenantShellLayout :page-title="t('reports.quick_supplier_title')">
+        <Head :title="t('reports.quick_supplier_title')" />
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
-                <h1 class="h4 mb-0">Supplier Reports</h1>
-                <p class="small text-muted mb-0">Supplier purchase, paid, due, return credit, and exportable performance view.</p>
+                <h1 class="h4 mb-0">{{ t('reports.quick_supplier_title') }}</h1>
+                <p class="small text-muted mb-0">{{ t('reports.quick_supplier_help') }}</p>
             </div>
-            <Link href="/reports" class="btn btn-sm btn-outline-secondary">Report Hub</Link>
+            <Link href="/reports" class="btn btn-sm btn-outline-secondary">{{ t('reports.hub') }}</Link>
         </div>
         <SmartReportFilters
             :filters="filters"
@@ -24,13 +24,13 @@
                 <table class="table table-sm mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Supplier</th>
-                            <th>Phone</th>
-                            <th class="text-end">Purchases</th>
-                            <th class="text-end">Total</th>
-                            <th class="text-end">Paid</th>
-                            <th class="text-end">Due</th>
-                            <th class="text-end">Return credit</th>
+                            <th>{{ t('purchases.supplier') }}</th>
+                            <th>{{ t('customers.phone_label') }}</th>
+                            <th class="text-end">{{ t('reports.purchases') }}</th>
+                            <th class="text-end">{{ t('sales.total') }}</th>
+                            <th class="text-end">{{ t('sales.paid') }}</th>
+                            <th class="text-end">{{ t('sales.due') }}</th>
+                            <th class="text-end">{{ t('reports.return_credit') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -44,7 +44,7 @@
                             <td class="text-end">{{ formatMoney(row.return_credit) }}</td>
                         </tr>
                         <tr v-if="!rows.data?.length">
-                            <td colspan="7" class="text-center text-muted py-4">No supplier records found.</td>
+                            <td colspan="7" class="text-center text-muted py-4">{{ t('reports.no_supplier_records') }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -56,6 +56,7 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import PaginationLinks from '@/Pages/Reports/Partials/PaginationLinks.vue';
 import SmartReportFilters from '@/Pages/Reports/Partials/SmartReportFilters.vue';
@@ -73,11 +74,12 @@ const props = defineProps({
 });
 
 const { formatMoney } = useMoney();
+const { t } = useLocale();
 
 const summaryCards = computed(() => [
-    { label: 'Suppliers', value: props.summary.supplierCount, money: false },
-    { label: 'Purchase total', value: props.summary.purchaseTotal, money: true },
-    { label: 'Paid', value: props.summary.paid, money: true },
-    { label: 'Due', value: props.summary.due, money: true },
+    { label: t('reports.suppliers'), value: props.summary.supplierCount, money: false },
+    { label: t('reports.purchase_total'), value: props.summary.purchaseTotal, money: true },
+    { label: t('sales.paid'), value: props.summary.paid, money: true },
+    { label: t('sales.due'), value: props.summary.due, money: true },
 ]);
 </script>

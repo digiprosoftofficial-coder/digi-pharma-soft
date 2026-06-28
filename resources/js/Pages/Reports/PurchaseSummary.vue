@@ -1,12 +1,12 @@
 <template>
-    <TenantShellLayout page-title="Purchase summary">
-        <Head title="Purchase summary" />
+    <TenantShellLayout :page-title="t('reports.quick_purchase_title')">
+        <Head :title="t('reports.quick_purchase_title')" />
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
-                <h1 class="h4 mb-0">Purchase summary</h1>
-                <p class="small text-muted mb-0">Branch-scoped purchase totals, supplier dues, and return credits.</p>
+                <h1 class="h4 mb-0">{{ t('reports.quick_purchase_title') }}</h1>
+                <p class="small text-muted mb-0">{{ t('reports.quick_purchase_help') }}</p>
             </div>
-            <Link href="/reports" class="btn btn-sm btn-outline-secondary">Reports hub</Link>
+            <Link href="/reports" class="btn btn-sm btn-outline-secondary">{{ t('reports.hub') }}</Link>
         </div>
 
         <ReportControls
@@ -24,19 +24,19 @@
             <div class="col-xl-8">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white">
-                        <h2 class="h6 mb-0">Purchases in range</h2>
+                        <h2 class="h6 mb-0">{{ t('reports.purchases_in_range') }}</h2>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-sm mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Invoice</th>
-                                    <th>Date</th>
-                                    <th>Branch</th>
-                                    <th>Supplier</th>
-                                    <th class="text-end">Total ({{ currencyCode() }})</th>
-                                    <th class="text-end">Due ({{ currencyCode() }})</th>
-                                    <th>Status</th>
+                                    <th>{{ t('purchases.invoice') }}</th>
+                                    <th>{{ t('purchases.date') }}</th>
+                                    <th>{{ t('branches.title') }}</th>
+                                    <th>{{ t('purchases.supplier') }}</th>
+                                    <th class="text-end">{{ t('purchases.total') }} ({{ currencyCode() }})</th>
+                                    <th class="text-end">{{ t('purchases.due') }} ({{ currencyCode() }})</th>
+                                    <th>{{ t('sales.status') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -56,7 +56,7 @@
                                     <td>{{ purchase.status }}</td>
                                 </tr>
                                 <tr v-if="!purchases.data?.length">
-                                    <td colspan="7" class="text-center text-muted py-4">No purchases found for this range.</td>
+                                    <td colspan="7" class="text-center text-muted py-4">{{ t('reports.no_purchases_found') }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -67,7 +67,7 @@
             <div class="col-xl-4">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white">
-                        <h2 class="h6 mb-0">Top suppliers</h2>
+                        <h2 class="h6 mb-0">{{ t('reports.top_suppliers') }}</h2>
                     </div>
                     <ul class="list-group list-group-flush">
                         <li v-for="supplier in topSuppliers" :key="supplier.supplier_id" class="list-group-item">
@@ -75,9 +75,9 @@
                                 <span>{{ supplier.supplier_name }}</span>
                                 <strong>{{ formatMoney(supplier.purchase_total) }}</strong>
                             </div>
-                            <div class="small text-muted text-end">Due {{ formatMoney(supplier.due_total) }}</div>
+                            <div class="small text-muted text-end">{{ t('sales.due') }} {{ formatMoney(supplier.due_total) }}</div>
                         </li>
-                        <li v-if="!topSuppliers.length" class="list-group-item text-muted small">No supplier purchases found.</li>
+                        <li v-if="!topSuppliers.length" class="list-group-item text-muted small">{{ t('reports.no_supplier_purchases') }}</li>
                     </ul>
                 </div>
             </div>
@@ -87,6 +87,7 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import PaginationLinks from '@/Pages/Reports/Partials/PaginationLinks.vue';
 import ReportControls from '@/Pages/Reports/Partials/ReportControls.vue';
@@ -105,14 +106,15 @@ const props = defineProps({
 });
 
 const { formatMoney, currencyCode } = useMoney();
+const { t } = useLocale();
 
 const summaryCards = computed(() => [
-    { label: 'Purchase total', value: props.summary.purchaseTotal, money: true },
-    { label: 'Return credit', value: props.summary.returnCredit, money: true },
-    { label: 'Net purchase', value: props.summary.netPurchase, money: true },
-    { label: 'Due', value: props.summary.due, money: true },
-    { label: 'Paid', value: props.summary.paid, money: true },
-    { label: 'Purchases', value: props.summary.purchaseCount, money: false },
-    { label: 'Returns', value: props.summary.returnCount, money: false },
+    { label: t('reports.purchase_total'), value: props.summary.purchaseTotal, money: true },
+    { label: t('reports.return_credit'), value: props.summary.returnCredit, money: true },
+    { label: t('reports.net_purchase'), value: props.summary.netPurchase, money: true },
+    { label: t('purchases.due'), value: props.summary.due, money: true },
+    { label: t('purchases.paid'), value: props.summary.paid, money: true },
+    { label: t('reports.purchases'), value: props.summary.purchaseCount, money: false },
+    { label: t('reports.returns'), value: props.summary.returnCount, money: false },
 ]);
 </script>

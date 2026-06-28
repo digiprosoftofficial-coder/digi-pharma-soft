@@ -1,12 +1,12 @@
 <template>
-    <TenantShellLayout page-title="Financial Reports">
-        <Head title="Financial Reports" />
+    <TenantShellLayout :page-title="t('reports.quick_finance_title')">
+        <Head :title="t('reports.quick_finance_title')" />
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
-                <h1 class="h4 mb-0">Financial Reports</h1>
-                <p class="small text-muted mb-0">Ledger entries, cash in/out, payment method breakdown, and account movement.</p>
+                <h1 class="h4 mb-0">{{ t('reports.quick_finance_title') }}</h1>
+                <p class="small text-muted mb-0">{{ t('reports.quick_finance_help') }}</p>
             </div>
-            <Link href="/reports" class="btn btn-sm btn-outline-secondary">Report Hub</Link>
+            <Link href="/reports" class="btn btn-sm btn-outline-secondary">{{ t('reports.hub') }}</Link>
         </div>
         <SmartReportFilters
             :filters="filters"
@@ -21,10 +21,10 @@
         <SummaryCards :cards="summaryCards" />
         <div class="row g-3 mb-3">
             <div class="col-md-6">
-                <BreakdownCard title="Sales payments" :rows="paymentBreakdown.sales" />
+                <BreakdownCard :title="t('reports.sales_payments')" :rows="paymentBreakdown.sales" />
             </div>
             <div class="col-md-6">
-                <BreakdownCard title="Purchase payments" :rows="paymentBreakdown.purchases" />
+                <BreakdownCard :title="t('reports.purchase_payments')" :rows="paymentBreakdown.purchases" />
             </div>
         </div>
         <div class="card border-0 shadow-sm">
@@ -32,12 +32,12 @@
                 <table class="table table-sm mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Date</th>
-                            <th>Account</th>
-                            <th>Type</th>
-                            <th>Direction</th>
-                            <th class="text-end">Amount</th>
-                            <th>Memo</th>
+                            <th>{{ t('sales.date') }}</th>
+                            <th>{{ t('reports.account') }}</th>
+                            <th>{{ t('catalog.product_type') }}</th>
+                            <th>{{ t('reports.direction') }}</th>
+                            <th class="text-end">{{ t('sales.amount') }}</th>
+                            <th>{{ t('reports.memo') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -50,7 +50,7 @@
                             <td>{{ entry.memo }}</td>
                         </tr>
                         <tr v-if="!entries.data?.length">
-                            <td colspan="6" class="text-center text-muted py-4">No ledger entries found.</td>
+                            <td colspan="6" class="text-center text-muted py-4">{{ t('reports.no_ledger_entries') }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -62,6 +62,7 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import PaginationLinks from '@/Pages/Reports/Partials/PaginationLinks.vue';
 import SmartReportFilters from '@/Pages/Reports/Partials/SmartReportFilters.vue';
@@ -81,14 +82,15 @@ const props = defineProps({
 });
 
 const { formatMoney } = useMoney();
+const { t } = useLocale();
 
 const summaryCards = computed(() => [
-    { label: 'Credits', value: props.summary.credits, money: true },
-    { label: 'Debits', value: props.summary.debits, money: true },
-    { label: 'Net', value: props.summary.net, money: true },
-    { label: 'Entries', value: props.summary.entryCount, money: false },
-    { label: 'Sales payments', value: props.summary.salesPayments, money: true },
-    { label: 'Purchase payments', value: props.summary.purchasePayments, money: true },
+    { label: t('reports.credits'), value: props.summary.credits, money: true },
+    { label: t('reports.debits'), value: props.summary.debits, money: true },
+    { label: t('reports.net'), value: props.summary.net, money: true },
+    { label: t('reports.entries'), value: props.summary.entryCount, money: false },
+    { label: t('reports.sales_payments'), value: props.summary.salesPayments, money: true },
+    { label: t('reports.purchase_payments'), value: props.summary.purchasePayments, money: true },
 ]);
 
 const BreakdownCard = {
@@ -98,10 +100,10 @@ const BreakdownCard = {
             h('div', { class: 'card-header bg-white' }, h('h2', { class: 'h6 mb-0' }, cardProps.title)),
             h('ul', { class: 'list-group list-group-flush' }, [
                 ...(cardProps.rows || []).map((row) => h('li', { class: 'list-group-item d-flex justify-content-between' }, [
-                    h('span', row.method || 'Unknown'),
+                    h('span', row.method || t('reports.unknown')),
                     h('strong', formatMoney(row.amount)),
                 ])),
-                (cardProps.rows || []).length ? null : h('li', { class: 'list-group-item text-muted small' }, 'No payments found.'),
+                (cardProps.rows || []).length ? null : h('li', { class: 'list-group-item text-muted small' }, t('reports.no_payments_found')),
             ]),
         ]);
     },

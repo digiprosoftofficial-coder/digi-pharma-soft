@@ -1,71 +1,71 @@
 <template>
-    <TenantShellLayout :page-title="existing ? 'Edit product' : 'New product'">
-        <Head :title="existing ? 'Edit product' : 'New product'" />
-        <h1 class="h4 mb-4 d-lg-none">{{ existing ? 'Edit product' : 'New product' }}</h1>
+    <TenantShellLayout :page-title="existing ? t('catalog.edit_product') : t('catalog.new_product')">
+        <Head :title="existing ? t('catalog.edit_product') : t('catalog.new_product')" />
+        <h1 class="h4 mb-4 d-lg-none">{{ existing ? t('catalog.edit_product') : t('catalog.new_product') }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label class="form-label">Name</label>
+                    <label class="form-label">{{ t('catalog.product_name') }}</label>
                     <input v-model="form.name" type="text" class="form-control" required />
                     <div v-if="form.errors.name" class="text-danger small">{{ form.errors.name }}</div>
                 </div>
                 <div v-if="advancedCatalogEnabled" class="col-md-4">
-                    <label class="form-label">Generic name <span class="text-muted fw-normal">(optional)</span></label>
-                    <input v-model="form.generic_name" type="text" class="form-control" placeholder="e.g. Paracetamol" />
+                    <label class="form-label">{{ t('catalog.generic_name') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
+                    <input v-model="form.generic_name" type="text" class="form-control" :placeholder="t('catalog.generic_name_placeholder')" />
                     <div v-if="form.errors.generic_name" class="text-danger small">{{ form.errors.generic_name }}</div>
                 </div>
                 <div v-if="advancedCatalogEnabled" class="col-md-2">
-                    <label class="form-label">{{ t('catalog.strength') }} <span class="text-muted fw-normal">(optional)</span></label>
+                    <label class="form-label">{{ t('catalog.strength') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
                     <input v-model="form.strength" type="text" class="form-control" :placeholder="t('catalog.strength_placeholder')" />
                     <div v-if="form.errors.strength" class="text-danger small">{{ form.errors.strength }}</div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">SKU</label>
                     <input v-if="existing" v-model="form.sku" type="text" class="form-control" readonly />
-                    <input v-else type="text" class="form-control bg-light" disabled placeholder="Auto (PRD-000001)" />
-                    <p v-if="!existing" class="form-text small mb-0">Generated automatically when you save.</p>
+                    <input v-else type="text" class="form-control bg-light" disabled :placeholder="t('catalog.sku_auto_placeholder')" />
+                    <p v-if="!existing" class="form-text small mb-0">{{ t('catalog.sku_auto_hint') }}</p>
                     <div v-if="form.errors.sku" class="text-danger small">{{ form.errors.sku }}</div>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Barcode</label>
+                    <label class="form-label">{{ t('catalog.barcode') }}</label>
                     <input v-model="form.barcode" type="text" class="form-control" />
                     <div v-if="existing" class="mt-2">
-                        <span class="small text-muted d-block mb-1">Label preview</span>
-                        <img :src="`/barcodes/${existing.id}`" alt="Barcode" class="border rounded bg-white p-1" style="max-height: 64px" />
+                        <span class="small text-muted d-block mb-1">{{ t('catalog.label_preview') }}</span>
+                        <img :src="`/barcodes/${existing.id}`" :alt="t('catalog.barcode')" class="border rounded bg-white p-1" style="max-height: 64px" />
                     </div>
                 </div>
                 <div v-if="wholesaleEnabled" class="col-md-4">
-                    <label class="form-label">Wholesale price <span class="text-muted fw-normal">(optional)</span></label>
+                    <label class="form-label">{{ t('catalog.wholesale_price') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
                     <input v-model="form.wholesale_price" type="number" min="0" step="0.01" class="form-control" />
                     <div v-if="form.errors.wholesale_price" class="text-danger small">{{ form.errors.wholesale_price }}</div>
                 </div>
                 <div v-if="advancedCatalogEnabled" class="col-md-4">
-                    <label class="form-label">VAT / tax % <span class="text-muted fw-normal">(optional)</span></label>
-                    <input v-model="form.vat_percent" type="number" min="0" max="100" step="0.01" class="form-control" placeholder="e.g. 5" />
+                    <label class="form-label">{{ t('catalog.vat_percent') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
+                    <input v-model="form.vat_percent" type="number" min="0" max="100" step="0.01" class="form-control" :placeholder="t('catalog.vat_placeholder')" />
                     <div v-if="form.errors.vat_percent" class="text-danger small">{{ form.errors.vat_percent }}</div>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Product image <span class="text-muted fw-normal">(optional)</span></label>
+                    <label class="form-label">{{ t('catalog.product_image') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
                     <input type="file" accept="image/*" class="form-control" @change="onImageChange" />
                     <div v-if="form.errors.image" class="text-danger small">{{ form.errors.image }}</div>
                     <div v-if="imagePreviewUrl" class="mt-2">
-                        <img :src="imagePreviewUrl" alt="Product" class="border rounded" style="max-height: 120px; max-width: 100%" />
+                        <img :src="imagePreviewUrl" :alt="t('catalog.product_image')" class="border rounded" style="max-height: 120px; max-width: 100%" />
                     </div>
                     <div v-if="existing?.image_url && !form.remove_image && !imagePreviewUrl" class="mt-2">
-                        <img :src="existing.image_url" alt="Product" class="border rounded" style="max-height: 120px; max-width: 100%" />
+                        <img :src="existing.image_url" :alt="t('catalog.product_image')" class="border rounded" style="max-height: 120px; max-width: 100%" />
                     </div>
                     <div v-if="existing?.image_url" class="form-check mt-2">
                         <input id="remove_image" v-model="form.remove_image" type="checkbox" class="form-check-input" />
-                        <label class="form-check-label small" for="remove_image">Remove current image</label>
+                        <label class="form-check-label small" for="remove_image">{{ t('catalog.remove_current_image') }}</label>
                     </div>
                 </div>
                 <div v-if="advancedCatalogEnabled" class="col-12">
-                    <label class="form-label">Short description <span class="text-muted fw-normal">(optional)</span></label>
+                    <label class="form-label">{{ t('catalog.short_description') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
                     <textarea v-model="form.short_description" class="form-control" rows="2" maxlength="2000" />
                     <div v-if="form.errors.short_description" class="text-danger small">{{ form.errors.short_description }}</div>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Product type</label>
+                    <label class="form-label">{{ t('catalog.product_type') }}</label>
                     <div class="d-flex align-items-center gap-2">
                         <img
                             v-if="selectedTypeIconUrl"
@@ -85,14 +85,14 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Base stock unit</label>
+                    <label class="form-label">{{ t('catalog.base_unit') }}</label>
                     <select v-model="form.base_unit" class="form-select" required @change="onBaseUnitChange">
                         <option v-for="u in availableSellUnits" :key="u" :value="u">{{ unitLabel(u) }}</option>
                     </select>
-                    <p class="form-text small mb-0">Inventory is tracked in this unit.</p>
+                    <p class="form-text small mb-0">{{ t('catalog.base_unit_hint') }}</p>
                 </div>
                 <div v-if="showPiecesPerStrip" class="col-md-4">
-                    <label class="form-label">Pieces per strip</label>
+                    <label class="form-label">{{ t('catalog.pieces_per_strip') }}</label>
                     <input
                         v-model="form.pieces_per_strip"
                         type="number"
@@ -100,14 +100,14 @@
                         step="1"
                         class="form-control"
                         :class="{ 'is-invalid': form.errors.pieces_per_strip }"
-                        placeholder="e.g. 10"
+                        :placeholder="t('catalog.pieces_per_strip_placeholder')"
                         @input="syncPiecesPerStripToUnits"
                     />
                     <div v-if="form.errors.pieces_per_strip" class="text-danger small">{{ form.errors.pieces_per_strip }}</div>
-                    <p v-else class="form-text small mb-0">Tablets/capsules in one strip — needed for piece sales &amp; stock count.</p>
+                    <p v-else class="form-text small mb-0">{{ t('catalog.pieces_per_strip_hint') }}</p>
                 </div>
                 <div v-if="showStripsPerBox" class="col-md-4">
-                    <label class="form-label">Strips per box</label>
+                    <label class="form-label">{{ t('catalog.strips_per_box') }}</label>
                     <input
                         v-model="form.strips_per_box"
                         type="number"
@@ -115,14 +115,14 @@
                         step="1"
                         class="form-control"
                         :class="{ 'is-invalid': form.errors.strips_per_box }"
-                        placeholder="e.g. 10"
+                        :placeholder="t('catalog.strips_per_box_placeholder')"
                         @input="syncStripsPerBoxToUnits"
                     />
                     <div v-if="form.errors.strips_per_box" class="text-danger small">{{ form.errors.strips_per_box }}</div>
-                    <p v-else class="form-text small mb-0">Strips in one box — syncs box conversion for purchases &amp; sales.</p>
+                    <p v-else class="form-text small mb-0">{{ t('catalog.strips_per_box_hint') }}</p>
                 </div>
                 <div v-if="showBoxesPerCarton" class="col-md-4">
-                    <label class="form-label">Boxes per carton</label>
+                    <label class="form-label">{{ t('catalog.boxes_per_carton') }}</label>
                     <input
                         v-model="form.boxes_per_carton"
                         type="number"
@@ -130,14 +130,14 @@
                         step="1"
                         class="form-control"
                         :class="{ 'is-invalid': form.errors.boxes_per_carton }"
-                        placeholder="e.g. 12"
+                        :placeholder="t('catalog.boxes_per_carton_placeholder')"
                         @input="syncBoxesPerCartonToUnits"
                     />
                     <div v-if="form.errors.boxes_per_carton" class="text-danger small">{{ form.errors.boxes_per_carton }}</div>
                     <p v-else class="form-text small mb-0">
-                        Boxes in one carton — syncs carton conversion (× box size).
+                        {{ t('catalog.boxes_per_carton_hint') }}
                         <span v-if="cartonConversionPreview" class="d-block">
-                            = {{ formatQty(cartonConversionPreview) }} {{ unitLabel(form.base_unit) }} per carton
+                            {{ t('catalog.carton_conversion_preview', { qty: formatQty(cartonConversionPreview), unit: unitLabel(form.base_unit) }) }}
                         </span>
                     </p>
                 </div>
@@ -166,20 +166,20 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Min stock alert</label>
+                    <label class="form-label">{{ t('catalog.min_stock_alert') }}</label>
                     <input v-model="form.min_stock" type="number" min="0" class="form-control" />
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Category</label>
+                    <label class="form-label">{{ t('catalog.category') }}</label>
                     <select v-model="form.category_id" class="form-select">
-                        <option :value="null">— None —</option>
+                        <option :value="null">{{ t('catalog.storage_location_none') }}</option>
                         <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
                     </select>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Manufacturer</label>
+                    <label class="form-label">{{ t('catalog.manufacturer') }}</label>
                     <select v-model="form.manufacturer_id" class="form-select">
-                        <option :value="null">— None —</option>
+                        <option :value="null">{{ t('catalog.storage_location_none') }}</option>
                         <option v-for="m in manufacturers" :key="m.id" :value="m.id">{{ m.name }}</option>
                     </select>
                 </div>

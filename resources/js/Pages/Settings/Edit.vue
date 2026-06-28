@@ -1,34 +1,34 @@
 <template>
-    <TenantShellLayout page-title="Settings">
-        <Head title="Settings" />
-        <h1 class="h4 mb-3">Pharmacy settings</h1>
+    <TenantShellLayout :page-title="t('common.settings')">
+        <Head :title="t('common.settings')" />
+        <h1 class="h4 mb-3">{{ t('common.pharmacy_settings') }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="mb-2">
-                <label class="form-label">Business name</label>
+                <label class="form-label">{{ t('common.business_name') }}</label>
                 <input v-model="form.name" class="form-control" required />
             </div>
             <div class="mb-2">
-                <label class="form-label">Slug</label>
+                <label class="form-label">{{ t('common.slug') }}</label>
                 <input :value="tenant.slug" class="form-control" disabled />
-                <div class="form-text">Read-only. Contact support to change subdomain.</div>
+                <div class="form-text">{{ t('common.slug_readonly_hint') }}</div>
             </div>
             <div class="mb-2">
-                <label class="form-label">Phone</label>
+                <label class="form-label">{{ t('customers.phone_label') }}</label>
                 <input v-model="form.settings.phone" class="form-control" />
             </div>
             <div class="mb-2">
-                <label class="form-label">Address</label>
+                <label class="form-label">{{ t('customers.address') }}</label>
                 <textarea v-model="form.settings.address" class="form-control" rows="2"></textarea>
             </div>
             <div class="mb-2">
-                <label class="form-label">Currency</label>
+                <label class="form-label">{{ t('common.currency') }}</label>
                 <select v-model="form.settings.currency" class="form-select">
                     <option v-for="code in currencies" :key="code" :value="code">
                         {{ currencyLabel(code) }}
                     </option>
                 </select>
                 <div class="form-text">
-                    Platform default: <strong>{{ platformDefaultCurrency }}</strong>. Changing this updates every monetary input and display in your pharmacy.
+                    {{ t('common.platform_default_currency_hint', { currency: platformDefaultCurrency }) }}
                 </div>
                 <div v-if="form.errors['settings.currency']" class="text-danger small">{{ form.errors['settings.currency'] }}</div>
             </div>
@@ -66,8 +66,8 @@
                 </select>
                 <div class="form-text">{{ t('sales.pos_rounding_hint') }}</div>
             </div>
-            <button v-if="can('settings.manage')" type="submit" class="btn btn-primary" :disabled="form.processing">Save</button>
-            <p v-else class="small text-muted mb-0">View only — you need settings.manage to update.</p>
+            <button v-if="can('settings.manage')" type="submit" class="btn btn-primary" :disabled="form.processing">{{ t('common.save') }}</button>
+            <p v-else class="small text-muted mb-0">{{ t('common.settings_view_only') }}</p>
         </form>
     </TenantShellLayout>
 </template>

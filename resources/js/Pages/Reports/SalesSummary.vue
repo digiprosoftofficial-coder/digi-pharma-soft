@@ -1,12 +1,12 @@
 <template>
-    <TenantShellLayout page-title="Sales summary">
-        <Head title="Sales summary" />
+    <TenantShellLayout :page-title="t('reports.quick_sales_title')">
+        <Head :title="t('reports.quick_sales_title')" />
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
-                <h1 class="h4 mb-0">Sales summary</h1>
-                <p class="small text-muted mb-0">Gross sales, returns, net sales, dues, and top products.</p>
+                <h1 class="h4 mb-0">{{ t('reports.quick_sales_title') }}</h1>
+                <p class="small text-muted mb-0">{{ t('reports.quick_sales_help') }}</p>
             </div>
-            <Link href="/reports" class="btn btn-sm btn-outline-secondary">Reports hub</Link>
+            <Link href="/reports" class="btn btn-sm btn-outline-secondary">{{ t('reports.hub') }}</Link>
         </div>
 
         <ReportControls
@@ -24,19 +24,19 @@
             <div class="col-xl-8">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white">
-                        <h2 class="h6 mb-0">Sales in range</h2>
+                        <h2 class="h6 mb-0">{{ t('reports.sales_in_range') }}</h2>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-sm mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Invoice</th>
-                                    <th>Date</th>
-                                    <th>Branch</th>
-                                    <th>Customer</th>
-                                    <th class="text-end">Total ({{ currencyCode() }})</th>
-                                    <th class="text-end">Due ({{ currencyCode() }})</th>
-                                    <th>Status</th>
+                                    <th>{{ t('sales.invoice') }}</th>
+                                    <th>{{ t('sales.date') }}</th>
+                                    <th>{{ t('branches.title') }}</th>
+                                    <th>{{ t('sales.customer') }}</th>
+                                    <th class="text-end">{{ t('sales.total') }} ({{ currencyCode() }})</th>
+                                    <th class="text-end">{{ t('sales.due') }} ({{ currencyCode() }})</th>
+                                    <th>{{ t('sales.status') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -44,7 +44,7 @@
                                     <td>{{ sale.invoice_no }}</td>
                                     <td>{{ formatDate(sale.sold_at) }}</td>
                                     <td>{{ sale.branch?.name ?? '—' }}</td>
-                                    <td>{{ sale.customer?.name ?? 'Walk-in' }}</td>
+                                    <td>{{ sale.customer?.name ?? t('reports.walk_in') }}</td>
                                     <td class="text-end">{{ formatMoney(sale.rounded_total ?? sale.total) }}</td>
                                     <td class="text-end" :class="{ 'text-danger fw-medium': Number(sale.due) > 0 }">
                                         {{ formatMoney(sale.due) }}
@@ -52,7 +52,7 @@
                                     <td>{{ sale.status }}</td>
                                 </tr>
                                 <tr v-if="!sales.data?.length">
-                                    <td colspan="7" class="text-center text-muted py-4">No sales found for this range.</td>
+                                    <td colspan="7" class="text-center text-muted py-4">{{ t('reports.no_sales_found') }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -63,7 +63,7 @@
             <div class="col-xl-4">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white">
-                        <h2 class="h6 mb-0">Top products</h2>
+                        <h2 class="h6 mb-0">{{ t('reports.top_products') }}</h2>
                     </div>
                     <ul class="list-group list-group-flush">
                         <li
@@ -77,7 +77,7 @@
                                 <span class="d-block small text-muted">{{ formatMoney(product.revenue) }}</span>
                             </span>
                         </li>
-                        <li v-if="!topProducts.length" class="list-group-item text-muted small">No product lines found.</li>
+                        <li v-if="!topProducts.length" class="list-group-item text-muted small">{{ t('reports.no_product_lines') }}</li>
                     </ul>
                 </div>
             </div>
@@ -87,6 +87,7 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import PaginationLinks from '@/Pages/Reports/Partials/PaginationLinks.vue';
 import ReportControls from '@/Pages/Reports/Partials/ReportControls.vue';
@@ -106,15 +107,16 @@ const props = defineProps({
 });
 
 const { formatMoney, currencyCode } = useMoney();
+const { t } = useLocale();
 
 const summaryCards = computed(() => [
-    { label: 'Gross sales', value: props.summary.grossSales, money: true },
-    { label: 'Returns', value: props.summary.returnTotal, money: true },
-    { label: 'Net sales', value: props.summary.netSales, money: true },
-    { label: 'Due', value: props.summary.due, money: true },
-    { label: 'Paid', value: props.summary.paid, money: true },
-    { label: 'Invoices', value: props.summary.invoiceCount, money: false },
-    { label: 'Return count', value: props.summary.returnCount, money: false },
+    { label: t('reports.gross_sales'), value: props.summary.grossSales, money: true },
+    { label: t('reports.returns'), value: props.summary.returnTotal, money: true },
+    { label: t('reports.net_sales'), value: props.summary.netSales, money: true },
+    { label: t('sales.due'), value: props.summary.due, money: true },
+    { label: t('sales.paid'), value: props.summary.paid, money: true },
+    { label: t('reports.invoices'), value: props.summary.invoiceCount, money: false },
+    { label: t('reports.return_count'), value: props.summary.returnCount, money: false },
 ]);
 
 </script>

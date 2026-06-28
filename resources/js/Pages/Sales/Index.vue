@@ -1,18 +1,18 @@
 <template>
-    <TenantShellLayout page-title="Sales list">
-        <Head title="Sales" />
-        <h1 class="h4 mb-3">Sales list</h1>
+    <TenantShellLayout :page-title="t('sales.sales_list')">
+        <Head :title="t('sales.sales')" />
+        <h1 class="h4 mb-3">{{ t('sales.sales_list') }}</h1>
         <div class="card border-0 shadow-sm table-responsive">
             <table class="table table-sm mb-0">
                 <thead class="table-light">
                     <tr>
                         <th style="width: 2rem"></th>
-                        <th>Invoice</th>
-                        <th>Date</th>
-                        <th>Status</th>
-                        <th class="text-end">Total ({{ currencyCode() }})</th>
-                        <th class="text-end">Due ({{ currencyCode() }})</th>
-                        <th class="text-end" style="width: 10rem">Actions</th>
+                        <th>{{ t('sales.invoice') }}</th>
+                        <th>{{ t('sales.date') }}</th>
+                        <th>{{ t('sales.status') }}</th>
+                        <th class="text-end">{{ t('sales.total') }} ({{ currencyCode() }})</th>
+                        <th class="text-end">{{ t('sales.due') }} ({{ currencyCode() }})</th>
+                        <th class="text-end" style="width: 10rem">{{ t('sales.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -61,7 +61,7 @@
                             <td colspan="6" class="py-2">
                                 <ul class="list-unstyled small mb-0">
                                     <li v-for="line in s.lines" :key="line.id" class="mb-1">
-                                        <span class="fw-medium">{{ line.product?.name ?? 'Product' }}</span>
+                                        <span class="fw-medium">{{ line.product?.name ?? t('sales.product') }}</span>
                                         <span class="text-muted">
                                             — {{ formatQty(line.quantity) }} {{ line.sell_unit ?? '' }}
                                             <template v-if="line.batch">

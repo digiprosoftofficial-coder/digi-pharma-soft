@@ -1,12 +1,12 @@
 <template>
-    <TenantShellLayout page-title="Branch Reports">
-        <Head title="Branch Reports" />
+    <TenantShellLayout :page-title="t('reports.quick_branch_title')">
+        <Head :title="t('reports.quick_branch_title')" />
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
-                <h1 class="h4 mb-0">Branch Reports</h1>
-                <p class="small text-muted mb-0">Compare branch sales, purchases, dues, stock value, expiry risk, and transfers.</p>
+                <h1 class="h4 mb-0">{{ t('reports.quick_branch_title') }}</h1>
+                <p class="small text-muted mb-0">{{ t('reports.quick_branch_help') }}</p>
             </div>
-            <Link href="/reports" class="btn btn-sm btn-outline-secondary">Report Hub</Link>
+            <Link href="/reports" class="btn btn-sm btn-outline-secondary">{{ t('reports.hub') }}</Link>
         </div>
         <SmartReportFilters
             :filters="filters"
@@ -24,14 +24,14 @@
                 <table class="table table-sm mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Branch</th>
-                            <th class="text-end">Sales</th>
-                            <th class="text-end">Purchases</th>
-                            <th class="text-end">Sales due</th>
-                            <th class="text-end">Purchase due</th>
-                            <th class="text-end">Stock value</th>
-                            <th class="text-end">Expiry risk</th>
-                            <th class="text-end">Transfers</th>
+                            <th>{{ t('branches.title') }}</th>
+                            <th class="text-end">{{ t('reports.sales') }}</th>
+                            <th class="text-end">{{ t('reports.purchases') }}</th>
+                            <th class="text-end">{{ t('reports.sales_due') }}</th>
+                            <th class="text-end">{{ t('reports.purchase_due') }}</th>
+                            <th class="text-end">{{ t('reports.stock_value') }}</th>
+                            <th class="text-end">{{ t('reports.expiry_risk') }}</th>
+                            <th class="text-end">{{ t('reports.transfers') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -43,7 +43,7 @@
                             <td class="text-end text-danger">{{ formatMoney(row.purchase_due) }}</td>
                             <td class="text-end">{{ formatMoney(row.stock_value) }}</td>
                             <td class="text-end">{{ row.expiry_risk }}</td>
-                            <td class="text-end">{{ row.transfers_out }} out / {{ row.transfers_in }} in</td>
+                            <td class="text-end">{{ t('reports.transfer_counts', { out: row.transfers_out, in: row.transfers_in }) }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -55,6 +55,7 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import PaginationLinks from '@/Pages/Reports/Partials/PaginationLinks.vue';
 import SmartReportFilters from '@/Pages/Reports/Partials/SmartReportFilters.vue';
@@ -72,11 +73,12 @@ const props = defineProps({
 });
 
 const { formatMoney } = useMoney();
+const { t } = useLocale();
 
 const summaryCards = computed(() => [
-    { label: 'Branches', value: props.summary.branches, money: false },
-    { label: 'Sales', value: props.summary.sales, money: true },
-    { label: 'Purchases', value: props.summary.purchases, money: true },
-    { label: 'Stock value', value: props.summary.stockValue, money: true },
+    { label: t('branches.title'), value: props.summary.branches, money: false },
+    { label: t('reports.sales'), value: props.summary.sales, money: true },
+    { label: t('reports.purchases'), value: props.summary.purchases, money: true },
+    { label: t('reports.stock_value'), value: props.summary.stockValue, money: true },
 ]);
 </script>

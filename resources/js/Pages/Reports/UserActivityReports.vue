@@ -1,12 +1,12 @@
 <template>
-    <TenantShellLayout page-title="User Activity Reports">
-        <Head title="User Activity Reports" />
+    <TenantShellLayout :page-title="t('reports.quick_activity_title')">
+        <Head :title="t('reports.quick_activity_title')" />
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
-                <h1 class="h4 mb-0">User Activity Reports</h1>
-                <p class="small text-muted mb-0">Tenant audit activity by user, event, subject, date, and exportable history.</p>
+                <h1 class="h4 mb-0">{{ t('reports.quick_activity_title') }}</h1>
+                <p class="small text-muted mb-0">{{ t('reports.quick_activity_help') }}</p>
             </div>
-            <Link href="/reports" class="btn btn-sm btn-outline-secondary">Report Hub</Link>
+            <Link href="/reports" class="btn btn-sm btn-outline-secondary">{{ t('reports.hub') }}</Link>
         </div>
         <SmartReportFilters
             :filters="filters"
@@ -24,11 +24,11 @@
                 <table class="table table-sm mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Date</th>
-                            <th>Event</th>
-                            <th>Description</th>
-                            <th>User</th>
-                            <th>Subject</th>
+                            <th>{{ t('sales.date') }}</th>
+                            <th>{{ t('dashboard.event') }}</th>
+                            <th>{{ t('dashboard.description') }}</th>
+                            <th>{{ t('reports.user') }}</th>
+                            <th>{{ t('reports.subject') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -36,11 +36,11 @@
                             <td>{{ formatDate(row.created_at) }}</td>
                             <td><span class="badge text-bg-light">{{ row.event }}</span></td>
                             <td>{{ row.description }}</td>
-                            <td>{{ row.causer?.name ?? 'System' }}</td>
+                            <td>{{ row.causer?.name ?? t('reports.system') }}</td>
                             <td class="small text-muted">{{ row.subject_type }} #{{ row.subject_id }}</td>
                         </tr>
                         <tr v-if="!rows.data?.length">
-                            <td colspan="5" class="text-center text-muted py-4">No activity found.</td>
+                            <td colspan="5" class="text-center text-muted py-4">{{ t('reports.no_activity_found') }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -52,6 +52,7 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useLocale } from '@/composables/useLocale';
 import PaginationLinks from '@/Pages/Reports/Partials/PaginationLinks.vue';
 import SmartReportFilters from '@/Pages/Reports/Partials/SmartReportFilters.vue';
 import SummaryCards from '@/Pages/Reports/Partials/SummaryCards.vue';
@@ -68,11 +69,13 @@ const props = defineProps({
     options: { type: Object, required: true },
 });
 
+const { t } = useLocale();
+
 const summaryCards = computed(() => [
-    { label: 'Events', value: props.summary.events, money: false },
-    { label: 'Users', value: props.summary.users, money: false },
-    { label: 'Logins', value: props.summary.logins, money: false },
-    { label: 'Imports', value: props.summary.imports, money: false },
+    { label: t('reports.events'), value: props.summary.events, money: false },
+    { label: t('reports.users'), value: props.summary.users, money: false },
+    { label: t('reports.logins'), value: props.summary.logins, money: false },
+    { label: t('reports.imports'), value: props.summary.imports, money: false },
 ]);
 
 </script>

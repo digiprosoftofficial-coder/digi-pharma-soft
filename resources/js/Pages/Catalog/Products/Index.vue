@@ -1,21 +1,21 @@
 <template>
-    <TenantShellLayout page-title="Products">
-        <Head title="Products" />
+    <TenantShellLayout :page-title="t('tenant_nav.products')">
+        <Head :title="t('tenant_nav.products')" />
         <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-            <h1 class="h4 mb-0 d-lg-none">Products</h1>
-            <Link v-if="can('products.manage')" href="/products/create" class="btn btn-primary">Add product</Link>
+            <h1 class="h4 mb-0 d-lg-none">{{ t('tenant_nav.products') }}</h1>
+            <Link v-if="can('products.manage')" href="/products/create" class="btn btn-primary">{{ t('catalog.add_product') }}</Link>
         </div>
         <form class="card border-0 shadow-sm card-body mb-3" @submit.prevent="applyFilters">
             <div class="row g-2 align-items-end">
                 <div class="col-md-4">
-                    <label class="form-label small mb-0">Search</label>
+                    <label class="form-label small mb-0">{{ t('common.search') }}</label>
                     <input v-model="filterForm.q" type="search" class="form-control form-control-sm" :placeholder="t('catalog.products_search_placeholder')" />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label small mb-0">Type</label>
+                    <label class="form-label small mb-0">{{ t('catalog.product_type') }}</label>
                     <select v-model="filterForm.product_type" class="form-select form-select-sm">
-                        <option value="">All types</option>
+                        <option value="">{{ t('catalog.all_product_types') }}</option>
                         <option v-for="pt in productTypes" :key="pt" :value="pt">{{ labelForType(pt) }}</option>
                     </select>
                 </div>
@@ -29,16 +29,16 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label small mb-0">Status</label>
+                    <label class="form-label small mb-0">{{ t('catalog.status') }}</label>
                     <select v-model="filterForm.is_active" class="form-select form-select-sm">
-                        <option value="">All</option>
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
+                        <option value="">{{ t('reports.all') }}</option>
+                        <option value="1">{{ t('common.active') }}</option>
+                        <option value="0">{{ t('common.inactive') }}</option>
                     </select>
                 </div>
                 <div class="col-md-2 d-flex gap-1">
-                    <button type="submit" class="btn btn-sm btn-primary">Filter</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" @click="clearFilters">Reset</button>
+                    <button type="submit" class="btn btn-sm btn-primary">{{ t('purchases.filter') }}</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" @click="clearFilters">{{ t('purchases.reset') }}</button>
                 </div>
             </div>
         </form>
@@ -102,18 +102,18 @@
             <table class="table table-striped mb-0">
                 <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Generic name</th>
+                        <th>{{ t('catalog.product_name') }}</th>
+                        <th>{{ t('catalog.generic_name') }}</th>
                         <th>{{ t('catalog.strength') }}</th>
-                        <th>Type</th>
-                        <th>Category</th>
+                        <th>{{ t('catalog.product_type') }}</th>
+                        <th>{{ t('catalog.category') }}</th>
                         <th>{{ t('catalog.storage_location_shelf') }}</th>
                         <th>SKU</th>
-                        <th>Unit</th>
-                        <th class="text-end">Sale ({{ currencyCode() }})</th>
-                        <th class="text-end">On hand</th>
-                        <th class="text-end">Purchased</th>
-                        <th>Status</th>
+                        <th>{{ t('catalog.sell_unit') }}</th>
+                        <th class="text-end">{{ t('catalog.sale_price') }} ({{ currencyCode() }})</th>
+                        <th class="text-end">{{ t('catalog.current_stock') }}</th>
+                        <th class="text-end">{{ t('reports.purchases') }}</th>
+                        <th>{{ t('catalog.status') }}</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -149,7 +149,7 @@
                         </td>
                         <td>
                             <span class="badge" :class="p.is_active ? 'text-bg-success' : 'text-bg-secondary'">
-                                {{ p.is_active ? 'Active' : 'Inactive' }}
+                                {{ p.is_active ? t('common.active') : t('common.inactive') }}
                             </span>
                         </td>
                         <td class="text-end text-nowrap">
@@ -157,7 +157,7 @@
                         </td>
                     </tr>
                     <tr v-if="!products.data?.length">
-                        <td colspan="13" class="text-muted text-center py-4">No products found.</td>
+                        <td colspan="13" class="text-muted text-center py-4">{{ t('catalog.products_showing_none') }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -166,7 +166,7 @@
         <!-- Grid view -->
         <div v-else-if="viewMode === 'grid'">
             <div v-if="!products.data?.length" class="card border-0 shadow-sm card-body text-muted text-center py-4">
-                No products found.
+                {{ t('catalog.products_showing_none') }}
             </div>
             <div v-else class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-3">
                 <div v-for="p in products.data" :key="p.id" class="col">
@@ -197,13 +197,13 @@
                                 </div>
                                 <div class="small text-muted mb-2">
                                     <span class="fw-semibold text-body">{{ formatQty(p.stock_on_hand) }}</span>
-                                    {{ unitLabel(p.base_unit || p.unit) }} on hand
+                                    {{ unitLabel(p.base_unit || p.unit) }} {{ t('catalog.on_hand') }}
                                     <span v-if="p.stock_pieces"> · {{ formatQty(p.stock_pieces) }} pcs</span>
                                 </div>
                                 <div class="d-flex flex-wrap gap-1 position-relative" style="z-index: 2">
-                                    <Link :href="`/products/${p.id}`" class="btn btn-sm btn-outline-primary">View</Link>
-                                    <a :href="`/barcodes/${p.id}`" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">Barcode</a>
-                                    <Link v-if="can('products.manage')" :href="`/products/${p.id}/edit`" class="btn btn-sm btn-outline-secondary">Edit</Link>
+                                    <Link :href="`/products/${p.id}`" class="btn btn-sm btn-outline-primary">{{ t('common.view') }}</Link>
+                                    <a :href="`/barcodes/${p.id}`" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">{{ t('catalog.barcode') }}</a>
+                                    <Link v-if="can('products.manage')" :href="`/products/${p.id}/edit`" class="btn btn-sm btn-outline-secondary">{{ t('common.edit') }}</Link>
                                 </div>
                             </div>
                         </div>
@@ -217,11 +217,11 @@
             <table class="table table-sm table-hover mb-0 align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th class="text-end">Sale ({{ currencyCode() }})</th>
-                        <th class="text-end">On hand</th>
-                        <th>Status</th>
+                        <th>{{ t('catalog.product_name') }}</th>
+                        <th>{{ t('catalog.product_type') }}</th>
+                        <th class="text-end">{{ t('catalog.sale_price') }} ({{ currencyCode() }})</th>
+                        <th class="text-end">{{ t('catalog.current_stock') }}</th>
+                        <th>{{ t('catalog.status') }}</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -251,7 +251,7 @@
                         </td>
                         <td>
                             <span class="badge" :class="p.is_active ? 'text-bg-success' : 'text-bg-secondary'">
-                                {{ p.is_active ? 'Active' : 'Inactive' }}
+                                {{ p.is_active ? t('common.active') : t('common.inactive') }}
                             </span>
                         </td>
                         <td class="text-end text-nowrap">
@@ -259,7 +259,7 @@
                         </td>
                     </tr>
                     <tr v-if="!products.data?.length">
-                        <td colspan="6" class="text-muted text-center py-4">No products found.</td>
+                        <td colspan="6" class="text-muted text-center py-4">{{ t('catalog.products_showing_none') }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -320,7 +320,7 @@ const ProductRowActions = defineComponent({
                 h(
                     Link,
                     { href: `/products/${props.product.id}`, class: `btn btn-sm btn-outline-primary${props.compact ? '' : ' me-1'}` },
-                    () => 'View',
+                    () => t('common.view'),
                 ),
                 h(
                     'a',
@@ -330,7 +330,7 @@ const ProductRowActions = defineComponent({
                         rel: 'noopener',
                         class: `btn btn-sm btn-outline-secondary${props.compact ? '' : ' me-1'}`,
                     },
-                    'Barcode',
+                    t('catalog.barcode'),
                 ),
                 props.canManage
                     ? h(
@@ -339,7 +339,7 @@ const ProductRowActions = defineComponent({
                               href: `/products/${props.product.id}/edit`,
                               class: `btn btn-sm btn-outline-secondary${props.compact ? '' : ' me-1'}`,
                           },
-                          () => 'Edit',
+                          () => t('common.edit'),
                       )
                     : null,
                 props.canManage
@@ -350,7 +350,7 @@ const ProductRowActions = defineComponent({
                               class: 'btn btn-sm btn-outline-danger',
                               onClick: () => emit('delete', props.product),
                           },
-                          'Delete',
+                          t('common.delete'),
                       )
                     : null,
             ]);

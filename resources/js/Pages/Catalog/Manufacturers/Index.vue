@@ -1,20 +1,20 @@
 <template>
-    <TenantShellLayout page-title="Manufacturers">
-        <Head title="Manufacturers" />
+    <TenantShellLayout :page-title="t('tenant_nav.manufacturers')">
+        <Head :title="t('tenant_nav.manufacturers')" />
         <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
         <div v-if="$page.props.errors?.manufacturer" class="alert alert-danger small">
             {{ $page.props.errors.manufacturer }}
         </div>
         <div class="d-flex justify-content-between mb-3">
-            <h1 class="h4 mb-0">Manufacturers</h1>
-            <Link href="/manufacturers/create" class="btn btn-primary btn-sm">Add manufacturer</Link>
+            <h1 class="h4 mb-0">{{ t('tenant_nav.manufacturers') }}</h1>
+            <Link href="/manufacturers/create" class="btn btn-primary btn-sm">{{ t('catalog.add_manufacturer') }}</Link>
         </div>
         <div class="card border-0 shadow-sm table-responsive">
             <table class="table table-sm mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>Name</th>
-                        <th class="text-end">Products</th>
+                        <th>{{ t('common.name') }}</th>
+                        <th class="text-end">{{ t('tenant_nav.products') }}</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -28,7 +28,7 @@
                             <span v-else class="text-muted">0</span>
                         </td>
                         <td class="text-end">
-                            <Link :href="`/manufacturers/${m.id}/edit`" class="btn btn-sm btn-outline-secondary me-1">Edit</Link>
+                            <Link :href="`/manufacturers/${m.id}/edit`" class="btn btn-sm btn-outline-secondary me-1">{{ t('common.edit') }}</Link>
                             <button
                                 type="button"
                                 class="btn btn-sm btn-outline-danger"
@@ -36,7 +36,7 @@
                                 :title="m.products_count > 0 ? t('catalog.manufacturer_delete_blocked') : ''"
                                 @click="remove(m)"
                             >
-                                Delete
+                                {{ t('common.delete') }}
                             </button>
                             <div v-if="m.products_count > 0" class="small text-muted mt-1">
                                 {{ t('catalog.manufacturer_delete_blocked') }}
@@ -44,7 +44,7 @@
                         </td>
                     </tr>
                     <tr v-if="!manufacturers.data?.length">
-                        <td colspan="3" class="text-muted text-center py-3">No manufacturers yet.</td>
+                        <td colspan="3" class="text-muted text-center py-3">{{ t('catalog.no_manufacturers') }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -63,7 +63,7 @@ const { t } = useLocale();
 
 function remove(manufacturer) {
     if (manufacturer.products_count > 0) return;
-    if (!window.confirm(`Delete manufacturer "${manufacturer.name}"?`)) return;
+    if (!window.confirm(t('catalog.manufacturer_delete_confirm', { name: manufacturer.name }))) return;
     router.delete(`/manufacturers/${manufacturer.id}`);
 }
 </script>

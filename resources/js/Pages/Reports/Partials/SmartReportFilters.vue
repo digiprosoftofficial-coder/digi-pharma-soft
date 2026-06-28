@@ -2,48 +2,48 @@
     <form class="card border-0 shadow-sm card-body mb-3" @submit.prevent="applyFilters">
         <div class="row g-2 align-items-end">
             <div class="col-md-2">
-                <label class="form-label small mb-0">From</label>
+                <label class="form-label small mb-0">{{ t('purchases.date_from') }}</label>
                 <input v-model="filterForm.date_from" type="date" class="form-control form-control-sm" />
             </div>
             <div class="col-md-2">
-                <label class="form-label small mb-0">To</label>
+                <label class="form-label small mb-0">{{ t('purchases.date_to') }}</label>
                 <input v-model="filterForm.date_to" type="date" class="form-control form-control-sm" />
             </div>
             <ReportFilterSelect
                 v-if="canViewAllBranches"
                 v-model="filterForm.branch_id"
-                label="Branch"
-                placeholder="All branches"
+                :label="t('branches.title')"
+                :placeholder="t('purchases.all_branches')"
                 :options="branchOptions"
                 column-class="col-md-2"
             />
-            <ReportFilterSelect v-if="has('supplier')" v-model="filterForm.supplier_id" label="Supplier" :options="options.suppliers" />
-            <ReportFilterSelect v-if="has('customer')" v-model="filterForm.customer_id" label="Customer" :options="options.customers" />
-            <ReportFilterSelect v-if="has('product')" v-model="filterForm.product_id" label="Product" :options="options.products" />
-            <ReportFilterSelect v-if="has('category')" v-model="filterForm.category_id" label="Category" :options="options.categories" />
-            <ReportFilterSelect v-if="has('manufacturer')" v-model="filterForm.manufacturer_id" label="Manufacturer" :options="options.manufacturers" />
-            <ReportFilterSelect v-if="has('user')" v-model="filterForm.user_id" label="User" :options="options.users" />
-            <ReportFilterSelect v-if="has('account')" v-model="filterForm.account_id" label="Account" :options="options.accounts" />
-            <ReportFilterSelect v-if="has('paymentStatus')" v-model="filterForm.payment_status" label="Payment status" :options="paymentStatusOptions" />
-            <ReportFilterSelect v-if="has('paymentMethod')" v-model="filterForm.payment_method" label="Payment method" :options="paymentMethodOptions" />
-            <ReportFilterSelect v-if="has('expiryStatus')" v-model="filterForm.expiry_status" label="Expiry status" :options="expiryStatusOptions" />
-            <ReportFilterSelect v-if="has('dueStatus')" v-model="filterForm.due_status" label="Due status" :options="dueStatusOptions" />
-            <ReportFilterSelect v-if="has('eventType')" v-model="filterForm.event_type" label="Event" :options="options.events" />
-            <ReportFilterSelect v-if="has('direction')" v-model="filterForm.direction" label="Direction" :options="directionOptions" />
+            <ReportFilterSelect v-if="has('supplier')" v-model="filterForm.supplier_id" :label="t('purchases.supplier')" :options="options.suppliers" />
+            <ReportFilterSelect v-if="has('customer')" v-model="filterForm.customer_id" :label="t('sales.customer')" :options="options.customers" />
+            <ReportFilterSelect v-if="has('product')" v-model="filterForm.product_id" :label="t('sales.product')" :options="options.products" />
+            <ReportFilterSelect v-if="has('category')" v-model="filterForm.category_id" :label="t('catalog.category')" :options="options.categories" />
+            <ReportFilterSelect v-if="has('manufacturer')" v-model="filterForm.manufacturer_id" :label="t('catalog.manufacturer')" :options="options.manufacturers" />
+            <ReportFilterSelect v-if="has('user')" v-model="filterForm.user_id" :label="t('reports.user')" :options="options.users" />
+            <ReportFilterSelect v-if="has('account')" v-model="filterForm.account_id" :label="t('reports.account')" :options="options.accounts" />
+            <ReportFilterSelect v-if="has('paymentStatus')" v-model="filterForm.payment_status" :label="t('reports.payment_status')" :options="paymentStatusOptions" />
+            <ReportFilterSelect v-if="has('paymentMethod')" v-model="filterForm.payment_method" :label="t('purchases.payment_method')" :options="paymentMethodOptions" />
+            <ReportFilterSelect v-if="has('expiryStatus')" v-model="filterForm.expiry_status" :label="t('reports.expiry_status')" :options="expiryStatusOptions" />
+            <ReportFilterSelect v-if="has('dueStatus')" v-model="filterForm.due_status" :label="t('reports.due_status')" :options="dueStatusOptions" />
+            <ReportFilterSelect v-if="has('eventType')" v-model="filterForm.event_type" :label="t('dashboard.event')" :options="options.events" />
+            <ReportFilterSelect v-if="has('direction')" v-model="filterForm.direction" :label="t('reports.direction')" :options="directionOptions" />
             <div v-if="has('batch')" class="col-md-2">
-                <label class="form-label small mb-0">Batch</label>
-                <input v-model="filterForm.batch" type="search" class="form-control form-control-sm" placeholder="Batch no" />
+                <label class="form-label small mb-0">{{ t('purchases.batch') }}</label>
+                <input v-model="filterForm.batch" type="search" class="form-control form-control-sm" :placeholder="t('reports.batch_no')" />
             </div>
             <div class="col-md-2 d-flex gap-1">
-                <button type="submit" class="btn btn-sm btn-primary">Apply</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" @click="resetFilters">Reset</button>
+                <button type="submit" class="btn btn-sm btn-primary">{{ t('reports.apply') }}</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" @click="resetFilters">{{ t('purchases.reset') }}</button>
             </div>
             <div class="col-md text-md-end">
                 <ReportOutputActions :export-path="exportPath" :params="cleanParams()" />
             </div>
         </div>
         <p class="small text-muted mb-0 mt-2">
-            Current scope: <strong>{{ branchLabel }}</strong>
+            {{ t('reports.current_scope') }}: <strong>{{ branchLabel }}</strong>
         </p>
     </form>
 </template>
@@ -51,6 +51,7 @@
 <script setup>
 import { router } from '@inertiajs/vue3';
 import { computed, reactive } from 'vue';
+import { useLocale } from '@/composables/useLocale';
 import ReportFilterSelect from './ReportFilterSelect.vue';
 import ReportOutputActions from './ReportOutputActions.vue';
 
@@ -64,6 +65,8 @@ const props = defineProps({
     enabledFilters: { type: Array, default: () => [] },
     options: { type: Object, default: () => ({}) },
 });
+
+const { t } = useLocale();
 
 const filterForm = reactive({
     date_from: props.filters.date_from ?? '',
@@ -93,35 +96,35 @@ const branchOptions = computed(() =>
 );
 
 const paymentStatusOptions = [
-    { value: 'paid', label: 'Paid' },
-    { value: 'partial', label: 'Partial' },
-    { value: 'due', label: 'Due' },
+    { value: 'paid', label: t('sales.paid') },
+    { value: 'partial', label: t('reports.partial') },
+    { value: 'due', label: t('sales.due') },
 ];
 
 const paymentMethodOptions = [
-    { value: 'cash', label: 'Cash' },
-    { value: 'card', label: 'Card' },
+    { value: 'cash', label: t('purchases.payment_cash') },
+    { value: 'card', label: t('purchases.payment_card') },
     { value: 'bkash', label: 'bKash' },
     { value: 'nagad', label: 'Nagad' },
-    { value: 'bank', label: 'Bank' },
+    { value: 'bank', label: t('reports.bank') },
 ];
 
 const expiryStatusOptions = [
-    { value: 'expired', label: 'Expired' },
-    { value: 'expiring_30', label: 'Expiring in 30 days' },
-    { value: 'expiring_60', label: 'Expiring in 60 days' },
-    { value: 'expiring_90', label: 'Expiring in 90 days' },
-    { value: 'valid', label: 'Valid' },
+    { value: 'expired', label: t('reports.expired') },
+    { value: 'expiring_30', label: t('reports.expiring_30_days') },
+    { value: 'expiring_60', label: t('reports.expiring_60_days') },
+    { value: 'expiring_90', label: t('reports.expiring_90_days') },
+    { value: 'valid', label: t('reports.valid') },
 ];
 
 const dueStatusOptions = [
-    { value: 'has_due', label: 'Has due' },
-    { value: 'clear', label: 'Clear' },
+    { value: 'has_due', label: t('reports.has_due') },
+    { value: 'clear', label: t('reports.clear') },
 ];
 
 const directionOptions = [
-    { value: 'debit', label: 'Debit' },
-    { value: 'credit', label: 'Credit' },
+    { value: 'debit', label: t('reports.debits') },
+    { value: 'credit', label: t('reports.credits') },
 ];
 
 function has(filter) {

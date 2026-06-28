@@ -1,7 +1,7 @@
 <template>
-    <TenantShellLayout page-title="Point of sale">
+    <TenantShellLayout :page-title="t('sales.pos_title')">
         <Head title="POS" />
-        <h1 class="h4 mb-3 d-lg-none">Point of sale</h1>
+        <h1 class="h4 mb-3 d-lg-none">{{ t('sales.pos_title') }}</h1>
         <div v-if="checkoutError" class="alert alert-danger">{{ checkoutError }}</div>
         <div v-if="showSaleSuccessAlert" class="alert alert-success pos-sale-alert">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -18,13 +18,13 @@
         <div class="row g-3">
             <div class="col-lg-5">
                 <div class="card card-body">
-                    <label class="form-label">Search product</label>
+                    <label class="form-label">{{ t('sales.pos_search_product') }}</label>
                     <input
                         ref="searchInput"
                         v-model="q"
                         type="search"
                         class="form-control"
-                        placeholder="Name, SKU, or barcode"
+                        :placeholder="t('catalog.products_search_placeholder')"
                         autocomplete="off"
                         @input="debouncedSearch"
                         @keydown.enter.prevent="onSearchEnter"
@@ -95,16 +95,16 @@
             </div>
             <div class="col-lg-7">
                 <div class="card card-body">
-                    <h2 class="h6">Cart</h2>
-                    <p v-if="!cart.length" class="text-muted small">Add products from search.</p>
+                    <h2 class="h6">{{ t('sales.cart') }}</h2>
+                    <p v-if="!cart.length" class="text-muted small">{{ t('sales.cart_empty_hint') }}</p>
                     <table v-else class="table table-sm align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th>Item</th>
-                                <th style="width: 6rem">Unit</th>
-                                <th style="width: 6rem">Qty</th>
-                                <th style="width: 8rem">Price ({{ currencyCode() }})</th>
-                                <th class="text-end">Line</th>
+                                <th>{{ t('sales.item') }}</th>
+                                <th style="width: 6rem">{{ t('catalog.sell_unit') }}</th>
+                                <th style="width: 6rem">{{ t('sales.qty') }}</th>
+                                <th style="width: 8rem">{{ t('sales.unit_price') }} ({{ currencyCode() }})</th>
+                                <th class="text-end">{{ t('sales.line_total') }}</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -158,7 +158,7 @@
                         </tbody>
                         <tfoot v-if="cart.length" class="fw-semibold">
                             <tr>
-                                <td colspan="4" class="text-end">Subtotal</td>
+                                <td colspan="4" class="text-end">{{ t('sales.subtotal') }}</td>
                                 <td class="text-end">{{ formatMoney(cartSubtotal) }}</td>
                                 <td></td>
                             </tr>
@@ -170,7 +170,7 @@
                                 <td></td>
                             </tr>
                             <tr v-if="cartDiscountAmount > 0 || roundAdjustment !== 0">
-                                <td colspan="4" class="text-end">Total</td>
+                                <td colspan="4" class="text-end">{{ t('sales.total') }}</td>
                                 <td class="text-end">{{ formatMoney(totalAfterDiscount) }}</td>
                                 <td></td>
                             </tr>
@@ -311,18 +311,18 @@
                             {{ t('sales.due_requires_customer') }}
                         </div>
                         <div class="mb-2">
-                            <label class="form-label">Payment method</label>
+                            <label class="form-label">{{ t('sales.payment_method') }}</label>
                             <select v-model="paymentMethod" class="form-select">
-                                <option value="cash">Cash</option>
-                                <option value="card">Card</option>
-                                <option value="mobile">Mobile</option>
+                                <option value="cash">{{ t('purchases.payment_cash') }}</option>
+                                <option value="card">{{ t('purchases.payment_card') }}</option>
+                                <option value="mobile">{{ t('purchases.payment_mobile') }}</option>
                             </select>
                         </div>
                         <div class="mb-2">
-                            <label class="form-label">Coupon code (optional)</label>
+                            <label class="form-label">{{ t('sales.coupon_code') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
                             <input v-model="couponCode" type="text" class="form-control form-control-sm text-uppercase" placeholder="SAVE10" autocomplete="off" />
                         </div>
-                        <button type="submit" class="btn btn-success" :disabled="!cart.length || submitting || needsCustomerForDue">Complete sale</button>
+                        <button type="submit" class="btn btn-success" :disabled="!cart.length || submitting || needsCustomerForDue">{{ t('sales.complete_sale') }}</button>
                     </form>
                 </div>
             </div>

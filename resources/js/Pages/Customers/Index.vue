@@ -1,21 +1,21 @@
 <template>
-    <TenantShellLayout page-title="Customers">
-        <Head title="Customers" />
+    <TenantShellLayout :page-title="t('tenant_nav.customers')">
+        <Head :title="t('tenant_nav.customers')" />
         <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
         <div v-if="formError" class="alert alert-danger small">{{ formError }}</div>
         <div class="d-flex justify-content-between mb-3">
-            <h1 class="h4 mb-0 d-lg-none">Customers</h1>
-            <Link v-if="can('customers.manage')" href="/customers/create" class="btn btn-primary btn-sm">Add customer</Link>
+            <h1 class="h4 mb-0 d-lg-none">{{ t('tenant_nav.customers') }}</h1>
+            <Link v-if="can('customers.manage')" href="/customers/create" class="btn btn-primary btn-sm">{{ t('customers.add_customer') }}</Link>
         </div>
         <div class="card border-0 shadow-sm">
             <div class="table-responsive">
                 <table class="table table-sm mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Name</th>
+                            <th>{{ t('common.name') }}</th>
                             <th>{{ t('customers.phone_label') }}</th>
                             <th class="text-end">{{ t('sales.due') }}</th>
-                            <th class="text-end">Points</th>
+                            <th class="text-end">{{ t('customers.loyalty_points') }}</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -40,7 +40,7 @@
                                 :href="`/customers/${c.id}/edit`"
                                 class="btn btn-sm btn-outline-secondary me-1"
                             >
-                                Edit
+                                {{ t('common.edit') }}
                             </Link>
                                 <button
                                     v-if="can('customers.manage')"
@@ -48,12 +48,12 @@
                                     class="btn btn-sm btn-outline-danger"
                                     @click="remove(c)"
                                 >
-                                    Delete
+                                    {{ t('common.delete') }}
                                 </button>
                             </td>
                         </tr>
                         <tr v-if="!customers.data?.length">
-                            <td colspan="5" class="text-muted text-center py-3">No customers yet.</td>
+                            <td colspan="5" class="text-muted text-center py-3">{{ t('customers.no_customers') }}</td>
                         </tr>
                     </tbody>
                 </table>

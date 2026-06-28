@@ -1,19 +1,19 @@
 <template>
-    <TenantShellLayout page-title="Inventory">
-        <Head title="Inventory" />
-        <h1 class="h4 mb-3">Inventory overview</h1>
+    <TenantShellLayout :page-title="t('tenant_nav.inventory')">
+        <Head :title="t('tenant_nav.inventory')" />
+        <h1 class="h4 mb-3">{{ t('reports.inventory_overview') }}</h1>
         <div class="row g-3">
             <div class="col-lg-6">
                 <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white fw-semibold">Low stock batches</div>
+                    <div class="card-header bg-white fw-semibold">{{ t('reports.low_stock_batches') }}</div>
                     <div class="table-responsive">
                         <table class="table table-sm mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Product</th>
-                                    <th>Batch</th>
-                                    <th>Shelf</th>
-                                    <th class="text-end">Qty</th>
+                                    <th>{{ t('sales.product') }}</th>
+                                    <th>{{ t('purchases.batch') }}</th>
+                                    <th>{{ t('catalog.storage_location_shelf') }}</th>
+                                    <th class="text-end">{{ t('sales.qty') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -24,7 +24,7 @@
                                     <td class="text-end">{{ formatQty(b.quantity_on_hand) }}</td>
                                 </tr>
                                 <tr v-if="!lowStockBatches.length">
-                                    <td colspan="4" class="text-muted small">No batches below min stock.</td>
+                                    <td colspan="4" class="text-muted small">{{ t('reports.no_batches_below_min_stock') }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -33,14 +33,14 @@
             </div>
             <div class="col-lg-6">
                 <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white fw-semibold">Recent movements</div>
+                    <div class="card-header bg-white fw-semibold">{{ t('reports.recent_movements') }}</div>
                     <div class="table-responsive">
                         <table class="table table-sm mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th>When</th>
-                                    <th>Type</th>
-                                    <th class="text-end">Qty</th>
+                                    <th>{{ t('dashboard.when') }}</th>
+                                    <th>{{ t('catalog.product_type') }}</th>
+                                    <th class="text-end">{{ t('sales.qty') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -55,7 +55,7 @@
                 </div>
             </div>
         </div>
-        <h2 class="h6 mt-4">Expiry alerts</h2>
+        <h2 class="h6 mt-4">{{ t('reports.expiry_alerts') }}</h2>
         <div class="row g-3 mb-4">
             <div class="col-lg-6" v-for="section in expirySections" :key="section.key">
                 <div class="card border-0 shadow-sm h-100">
@@ -64,10 +64,10 @@
                         <table class="table table-sm mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Product</th>
-                                    <th>Batch</th>
-                                    <th>Expiry</th>
-                                    <th class="text-end">Qty</th>
+                                    <th>{{ t('sales.product') }}</th>
+                                    <th>{{ t('purchases.batch') }}</th>
+                                    <th>{{ t('purchases.expiry') }}</th>
+                                    <th class="text-end">{{ t('sales.qty') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -87,16 +87,16 @@
             </div>
         </div>
 
-        <h2 class="h6 mt-4">All batches</h2>
+        <h2 class="h6 mt-4">{{ t('reports.all_batches') }}</h2>
         <div class="card border-0 shadow-sm table-responsive">
             <table class="table table-sm mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>Product</th>
-                        <th>Batch</th>
-                        <th>Shelf</th>
-                        <th>Expiry</th>
-                        <th class="text-end">On hand</th>
+                        <th>{{ t('sales.product') }}</th>
+                        <th>{{ t('purchases.batch') }}</th>
+                        <th>{{ t('catalog.storage_location_shelf') }}</th>
+                        <th>{{ t('purchases.expiry') }}</th>
+                        <th class="text-end">{{ t('catalog.current_stock') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -115,6 +115,7 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { useLocale } from '@/composables/useLocale';
 import { useQuantity } from '@/composables/useQuantity';
 import { formatHumanDate } from '@/utils/dates';
 import { Head } from '@inertiajs/vue3';
@@ -131,37 +132,38 @@ const props = defineProps({
 });
 
 const { formatQty } = useQuantity();
+const { t } = useLocale();
 
 const expirySections = computed(() => [
     {
         key: 'expired',
-        title: 'Expired',
+        title: t('reports.expired'),
         items: props.expiredBatches,
-        empty: 'No expired stock on hand.',
+        empty: t('reports.no_expired_stock'),
         headerClass: 'text-danger',
         dateClass: 'text-danger fw-medium',
     },
     {
         key: '30',
-        title: 'Expiring within 30 days',
+        title: t('reports.expiring_30_days'),
         items: props.expiringWithin30,
-        empty: 'Nothing expiring in the next 30 days.',
+        empty: t('reports.nothing_expiring_30'),
         headerClass: 'text-warning',
         dateClass: 'text-warning',
     },
     {
         key: '60',
-        title: 'Expiring in 31–60 days',
+        title: t('reports.expiring_31_60_days'),
         items: props.expiringWithin60,
-        empty: 'Nothing in the 31–60 day window.',
+        empty: t('reports.nothing_expiring_31_60'),
         headerClass: '',
         dateClass: '',
     },
     {
         key: '90',
-        title: 'Expiring in 61–90 days',
+        title: t('reports.expiring_61_90_days'),
         items: props.expiringWithin90,
-        empty: 'Nothing in the 61–90 day window.',
+        empty: t('reports.nothing_expiring_61_90'),
         headerClass: '',
         dateClass: '',
     },

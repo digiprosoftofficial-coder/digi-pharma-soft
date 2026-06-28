@@ -1,11 +1,11 @@
 <template>
-    <TenantShellLayout page-title="Customer">
-        <Head :title="customer ? 'Edit customer' : 'New customer'" />
+    <TenantShellLayout :page-title="t('sales.customer')">
+        <Head :title="customer ? t('customers.edit_customer') : t('customers.new_customer')" />
         <div v-if="formError" class="alert alert-danger small">{{ formError }}</div>
-        <h1 class="h4 mb-3">{{ customer ? 'Edit customer' : 'New customer' }}</h1>
+        <h1 class="h4 mb-3">{{ customer ? t('customers.edit_customer') : t('customers.new_customer') }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="mb-2">
-                <label class="form-label">Name</label>
+                <label class="form-label">{{ t('common.name') }}</label>
                 <input v-model="form.name" class="form-control" required />
             </div>
             <div class="mb-2">
@@ -13,7 +13,7 @@
                 <input v-model="form.phone" class="form-control" />
             </div>
             <div class="mb-2">
-                <label class="form-label">Email</label>
+                <label class="form-label">{{ t('customers.email') }}</label>
                 <input v-model="form.email" type="email" class="form-control" />
             </div>
             <div class="mb-2">
@@ -22,7 +22,7 @@
             </div>
             <div v-if="customer" class="alert alert-light border small">
                 <div>{{ t('sales.due') }}: <strong>{{ formatMoney(customer.balance_due) }}</strong></div>
-                <div>Loyalty points: <strong>{{ customer.loyalty_points }}</strong></div>
+                <div>{{ t('customers.loyalty_points') }}: <strong>{{ customer.loyalty_points }}</strong></div>
                 <Link
                     v-if="Number(customer.balance_due) > 0"
                     :href="`/sales/customer-bills/${customer.id}`"
@@ -32,15 +32,15 @@
                 </Link>
             </div>
             <div class="d-flex flex-wrap gap-2 align-items-center">
-                <button type="submit" class="btn btn-primary" :disabled="form.processing">Save</button>
-                <Link href="/customers" class="btn btn-link">Cancel</Link>
+                <button type="submit" class="btn btn-primary" :disabled="form.processing">{{ t('common.save') }}</button>
+                <Link href="/customers" class="btn btn-link">{{ t('common.cancel') }}</Link>
                 <button
                     v-if="customer && can('customers.manage')"
                     type="button"
                     class="btn btn-outline-danger ms-auto"
                     @click="remove"
                 >
-                    Delete
+                    {{ t('common.delete') }}
                 </button>
             </div>
         </form>
