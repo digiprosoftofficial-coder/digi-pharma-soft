@@ -21,6 +21,21 @@ class TenantCatalogPlanFeatureTest extends TestCase
 
         $this->assertTrue(TenantFeatures::bulkImportEnabled($tenant));
         $this->assertTrue(TenantFeatures::advancedCatalogEnabled($tenant));
+        $this->assertFalse(TenantFeatures::barcodeCameraScanEnabled($tenant));
+    }
+
+    public function test_barcode_camera_scan_enabled_from_plan(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $tenant = Tenant::query()->firstOrFail();
+
+        $plan = $tenant->activeSubscription?->plan;
+        $plan->features = ['pos' => true, 'reports' => true, 'barcode_camera_scan' => true];
+        $plan->save();
+        $tenant->refresh();
+
+        $this->assertTrue(TenantFeatures::barcodeCameraScanEnabled($tenant));
+        $this->assertTrue(TenantFeatures::shareForInertia($tenant)['barcode_camera_scan']);
     }
 
     public function test_import_pages_blocked_when_bulk_import_disabled_by_plan(): void
@@ -113,12 +128,19 @@ class TenantCatalogPlanFeatureTest extends TestCase
                 'slug' => 'basic',
                 'price_cents' => 1900,
                 'trial_days' => 7,
-                'features' => ['pos' => true, 'reports' => true, 'bulk_import' => false, 'advanced_catalog' => false],
+                'features' => [
+                    'pos' => true,
+                    'reports' => true,
+                    'bulk_import' => false,
+                    'advanced_catalog' => false,
+                    'barcode_camera_scan' => true,
+                ],
             ])
             ->assertRedirect(route('platform.plans.index'));
 
         $plan = \App\Domain\Billing\Models\SubscriptionPlan::query()->where('slug', 'basic')->firstOrFail();
         $this->assertFalse($plan->features['bulk_import']);
         $this->assertFalse($plan->features['advanced_catalog']);
+        $this->assertTrue($plan->features['barcode_camera_scan']);
     }
 }

@@ -76,6 +76,8 @@ return [
     'feature_attendance_help' => 'লিংকড কর্মচারীদের ক্লক ইন/আউট ও দৈনিক উপস্থিতি।',
     'feature_hr_payroll' => 'HR ও পে-রোল',
     'feature_hr_payroll_help' => 'পে-রোল রান, ছুটির ধরন, ছুটির আবেদন ও HR সারাংশ।',
+    'feature_barcode_camera_scan' => 'ক্যামেরা বারকোড স্ক্যান',
+    'feature_barcode_camera_scan_help' => 'POS-এ মোবাইল বা ল্যাপটপ ক্যামেরা দিয়ে পণ্যের বারকোড স্ক্যান করতে দিন।',
     'employee_management_override_label' => 'কর্মচারী ব্যবস্থাপনা ওভাররাইড',
     'employee_management_override_inherit' => 'প্ল্যান থেকে নিন',
     'employee_management_override_on' => 'চালু করুন',

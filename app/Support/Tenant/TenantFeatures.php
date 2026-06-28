@@ -24,6 +24,8 @@ final class TenantFeatures
 
     public const HR_PAYROLL = 'hr_payroll';
 
+    public const BARCODE_CAMERA_SCAN = 'barcode_camera_scan';
+
     /**
      * Catalog fields only available when the advanced_catalog feature is on.
      *
@@ -87,6 +89,11 @@ final class TenantFeatures
     public static function hrPayrollEnabled(?Tenant $tenant): bool
     {
         return self::enabled($tenant, self::HR_PAYROLL, false);
+    }
+
+    public static function barcodeCameraScanEnabled(?Tenant $tenant): bool
+    {
+        return self::enabled($tenant, self::BARCODE_CAMERA_SCAN, false);
     }
 
     public static function enabled(?Tenant $tenant, string $feature, bool $default = false): bool
@@ -236,6 +243,7 @@ final class TenantFeatures
             'employee_management' => self::employeeManagementEnabled($tenant),
             'attendance' => self::attendanceEnabled($tenant),
             'hr_payroll' => self::hrPayrollEnabled($tenant),
+            'barcode_camera_scan' => self::barcodeCameraScanEnabled($tenant),
         ];
     }
 }

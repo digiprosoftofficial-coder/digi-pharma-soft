@@ -18,7 +18,19 @@
         <div class="row g-3">
             <div class="col-lg-5">
                 <div class="card card-body">
-                    <label class="form-label">{{ t('sales.pos_search_product') }}</label>
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                        <label class="form-label mb-0">{{ t('sales.pos_search_product') }}</label>
+                        <button
+                            v-if="barcodeCameraScanEnabled"
+                            type="button"
+                            class="btn btn-sm"
+                            :class="cameraScanActive ? 'btn-outline-danger' : 'btn-outline-primary'"
+                            :disabled="cameraScanStarting"
+                            @click="cameraScanActive ? stopBarcodeScanner() : startBarcodeScanner()"
+                        >
+                            {{ cameraScanActive ? t('sales.pos_camera_scan_stop') : t('sales.pos_camera_scan_start') }}
+                        </button>
+                    </div>
                     <input
                         ref="searchInput"
                         v-model="q"
@@ -30,6 +42,15 @@
                         @keydown.enter.prevent="onSearchEnter"
                     />
                     <p class="form-text small mb-0">{{ t('sales.pos_scan_hint') }}</p>
+                    <div v-if="barcodeCameraScanEnabled && (cameraScanActive || cameraScanError)" class="pos-barcode-scanner mt-2">
+                        <div v-if="cameraScanError" class="alert alert-warning py-2 mb-2 small">{{ cameraScanError }}</div>
+                        <div v-if="cameraScanActive" class="border rounded bg-dark p-2">
+                            <div :id="barcodeScannerElementId" class="pos-barcode-scanner__viewport"></div>
+                            <p class="small text-white-50 mb-0 mt-2">
+                                {{ cameraScanStarting ? t('sales.pos_camera_scan_starting') : t('sales.pos_camera_scan_hint') }}
+                            </p>
+                        </div>
+                    </div>
                     <ul class="list-group mt-2 small">
                         <li
                             v-for="item in results"
@@ -345,7 +366,8 @@ import { useMoney } from '@/composables/useMoney';
 import { useQuantity } from '@/composables/useQuantity';
 import { defaultSellUnit, stockInSellUnit, unitLabel, unitSalePrice } from '@/composables/useProductUnits';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { Html5Qrcode } from 'html5-qrcode';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 
 const props = defineProps({
     lastSaleId: { type: Number, default: null },
@@ -358,6 +380,7 @@ const { formatMoney, currencyCode } = useMoney();
 const { formatQty } = useQuantity();
 const page = usePage();
 const markupPricingEnabled = computed(() => page.props.features?.markup_pricing ?? false);
+const barcodeCameraScanEnabled = computed(() => page.props.features?.barcode_camera_scan ?? false);
 const checkoutError = computed(() => page.props.errors?.checkout ?? null);
 const saleSuccessMessage = computed(() => page.props.flash?.success || 'Sale completed.');
 const showSaleSuccessAlert = ref(Boolean(props.lastSaleId));
@@ -385,6 +408,12 @@ const paymentMethod = ref('cash');
 const couponCode = ref('');
 const submitting = ref(false);
 const searchInput = ref(null);
+const barcodeScannerElementId = 'pos-barcode-scanner-reader';
+const cameraScanActive = ref(false);
+const cameraScanStarting = ref(false);
+const cameraScanError = ref('');
+let barcodeScanner = null;
+let handlingScannedBarcode = false;
 let timer;
 
 const cartSubtotal = computed(() =>
@@ -447,6 +476,7 @@ function closeSaleSuccessAlert() {
 
 onBeforeUnmount(() => {
     clearTimeout(saleSuccessTimer);
+    void stopBarcodeScanner();
 });
 
 watch(
@@ -535,17 +565,99 @@ async function onSearchEnter() {
 function tryAddFromSearch() {
     const term = q.value.trim();
     if (!term || !results.value.length) {
-        return;
+        return false;
     }
     const exactBarcode = results.value.find((r) => r.barcode === term);
     const pick = exactBarcode ?? (results.value.length === 1 ? results.value[0] : null);
     if (!pick) {
-        return;
+        return false;
     }
     addLine(pick);
     q.value = '';
     results.value = [];
     searchInput.value?.focus();
+
+    return true;
+}
+
+async function startBarcodeScanner() {
+    if (!barcodeCameraScanEnabled.value || cameraScanStarting.value || cameraScanActive.value) {
+        return;
+    }
+
+    cameraScanError.value = '';
+    cameraScanActive.value = true;
+    cameraScanStarting.value = true;
+
+    await nextTick();
+
+    try {
+        barcodeScanner = new Html5Qrcode(barcodeScannerElementId);
+        await barcodeScanner.start(
+            { facingMode: 'environment' },
+            { fps: 10, qrbox: { width: 260, height: 160 } },
+            onBarcodeScanned,
+            () => {},
+        );
+    } catch (error) {
+        cameraScanError.value = t('sales.pos_camera_scan_unavailable');
+        cameraScanActive.value = false;
+        barcodeScanner = null;
+    } finally {
+        cameraScanStarting.value = false;
+    }
+}
+
+async function stopBarcodeScanner() {
+    const scanner = barcodeScanner;
+    barcodeScanner = null;
+    cameraScanActive.value = false;
+    cameraScanStarting.value = false;
+
+    if (!scanner) {
+        return;
+    }
+
+    try {
+        await scanner.stop();
+    } catch (error) {
+        // Scanner may already be stopped if startup failed or the page is closing.
+    }
+
+    try {
+        scanner.clear();
+    } catch (error) {
+        // Ignore cleanup errors from detached DOM nodes.
+    }
+}
+
+async function onBarcodeScanned(decodedText) {
+    if (handlingScannedBarcode) {
+        return;
+    }
+
+    const barcode = decodedText.trim();
+    if (!barcode) {
+        return;
+    }
+
+    handlingScannedBarcode = true;
+    cameraScanError.value = '';
+
+    try {
+        await stopBarcodeScanner();
+        q.value = barcode;
+        await runSearch();
+
+        if (!tryAddFromSearch()) {
+            cameraScanError.value = results.value.length
+                ? t('sales.pos_camera_scan_select_result', { barcode })
+                : t('sales.pos_camera_scan_not_found', { barcode });
+            searchInput.value?.focus();
+        }
+    } finally {
+        handlingScannedBarcode = false;
+    }
 }
 
 function shelfHint(item) {
@@ -854,6 +966,22 @@ function submitSale() {
 .pos-product-card:disabled {
     cursor: not-allowed;
     opacity: 0.55;
+}
+
+.pos-barcode-scanner__viewport {
+    overflow: hidden;
+    border-radius: 0.3rem;
+}
+
+.pos-barcode-scanner__viewport :deep(video) {
+    width: 100% !important;
+    max-height: 18rem;
+    object-fit: cover;
+    border-radius: 0.3rem;
+}
+
+.pos-barcode-scanner__viewport :deep(canvas) {
+    display: none;
 }
 
 .pos-product-card__image-wrap {

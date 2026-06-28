@@ -83,7 +83,12 @@
                     <input id="fhrpayroll" v-model="form.features.hr_payroll" type="checkbox" class="form-check-input" />
                     <label class="form-check-label" for="fhrpayroll">{{ t('platform.feature_hr_payroll') }}</label>
                 </div>
-                <p class="form-text small mb-0">{{ t('platform.feature_hr_payroll_help') }}</p>
+                <p class="form-text small mb-2">{{ t('platform.feature_hr_payroll_help') }}</p>
+                <div class="form-check">
+                    <input id="fbarcodecamera" v-model="form.features.barcode_camera_scan" type="checkbox" class="form-check-input" />
+                    <label class="form-check-label" for="fbarcodecamera">{{ t('platform.feature_barcode_camera_scan') }}</label>
+                </div>
+                <p class="form-text small mb-0">{{ t('platform.feature_barcode_camera_scan_help') }}</p>
             </div>
             <div class="row g-2 mb-3">
                 <div class="col-md-6">
@@ -174,6 +179,7 @@ const form = useForm({
         employee_management: props.plan?.features?.employee_management ?? true,
         attendance: props.plan?.features?.attendance ?? false,
         hr_payroll: props.plan?.features?.hr_payroll ?? false,
+        barcode_camera_scan: props.plan?.features?.barcode_camera_scan ?? false,
         import_preset: props.plan?.features?.import_preset ?? 'pro',
         import_columns: props.plan?.features?.import_columns ?? ['name'],
     },

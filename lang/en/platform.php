@@ -76,6 +76,8 @@ return [
     'feature_attendance_help' => 'Clock in/out and daily attendance tracking for linked employees.',
     'feature_hr_payroll' => 'HR & payroll',
     'feature_hr_payroll_help' => 'Payroll runs, leave types, leave requests, and HR summary.',
+    'feature_barcode_camera_scan' => 'Camera barcode scanning',
+    'feature_barcode_camera_scan_help' => 'Allow POS users to scan product barcodes with a phone or laptop camera.',
     'employee_management_override_label' => 'Employee management override',
     'employee_management_override_inherit' => 'Inherit from plan',
     'employee_management_override_on' => 'Force on',
