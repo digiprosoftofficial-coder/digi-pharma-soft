@@ -115,103 +115,105 @@
                 </div>
             </div>
             <div class="col-lg-7">
-                <div class="card card-body">
+                <div class="card card-body pos-cart-card">
                     <h2 class="h6">{{ t('sales.cart') }}</h2>
                     <p v-if="!cart.length" class="text-muted small">{{ t('sales.cart_empty_hint') }}</p>
-                    <table v-else class="table table-sm align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>{{ t('sales.item') }}</th>
-                                <th style="width: 6rem">{{ t('catalog.sell_unit') }}</th>
-                                <th style="width: 6rem">{{ t('sales.qty') }}</th>
-                                <th style="width: 8rem">{{ t('sales.unit_price') }} ({{ currencyCode() }})</th>
-                                <th class="text-end">{{ t('sales.line_total') }}</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(line, idx) in cart" :key="idx">
-                                <td>
-                                    <div>{{ line.name }}</div>
-                                    <div v-if="line.batches?.length > 1" class="mt-1">
-                                        <select
-                                            v-model.number="line.product_batch_id"
-                                            class="form-select form-select-sm"
-                                            @change="onBatchChange(line)"
-                                        >
-                                            <option v-for="b in line.batches" :key="b.id" :value="b.id">
-                                                {{ formatBatchLabel(b) }}
+                    <div v-else class="pos-cart-table table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>{{ t('sales.item') }}</th>
+                                    <th style="width: 6rem">{{ t('catalog.sell_unit') }}</th>
+                                    <th style="width: 6rem">{{ t('sales.qty') }}</th>
+                                    <th style="width: 8rem">{{ t('sales.unit_price') }} ({{ currencyCode() }})</th>
+                                    <th class="text-end">{{ t('sales.line_total') }}</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(line, idx) in cart" :key="idx">
+                                    <td>
+                                        <div>{{ line.name }}</div>
+                                        <div v-if="line.batches?.length > 1" class="mt-1">
+                                            <select
+                                                v-model.number="line.product_batch_id"
+                                                class="form-select form-select-sm"
+                                                @change="onBatchChange(line)"
+                                            >
+                                                <option v-for="b in line.batches" :key="b.id" :value="b.id">
+                                                    {{ formatBatchLabel(b) }}
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <div v-else class="small text-muted">{{ lineBatchLabel(line) }}</div>
+                                        <div class="small text-muted">{{ lineStockHint(line) }}</div>
+                                        <div v-if="linePriceSourceHint(line)" class="small" :class="line.uses_markup_pricing ? 'text-primary' : 'text-muted'">
+                                            {{ linePriceSourceHint(line) }}
+                                        </div>
+                                        <div v-if="linePricingHint(line)" class="small text-muted">{{ linePricingHint(line) }}</div>
+                                        <div v-if="selectedBatch(line)?.is_expired" class="small text-danger">
+                                            {{ t('catalog.pos_batch_expired') }}
+                                        </div>
+                                        <div v-if="lineMaySplit(line)" class="small text-warning">{{ t('catalog.pos_may_split_batches') }}</div>
+                                    </td>
+                                    <td>
+                                        <select v-model="line.sell_unit" class="form-select form-select-sm" @change="onUnitChange(line)">
+                                            <option v-for="u in line.unit_options" :key="u.sell_unit" :value="u.sell_unit">
+                                                {{ unitLabel(u.sell_unit) }}
                                             </option>
                                         </select>
-                                    </div>
-                                    <div v-else class="small text-muted">{{ lineBatchLabel(line) }}</div>
-                                    <div class="small text-muted">{{ lineStockHint(line) }}</div>
-                                    <div v-if="linePriceSourceHint(line)" class="small" :class="line.uses_markup_pricing ? 'text-primary' : 'text-muted'">
-                                        {{ linePriceSourceHint(line) }}
-                                    </div>
-                                    <div v-if="linePricingHint(line)" class="small text-muted">{{ linePricingHint(line) }}</div>
-                                    <div v-if="selectedBatch(line)?.is_expired" class="small text-danger">
-                                        {{ t('catalog.pos_batch_expired') }}
-                                    </div>
-                                    <div v-if="lineMaySplit(line)" class="small text-warning">{{ t('catalog.pos_may_split_batches') }}</div>
-                                </td>
-                                <td>
-                                    <select v-model="line.sell_unit" class="form-select form-select-sm" @change="onUnitChange(line)">
-                                        <option v-for="u in line.unit_options" :key="u.sell_unit" :value="u.sell_unit">
-                                            {{ unitLabel(u.sell_unit) }}
-                                        </option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <input
-                                        v-model.number="line.quantity"
-                                        type="number"
-                                        min="1"
-                                        step="1"
-                                        class="form-control form-control-sm"
-                                        @change="normalizeLineQuantity(line)"
-                                    />
-                                </td>
-                                <td><input v-model.number="line.unit_price" type="number" min="0" step="0.0001" class="form-control form-control-sm" /></td>
-                                <td class="text-end">{{ formatMoney(Number(line.quantity || 0) * Number(line.unit_price || 0)) }}</td>
-                                <td><button type="button" class="btn btn-sm btn-outline-danger" @click="cart.splice(idx, 1)">×</button></td>
-                            </tr>
-                        </tbody>
-                        <tfoot v-if="cart.length" class="fw-semibold">
-                            <tr>
-                                <td colspan="4" class="text-end">{{ t('sales.subtotal') }}</td>
-                                <td class="text-end">{{ formatMoney(cartSubtotal) }}</td>
-                                <td></td>
-                            </tr>
-                            <tr v-if="cartDiscountAmount > 0">
-                                <td colspan="4" class="text-end text-muted">
-                                    {{ t('sales.pos_discount') }} ({{ cartDiscountPercent }}%)
-                                </td>
-                                <td class="text-end text-danger">−{{ formatMoney(cartDiscountAmount) }}</td>
-                                <td></td>
-                            </tr>
-                            <tr v-if="cartDiscountAmount > 0 || roundAdjustment !== 0">
-                                <td colspan="4" class="text-end">{{ t('sales.total') }}</td>
-                                <td class="text-end">{{ formatMoney(totalAfterDiscount) }}</td>
-                                <td></td>
-                            </tr>
-                            <tr v-if="roundAdjustment !== 0">
-                                <td colspan="4" class="text-end text-muted">
-                                    {{ t('sales.round_adjustment') }}
-                                </td>
-                                <td class="text-end" :class="roundAdjustment > 0 ? 'text-success' : 'text-danger'">
-                                    {{ roundAdjustment > 0 ? '+' : '' }}{{ formatMoney(roundAdjustment) }}
-                                </td>
-                                <td></td>
-                            </tr>
-                            <tr v-if="roundAdjustment !== 0" class="table-primary">
-                                <td colspan="4" class="text-end fw-bold">{{ t('sales.payable_amount') }}</td>
-                                <td class="text-end fw-bold">{{ formatMoney(payableAmount) }}</td>
-                                <td></td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                    <form class="mt-3" @submit.prevent="submitSale">
+                                    </td>
+                                    <td>
+                                        <input
+                                            v-model.number="line.quantity"
+                                            type="number"
+                                            min="1"
+                                            step="1"
+                                            class="form-control form-control-sm"
+                                            @change="normalizeLineQuantity(line)"
+                                        />
+                                    </td>
+                                    <td><input v-model.number="line.unit_price" type="number" min="0" step="0.0001" class="form-control form-control-sm" /></td>
+                                    <td class="text-end">{{ formatMoney(Number(line.quantity || 0) * Number(line.unit_price || 0)) }}</td>
+                                    <td><button type="button" class="btn btn-sm btn-outline-danger" @click="cart.splice(idx, 1)">×</button></td>
+                                </tr>
+                            </tbody>
+                            <tfoot v-if="cart.length" class="fw-semibold">
+                                <tr>
+                                    <td colspan="4" class="text-end">{{ t('sales.subtotal') }}</td>
+                                    <td class="text-end">{{ formatMoney(cartSubtotal) }}</td>
+                                    <td></td>
+                                </tr>
+                                <tr v-if="cartDiscountAmount > 0">
+                                    <td colspan="4" class="text-end text-muted">
+                                        {{ t('sales.pos_discount') }} ({{ cartDiscountPercent }}%)
+                                    </td>
+                                    <td class="text-end text-danger">−{{ formatMoney(cartDiscountAmount) }}</td>
+                                    <td></td>
+                                </tr>
+                                <tr v-if="cartDiscountAmount > 0 || roundAdjustment !== 0">
+                                    <td colspan="4" class="text-end">{{ t('sales.total') }}</td>
+                                    <td class="text-end">{{ formatMoney(totalAfterDiscount) }}</td>
+                                    <td></td>
+                                </tr>
+                                <tr v-if="roundAdjustment !== 0">
+                                    <td colspan="4" class="text-end text-muted">
+                                        {{ t('sales.round_adjustment') }}
+                                    </td>
+                                    <td class="text-end" :class="roundAdjustment > 0 ? 'text-success' : 'text-danger'">
+                                        {{ roundAdjustment > 0 ? '+' : '' }}{{ formatMoney(roundAdjustment) }}
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr v-if="roundAdjustment !== 0" class="table-primary">
+                                    <td colspan="4" class="text-end fw-bold">{{ t('sales.payable_amount') }}</td>
+                                    <td class="text-end fw-bold">{{ formatMoney(payableAmount) }}</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <form class="mt-3 pos-checkout-form" @submit.prevent="submitSale">
                         <div class="mb-2">
                             <label class="form-label">{{ t('sales.pos_customer') }}</label>
 
@@ -263,7 +265,7 @@
                                     <button type="button" class="btn btn-sm btn-link p-0" @click="toggleNewCustomerForm">{{ t('common.cancel') }}</button>
                                 </div>
                                 <div class="row g-2">
-                                    <div class="col-7">
+                                    <div class="col-12 col-sm-7">
                                         <input
                                             v-model="newCustomerName"
                                             type="text"
@@ -272,7 +274,7 @@
                                             required
                                         />
                                     </div>
-                                    <div class="col-5">
+                                    <div class="col-12 col-sm-5">
                                         <input
                                             v-model="newCustomerPhone"
                                             type="text"
@@ -288,7 +290,7 @@
                             </p>
                         </div>
                         <div class="row g-2 mb-2">
-                            <div class="col-6">
+                            <div class="col-12 col-sm-6">
                                 <label class="form-label">{{ t('sales.pos_discount') }}</label>
                                 <div class="input-group input-group-sm">
                                     <input
@@ -305,7 +307,7 @@
                                     {{ t('sales.pos_discount_amount', { amount: formatMoney(cartDiscountAmount) }) }}
                                 </p>
                             </div>
-                            <div class="col-6">
+                            <div class="col-12 col-sm-6">
                                 <label class="form-label">{{ t('sales.pos_amount_tendered') }}</label>
                                 <input
                                     v-model.number="amountPaid"
@@ -317,7 +319,7 @@
                                 />
                             </div>
                         </div>
-                        <div class="mb-2 d-flex flex-wrap gap-2 align-items-center small">
+                        <div class="mb-2 d-flex flex-wrap gap-2 align-items-center small pos-payment-row">
                             <button type="button" class="btn btn-sm btn-outline-secondary" @click="setPayFull">
                                 {{ t('sales.pos_pay_full') }}
                             </button>
@@ -343,7 +345,7 @@
                             <label class="form-label">{{ t('sales.coupon_code') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
                             <input v-model="couponCode" type="text" class="form-control form-control-sm text-uppercase" placeholder="SAVE10" autocomplete="off" />
                         </div>
-                        <button type="submit" class="btn btn-success" :disabled="!cart.length || submitting || needsCustomerForDue">{{ t('sales.complete_sale') }}</button>
+                        <button type="submit" class="btn btn-success pos-complete-sale" :disabled="!cart.length || submitting || needsCustomerForDue">{{ t('sales.complete_sale') }}</button>
                     </form>
                 </div>
             </div>
@@ -945,6 +947,10 @@ function submitSale() {
     gap: 0.75rem;
 }
 
+.pos-cart-table table {
+    min-width: 760px;
+}
+
 .pos-product-card {
     display: flex;
     flex-direction: column;
@@ -1021,8 +1027,39 @@ function submitSale() {
 }
 
 @media (max-width: 575.98px) {
+    .pos-cart-card {
+        margin-right: -0.25rem;
+        margin-left: -0.25rem;
+    }
+
+    .pos-cart-table {
+        margin-right: -0.75rem;
+        margin-left: -0.75rem;
+    }
+
     .pos-product-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+    }
+
+    .pos-product-card {
+        min-height: 9.25rem;
+        padding: 0.55rem;
+    }
+
+    .pos-product-card__image-wrap {
+        height: 4rem;
+    }
+
+    .pos-payment-row .btn,
+    .pos-complete-sale {
+        width: 100%;
+    }
+
+    .pos-checkout-form .form-control,
+    .pos-checkout-form .form-select,
+    .pos-checkout-form .btn {
+        min-height: 2.5rem;
     }
 }
 </style>

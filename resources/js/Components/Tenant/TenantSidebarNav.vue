@@ -7,6 +7,7 @@
                     href="/dashboard"
                     class="tenant-nav-item"
                     :class="{ 'tenant-nav-item--active': isExact('/dashboard') }"
+                    @click="notifyNavigate"
                 >
                     <TenantNavIcon name="dashboard" />
                     <span class="tenant-nav-label">{{ t('tenant_nav.dashboard') }}</span>
@@ -51,6 +52,7 @@
                                     'tenant-nav-child--active': isChildActive(child),
                                     'tenant-nav-child--inactive': !isChildActive(child),
                                 }"
+                                @click="notifyNavigate"
                             >
                                 <TenantNavIcon :name="child.icon" />
                                 <span>{{ child.label }}</span>
@@ -68,6 +70,7 @@
                             'tenant-nav-item--active': pathStarts('/reports'),
                             'tenant-nav-item--inactive': !pathStarts('/reports'),
                         }"
+                        @click="notifyNavigate"
                     >
                         <TenantNavIcon name="report" />
                         <span class="tenant-nav-label">{{ t('reports.hub') }}</span>
@@ -84,6 +87,7 @@
                     'tenant-nav-child--active': isExact('/support') || pathStarts('/support'),
                     'tenant-nav-child--inactive': !(isExact('/support') || pathStarts('/support')),
                 }"
+                @click="notifyNavigate"
             >
                 <TenantNavIcon name="support" />
                 <span>{{ t('tenant_nav.support') }}</span>
@@ -96,6 +100,7 @@
                     'tenant-nav-child--active': pathStarts('/platform'),
                     'tenant-nav-child--inactive': !pathStarts('/platform'),
                 }"
+                @click="notifyNavigate"
             >
                 <TenantNavIcon name="globe" />
                 <span>{{ t('tenant_nav.global_settings') }}</span>
@@ -104,6 +109,7 @@
                 v-else
                 href="/global-settings"
                 class="tenant-nav-child tenant-nav-child--inactive"
+                @click="notifyNavigate"
             >
                 <TenantNavIcon name="globe" />
                 <span>{{ t('tenant_nav.global_settings') }}</span>
@@ -122,6 +128,7 @@ import { computed, reactive, watch } from 'vue';
 const { t } = useLocale();
 const { can } = usePermissions();
 const page = usePage();
+const emit = defineEmits(['navigate']);
 
 const usesPlatform = computed(() => page.props.auth?.user?.uses_platform_dashboard === true);
 const bulkImportEnabled = computed(() => page.props.features?.bulk_import ?? true);
@@ -153,6 +160,10 @@ function isChildActive(child) {
         return u === '/products' || (u.startsWith('/products/') && u !== '/products/create');
     }
     return pathStarts(child.href);
+}
+
+function notifyNavigate() {
+    emit('navigate');
 }
 
 const sectionsConfig = computed(() => [
@@ -311,6 +322,7 @@ function toggle(id) {
     align-items: center;
     gap: 0.65rem;
     width: 100%;
+    min-height: 2.75rem;
     padding: 0.55rem 0.75rem;
     border: 0;
     border-radius: 0.5rem;
@@ -369,6 +381,7 @@ function toggle(id) {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    min-height: 2.5rem;
     padding: 0.4rem 0.65rem 0.4rem 2rem;
     margin: 0.1rem 0;
     border-radius: 0.4rem;
@@ -397,5 +410,17 @@ function toggle(id) {
 
 .tenant-nav-footer .tenant-nav-child {
     padding-left: 0.75rem;
+}
+
+@media (max-width: 991.98px) {
+    .tenant-nav-item {
+        min-height: 3rem;
+        font-size: 0.95rem;
+    }
+
+    .tenant-nav-child {
+        min-height: 2.75rem;
+        font-size: 0.9rem;
+    }
 }
 </style>

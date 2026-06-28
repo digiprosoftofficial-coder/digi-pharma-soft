@@ -32,6 +32,11 @@
                 </div>
                 <div v-if="form.errors['settings.currency']" class="text-danger small">{{ form.errors['settings.currency'] }}</div>
             </div>
+            <div class="mb-2">
+                <label class="form-label">{{ t('common.language') }}</label>
+                <LocaleSwitcher fluid />
+                <div class="form-text">{{ t('common.language_settings_hint', 'This changes the app language for your account.') }}</div>
+            </div>
             <div v-if="supplierBranchLedgerEnabled" class="border-top pt-3 mt-3 mb-3">
                 <h2 class="h6 mb-3">{{ t('purchases.supplier_bills') }}</h2>
                 <div class="form-check mb-2">
@@ -74,6 +79,7 @@
 
 <script setup>
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import LocaleSwitcher from '@/Components/LocaleSwitcher.vue';
 import { useLocale } from '@/composables/useLocale';
 import { usePermissions } from '@/composables/usePermissions';
 import { Head, useForm } from '@inertiajs/vue3';

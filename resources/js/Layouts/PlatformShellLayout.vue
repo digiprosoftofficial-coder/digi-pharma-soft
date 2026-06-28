@@ -20,7 +20,6 @@
         <div class="flex-grow-1 d-flex flex-column min-vh-100 min-w-0">
             <header class="border-bottom bg-white px-3 py-2 d-flex flex-wrap align-items-center gap-2">
                 <h1 class="h5 mb-0 text-primary me-auto">{{ pageTitle }}</h1>
-                <LocaleSwitcher />
                 <span class="small text-muted d-none d-md-inline">{{ userName }}</span>
                 <Link href="/logout" method="post" as="button" class="btn btn-sm btn-outline-secondary">
                     {{ t('common.logout') }}
@@ -38,7 +37,6 @@
 </template>
 
 <script setup>
-import LocaleSwitcher from '@/Components/LocaleSwitcher.vue';
 import { useLocale } from '@/composables/useLocale';
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';

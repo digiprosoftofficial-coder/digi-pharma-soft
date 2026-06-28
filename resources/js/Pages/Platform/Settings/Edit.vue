@@ -76,18 +76,23 @@
             <h2 class="h6 mt-4">{{ t('platform.settings_section_region') }}</h2>
             <p class="small text-muted">{{ t('platform.settings_region_help') }}</p>
             <div class="row g-2 mb-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
+                    <label class="form-label">{{ t('common.language') }}</label>
+                    <LocaleSwitcher fluid />
+                    <div class="form-text">{{ t('common.language_settings_hint', 'This changes the app language for your account.') }}</div>
+                </div>
+                <div class="col-md-3">
                     <label class="form-label">{{ t('platform.settings_default_locale') }}</label>
                     <select v-model="form.default_locale" class="form-select" required>
                         <option value="en">English</option>
                         <option value="bn">বাংলা</option>
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label">{{ t('platform.settings_default_timezone') }}</label>
                     <input v-model="form.default_timezone" class="form-control" required />
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label">{{ t('platform.settings_default_country') }}</label>
                     <input v-model="form.default_country_code" class="form-control" maxlength="2" required />
                 </div>
@@ -195,6 +200,7 @@
 
 <script setup>
 import PlatformShellLayout from '@/Layouts/PlatformShellLayout.vue';
+import LocaleSwitcher from '@/Components/LocaleSwitcher.vue';
 import { useLocale } from '@/composables/useLocale';
 import { Head, useForm } from '@inertiajs/vue3';
 

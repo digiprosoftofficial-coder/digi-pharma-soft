@@ -2,7 +2,7 @@
     <TenantShellLayout page-title="New purchase">
         <Head title="New purchase" />
         <h1 class="h4 mb-3">Record purchase</h1>
-        <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
+        <form class="card border-0 shadow-sm card-body purchase-form" @submit.prevent="submit">
             <div class="row g-2 mb-3">
                 <div class="col-md-4">
                     <label class="form-label">{{ t('purchases.supplier') }}</label>
@@ -113,13 +113,13 @@
             <p v-if="!form.lines.length" class="text-muted small">Search and click a product above to add lines.</p>
             <div v-if="form.errors.lines" class="text-danger small mb-2">{{ form.errors.lines }}</div>
 
-            <div v-for="(line, i) in form.lines" :key="line._key" class="border rounded p-3 mb-2 bg-white">
-                <div class="d-flex justify-content-between align-items-start mb-2">
+            <div v-for="(line, i) in form.lines" :key="line._key" class="purchase-line-card border rounded p-3 mb-2 bg-white">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
                     <div>
                         <span class="fw-semibold">{{ line.product_name }}</span>
                         <span class="text-muted small ms-2">{{ line.product_sku }}</span>
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-danger" @click="removeLine(i)">Remove</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger purchase-line-remove" @click="removeLine(i)">Remove</button>
                 </div>
                 <div class="row g-2 align-items-end">
                     <div class="col-md-3">
@@ -313,7 +313,7 @@
                 </div>
             </div>
 
-            <div class="mt-3">
+            <div class="purchase-actions mt-3 d-grid d-sm-flex gap-2">
                 <button type="submit" class="btn btn-primary" :disabled="form.processing || !form.lines.length">Save purchase</button>
                 <Link href="/purchases" class="btn btn-link">Cancel</Link>
             </div>
@@ -765,3 +765,26 @@ function submit() {
     }).post('/purchases');
 }
 </script>
+
+<style scoped>
+.purchase-form :deep(.form-control),
+.purchase-form :deep(.form-select),
+.purchase-form :deep(.btn) {
+    min-height: 2.35rem;
+}
+
+@media (max-width: 575.98px) {
+    .purchase-form {
+        padding: 0.75rem !important;
+    }
+
+    .purchase-line-card {
+        padding: 0.75rem !important;
+    }
+
+    .purchase-line-remove,
+    .purchase-actions .btn {
+        width: 100%;
+    }
+}
+</style>

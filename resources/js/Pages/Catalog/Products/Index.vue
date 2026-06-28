@@ -36,7 +36,7 @@
                         <option value="0">{{ t('common.inactive') }}</option>
                     </select>
                 </div>
-                <div class="col-md-2 d-flex gap-1">
+                <div class="col-md-2 d-grid d-sm-flex gap-1">
                     <button type="submit" class="btn btn-sm btn-primary">{{ t('purchases.filter') }}</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary" @click="clearFilters">{{ t('purchases.reset') }}</button>
                 </div>
@@ -44,10 +44,10 @@
         </form>
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
             <p class="small text-muted mb-0">{{ resultsSummary }}</p>
-            <div class="d-flex flex-wrap align-items-center gap-2">
+            <div class="product-toolbar d-flex flex-wrap align-items-center gap-2">
                 <select
                     v-model="filterForm.category_id"
-                    class="form-select form-select-sm"
+                    class="form-select form-select-sm product-category-filter"
                     style="width: auto; min-width: 11rem"
                     @change="applyFilters"
                 >
@@ -56,7 +56,7 @@
                         {{ category.name }}
                     </option>
                 </select>
-                <div class="btn-group btn-group-sm" role="group" :aria-label="t('catalog.products_view_mode')">
+                <div class="btn-group btn-group-sm product-view-toggle" role="group" :aria-label="t('catalog.products_view_mode')">
                     <button
                         type="button"
                         class="btn"
@@ -82,7 +82,7 @@
                         {{ t('catalog.products_view_compact') }}
                     </button>
                 </div>
-                <div class="d-flex align-items-center gap-2">
+                <div class="product-per-page d-flex align-items-center gap-2">
                     <label class="small text-muted mb-0" for="per-page">{{ t('catalog.products_per_page') }}</label>
                     <select
                         id="per-page"
@@ -366,6 +366,9 @@ function loadViewMode() {
     } catch {
         // ignore
     }
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        return 'grid';
+    }
     return 'table';
 }
 
@@ -460,5 +463,26 @@ function confirmDelete(product) {
 .product-card-image--placeholder {
     object-fit: contain;
     padding: 0.75rem;
+}
+
+.table-responsive table {
+    min-width: 860px;
+}
+
+@media (max-width: 575.98px) {
+    .product-toolbar,
+    .product-category-filter,
+    .product-view-toggle,
+    .product-per-page {
+        width: 100% !important;
+    }
+
+    .product-view-toggle .btn {
+        flex: 1 1 0;
+    }
+
+    .product-per-page {
+        justify-content: space-between;
+    }
 }
 </style>
