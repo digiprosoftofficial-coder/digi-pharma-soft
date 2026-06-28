@@ -71,6 +71,20 @@
                 </select>
                 <div class="form-text">{{ t('sales.pos_rounding_hint') }}</div>
             </div>
+            <div v-if="packageSalesAvailable" class="border-top pt-3 mt-3 mb-3">
+                <h2 class="h6 mb-2">{{ t('tenant_nav.package_sell') }}</h2>
+                <div class="form-check">
+                    <input
+                        id="packageSales"
+                        v-model="form.settings.features.package_sales"
+                        type="checkbox"
+                        class="form-check-input"
+                        :disabled="!can('settings.manage')"
+                    />
+                    <label class="form-check-label" for="packageSales">Enable package sales and package templates</label>
+                </div>
+                <p class="form-text small mb-0">When enabled, package sale and package template management will appear in the sales menu.</p>
+            </div>
             <button v-if="can('settings.manage')" type="submit" class="btn btn-primary" :disabled="form.processing">{{ t('common.save') }}</button>
             <p v-else class="small text-muted mb-0">{{ t('common.settings_view_only') }}</p>
         </form>
@@ -90,6 +104,7 @@ const props = defineProps({
     platformDefaultCurrency: { type: String, default: 'BDT' },
     roundingOptions: { type: Array, default: () => [{ value: 'none', label: 'None' }] },
     supplierBranchLedgerEnabled: { type: Boolean, default: false },
+    packageSalesAvailable: { type: Boolean, default: false },
 });
 
 const { t } = useLocale();
@@ -105,6 +120,9 @@ const form = useForm({
         supplier_payments: {
             cross_branch: props.tenant.settings?.supplier_payments?.cross_branch ?? true,
             managers_can_pay: props.tenant.settings?.supplier_payments?.managers_can_pay ?? false,
+        },
+        features: {
+            package_sales: props.tenant.settings?.features?.package_sales ?? false,
         },
     },
 });

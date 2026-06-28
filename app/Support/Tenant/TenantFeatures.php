@@ -3,6 +3,7 @@
 namespace App\Support\Tenant;
 
 use App\Domain\Tenant\Models\Tenant;
+use App\Support\Platform\PlatformSettings;
 
 final class TenantFeatures
 {
@@ -25,6 +26,8 @@ final class TenantFeatures
     public const HR_PAYROLL = 'hr_payroll';
 
     public const BARCODE_CAMERA_SCAN = 'barcode_camera_scan';
+
+    public const PACKAGE_SALES = 'package_sales';
 
     /**
      * Catalog fields only available when the advanced_catalog feature is on.
@@ -94,6 +97,27 @@ final class TenantFeatures
     public static function barcodeCameraScanEnabled(?Tenant $tenant): bool
     {
         return self::enabled($tenant, self::BARCODE_CAMERA_SCAN, false);
+    }
+
+    public static function packageSalesPlatformEnabled(): bool
+    {
+        return (bool) (PlatformSettings::defaultFeatureFlags()[self::PACKAGE_SALES] ?? false);
+    }
+
+    public static function packageSalesAvailable(?Tenant $tenant): bool
+    {
+        return $tenant !== null
+            && self::packageSalesPlatformEnabled()
+            && self::fromPlan($tenant, self::PACKAGE_SALES, false);
+    }
+
+    public static function packageSalesEnabled(?Tenant $tenant): bool
+    {
+        if (! self::packageSalesAvailable($tenant)) {
+            return false;
+        }
+
+        return (bool) (($tenant->settings['features'][self::PACKAGE_SALES] ?? false));
     }
 
     public static function enabled(?Tenant $tenant, string $feature, bool $default = false): bool
@@ -244,6 +268,8 @@ final class TenantFeatures
             'attendance' => self::attendanceEnabled($tenant),
             'hr_payroll' => self::hrPayrollEnabled($tenant),
             'barcode_camera_scan' => self::barcodeCameraScanEnabled($tenant),
+            'package_sales_available' => self::packageSalesAvailable($tenant),
+            'package_sales' => self::packageSalesEnabled($tenant),
         ];
     }
 }

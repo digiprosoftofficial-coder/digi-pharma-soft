@@ -30,6 +30,7 @@ final class TenantSettingsController extends Controller
                 'currency' => $tenant->currency(),
             ],
             'supplierBranchLedgerEnabled' => TenantFeatures::supplierBranchLedgerEnabled($tenant),
+            'packageSalesAvailable' => TenantFeatures::packageSalesAvailable($tenant),
             'currencies' => SupportedCurrencies::codes(),
             'platformDefaultCurrency' => PlatformSettings::defaultCurrency(),
             'roundingOptions' => [
@@ -54,6 +55,7 @@ final class TenantSettingsController extends Controller
             'settings.invoice_rounding' => ['nullable', Rule::in([InvoiceRounding::NONE, InvoiceRounding::NEAREST_1])],
             'settings.supplier_payments.cross_branch' => ['nullable', 'boolean'],
             'settings.supplier_payments.managers_can_pay' => ['nullable', 'boolean'],
+            'settings.features.package_sales' => ['nullable', 'boolean'],
         ]);
 
         $tenant->name = $validated['name'];
@@ -71,6 +73,16 @@ final class TenantSettingsController extends Controller
                 }
                 $settings['supplier_payments'] = $payments;
                 unset($incoming['supplier_payments']);
+            }
+
+            if (array_key_exists('features', $incoming)) {
+                $features = $settings['features'] ?? [];
+                if (array_key_exists(TenantFeatures::PACKAGE_SALES, $incoming['features'])) {
+                    $features[TenantFeatures::PACKAGE_SALES] = TenantFeatures::packageSalesAvailable($tenant)
+                        && (bool) $incoming['features'][TenantFeatures::PACKAGE_SALES];
+                }
+                $settings['features'] = $features;
+                unset($incoming['features']);
             }
 
             foreach ($incoming as $key => $value) {

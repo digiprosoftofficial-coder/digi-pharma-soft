@@ -24,11 +24,13 @@ class PlatformPlanCrudTest extends TestCase
                 'slug' => 'starter',
                 'price_cents' => 9900,
                 'trial_days' => 7,
-                'features' => ['pos' => true, 'reports' => false],
+                'features' => ['pos' => true, 'reports' => false, 'package_sales' => true],
             ])
             ->assertRedirect(route('platform.plans.index'));
 
         $this->assertDatabaseHas('subscription_plans', ['slug' => 'starter']);
+        $plan = SubscriptionPlan::query()->where('slug', 'starter')->firstOrFail();
+        $this->assertTrue($plan->features['package_sales']);
     }
 
     public function test_tenant_owner_cannot_access_platform_plans(): void

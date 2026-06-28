@@ -88,7 +88,12 @@
                     <input id="fbarcodecamera" v-model="form.features.barcode_camera_scan" type="checkbox" class="form-check-input" />
                     <label class="form-check-label" for="fbarcodecamera">{{ t('platform.feature_barcode_camera_scan') }}</label>
                 </div>
-                <p class="form-text small mb-0">{{ t('platform.feature_barcode_camera_scan_help') }}</p>
+                <p class="form-text small mb-2">{{ t('platform.feature_barcode_camera_scan_help') }}</p>
+                <div class="form-check">
+                    <input id="fpackagesales" v-model="form.features.package_sales" type="checkbox" class="form-check-input" />
+                    <label class="form-check-label" for="fpackagesales">Package sales</label>
+                </div>
+                <p class="form-text small mb-0">Allow tenants on this plan to enable package templates and package sale checkout.</p>
             </div>
             <div class="row g-2 mb-3">
                 <div class="col-md-6">
@@ -180,6 +185,7 @@ const form = useForm({
         attendance: props.plan?.features?.attendance ?? false,
         hr_payroll: props.plan?.features?.hr_payroll ?? false,
         barcode_camera_scan: props.plan?.features?.barcode_camera_scan ?? false,
+        package_sales: props.plan?.features?.package_sales ?? false,
         import_preset: props.plan?.features?.import_preset ?? 'pro',
         import_columns: props.plan?.features?.import_columns ?? ['name'],
     },

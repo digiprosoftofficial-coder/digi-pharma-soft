@@ -191,6 +191,11 @@
                     <input id="f-stock" v-model="form.feature_flags.stock_transfers" type="checkbox" class="form-check-input" />
                     <label class="form-check-label" for="f-stock">Stock transfers</label>
                 </div>
+                <div class="form-check">
+                    <input id="f-package-sales" v-model="form.feature_flags.package_sales" type="checkbox" class="form-check-input" />
+                    <label class="form-check-label" for="f-package-sales">Package sales</label>
+                    <div class="form-text small">Allow pharmacy owners to enable package templates and package sale checkout.</div>
+                </div>
             </div>
 
             <button type="submit" class="btn btn-primary" :disabled="form.processing">{{ t('common.save') }}</button>
@@ -226,6 +231,7 @@ const form = useForm({
         pos: props.settings.feature_flags?.pos ?? true,
         reports: props.settings.feature_flags?.reports ?? true,
         stock_transfers: props.settings.feature_flags?.stock_transfers ?? true,
+        package_sales: props.settings.feature_flags?.package_sales ?? false,
     },
     audit_log_retention_days: props.settings.audit_log_retention_days ?? 365,
     compliance_export_retention_days: props.settings.compliance_export_retention_days ?? 7,

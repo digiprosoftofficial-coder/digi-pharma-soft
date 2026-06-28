@@ -103,6 +103,7 @@ final class PlatformPlanController extends Controller
             'features.attendance' => ['boolean'],
             'features.hr_payroll' => ['boolean'],
             'features.barcode_camera_scan' => ['boolean'],
+            'features.package_sales' => ['boolean'],
             'features.import_preset' => ['nullable', 'string', Rule::in(ProductImportCsv::PRESETS)],
             'features.import_columns' => ['nullable', 'array'],
             'features.import_columns.*' => ['string', Rule::in(ProductImportCsv::HEADERS)],
@@ -130,6 +131,7 @@ final class PlatformPlanController extends Controller
             'attendance' => $request->boolean('features.attendance', false),
             'hr_payroll' => $request->boolean('features.hr_payroll', false),
             'barcode_camera_scan' => $request->boolean('features.barcode_camera_scan', false),
+            'package_sales' => $request->boolean('features.package_sales', false),
             'import_preset' => $importPreset,
             'import_columns' => $importColumns,
         ];

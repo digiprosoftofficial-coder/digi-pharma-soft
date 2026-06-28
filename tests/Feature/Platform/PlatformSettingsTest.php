@@ -31,6 +31,7 @@ class PlatformSettingsTest extends TestCase
         $this->assertSame('support@pharmacy.test', $settings['support_email']);
         $this->assertTrue($settings['sms_api_key_set']);
         $this->assertFalse($settings['feature_flags']['stock_transfers']);
+        $this->assertTrue($settings['feature_flags']['package_sales']);
         $this->assertSame('BDT', $settings['default_currency']);
     }
 
@@ -90,6 +91,7 @@ class PlatformSettingsTest extends TestCase
                 'pos' => true,
                 'reports' => true,
                 'stock_transfers' => false,
+                'package_sales' => true,
             ],
             'audit_log_retention_days' => 365,
             'compliance_export_retention_days' => 7,

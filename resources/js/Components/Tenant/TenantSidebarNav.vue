@@ -136,6 +136,7 @@ const multiBranchEnabled = computed(() => page.props.features?.multi_branch ?? f
 const employeeManagementEnabled = computed(() => page.props.features?.employee_management ?? true);
 const attendanceEnabled = computed(() => page.props.features?.attendance ?? false);
 const hrPayrollEnabled = computed(() => page.props.features?.hr_payroll ?? false);
+const packageSalesEnabled = computed(() => page.props.features?.package_sales ?? false);
 
 const url = computed(() => page.url || '');
 function pathNow() {
@@ -171,12 +172,13 @@ const sectionsConfig = computed(() => [
         id: 'sales',
         icon: 'sales',
         label: t('tenant_nav.sales'),
-        show: can('sales.view') || can('pos.access') || can('returns.manage'),
-        paths: ['/sales', '/pos', '/sales/package', '/sales/returns'],
+        show: can('sales.view') || can('pos.access') || can('returns.manage') || packageSalesEnabled.value,
+        paths: ['/sales', '/pos', '/sales/package', '/sales/packages', '/sales/returns'],
         children: [
             { href: '/sales', icon: 'list', label: t('tenant_nav.sales_list'), show: can('sales.view'), match: 'exact' },
             { href: '/pos', icon: 'plus', label: t('tenant_nav.pos'), show: can('pos.access'), match: 'exact' },
-            { href: '/sales/package', icon: 'package', label: t('tenant_nav.package_sell'), show: can('pos.access'), match: 'prefix' },
+            { href: '/sales/package', icon: 'package', label: t('tenant_nav.package_sell'), show: can('pos.access') && packageSalesEnabled.value, match: 'exact' },
+            { href: '/sales/packages', icon: 'package', label: 'Package templates', show: can('pos.access') && packageSalesEnabled.value, match: 'prefix' },
             { href: '/sales/returns', icon: 'return', label: t('tenant_nav.returns'), show: can('returns.manage'), match: 'prefix' },
             { href: '/sales/customer-bills', icon: 'bill', label: t('tenant_nav.customer_bills'), show: can('customers.view'), match: 'prefix' },
         ],

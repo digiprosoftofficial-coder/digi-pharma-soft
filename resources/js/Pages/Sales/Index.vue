@@ -34,19 +34,20 @@
                     </div>
 
                     <div v-if="expanded === s.id && s.lines?.length" class="sales-mobile-card__lines small mb-2">
-                        <div v-for="line in s.lines" :key="line.id" class="border-top py-2">
-                            <div class="fw-medium">{{ line.product?.name ?? t('sales.product') }}</div>
-                            <div class="text-muted">
-                                {{ formatQty(line.quantity) }} {{ line.sell_unit ?? '' }}
-                                <template v-if="line.batch">
-                                    · {{ batchLineLabel(line.batch) }}
-                                </template>
+                        <div v-for="line in s.lines" :key="line.id" class="sales-line-mobile-card">
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <div class="min-w-0">
+                                    <div class="fw-semibold text-truncate">{{ line.product?.name ?? t('sales.product') }}</div>
+                                    <div class="text-muted text-truncate">
+                                        <span>{{ formatQty(line.quantity) }} {{ line.sell_unit ?? '' }}</span>
+                                        <template v-if="line.batch">
+                                            <span> · {{ batchLineLabel(line.batch) }}</span>
+                                        </template>
+                                    </div>
+                                </div>
+                                <strong class="text-nowrap">{{ formatMoney(line.line_total) }}</strong>
                             </div>
-                            <div class="d-flex justify-content-between gap-2 mt-1">
-                                <span class="text-muted">{{ t('sales.line_total') }}</span>
-                                <span>{{ formatMoney(line.line_total) }}</span>
-                            </div>
-                            <div v-if="line.unit_cost_at_sale != null" class="text-muted">
+                            <div v-if="line.unit_cost_at_sale != null" class="sales-line-mobile-card__profit">
                                 {{ lineCostProfitLabel(line) }}
                             </div>
                         </div>
@@ -140,30 +141,26 @@
                                 </button>
                             </td>
                         </tr>
-                        <tr v-if="expanded === s.id && s.lines?.length" class="table-light">
+                        <tr v-if="expanded === s.id && s.lines?.length" class="table-light sales-expanded-row">
                             <td></td>
                             <td colspan="6" class="py-2">
-                                <ul class="list-unstyled small mb-0">
-                                    <li v-for="line in s.lines" :key="line.id" class="mb-1">
-                                        <span class="fw-medium">{{ line.product?.name ?? t('sales.product') }}</span>
-                                        <span class="text-muted">
-                                            — {{ formatQty(line.quantity) }} {{ line.sell_unit ?? '' }}
-                                            <template v-if="line.batch">
-                                                · {{ batchLineLabel(line.batch) }}
-                                            </template>
-                                        </span>
-                                        <span class="float-end text-end">
-                                            <span>{{ formatMoney(line.line_total) }}</span>
-                                            <span
-                                                v-if="line.unit_cost_at_sale != null"
-                                                class="d-block text-muted"
-                                                style="font-size: 0.85em"
-                                            >
+                                <div class="sales-line-list">
+                                    <div v-for="line in s.lines" :key="line.id" class="sales-line-row">
+                                        <div class="sales-line-row__product min-w-0">
+                                            <div class="fw-semibold text-truncate">{{ line.product?.name ?? t('sales.product') }}</div>
+                                            <div v-if="line.batch" class="text-muted text-truncate">{{ batchLineLabel(line.batch) }}</div>
+                                        </div>
+                                        <div class="sales-line-row__qty text-muted">
+                                            {{ formatQty(line.quantity) }} {{ line.sell_unit ?? '' }}
+                                        </div>
+                                        <div class="sales-line-row__amount text-end">
+                                            <strong>{{ formatMoney(line.line_total) }}</strong>
+                                            <div v-if="line.unit_cost_at_sale != null" class="text-muted">
                                                 {{ lineCostProfitLabel(line) }}
-                                            </span>
-                                        </span>
-                                    </li>
-                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                     </template>
@@ -228,6 +225,47 @@ function confirmVoid(sale) {
     font-size: 0.92rem;
 }
 
+.sales-line-mobile-card {
+    border: 1px solid #e9ecef;
+    border-radius: 0.65rem;
+    background: #fff;
+    padding: 0.65rem;
+    margin-bottom: 0.5rem;
+}
+
+.sales-line-mobile-card__profit {
+    border-top: 1px solid #f1f3f5;
+    color: #6c757d;
+    font-size: 0.82rem;
+    margin-top: 0.45rem;
+    padding-top: 0.45rem;
+}
+
+.sales-line-list {
+    display: grid;
+    gap: 0.4rem;
+}
+
+.sales-line-row {
+    display: grid;
+    grid-template-columns: minmax(14rem, 1fr) 8rem minmax(12rem, 16rem);
+    align-items: center;
+    gap: 0.75rem;
+    border: 1px solid #e9ecef;
+    border-radius: 0.65rem;
+    background: #fff;
+    padding: 0.6rem 0.75rem;
+}
+
+.sales-line-row__qty,
+.sales-line-row__amount {
+    font-size: 0.9rem;
+}
+
+.sales-line-row__amount .text-muted {
+    font-size: 0.82rem;
+}
+
 .sales-mobile-card__actions {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -239,5 +277,11 @@ function confirmVoid(sale) {
     padding-right: 0.35rem;
     padding-left: 0.35rem;
     font-size: 0.78rem;
+}
+
+@media (max-width: 991.98px) {
+    .sales-line-row {
+        grid-template-columns: minmax(12rem, 1fr) 7rem minmax(10rem, 14rem);
+    }
 }
 </style>

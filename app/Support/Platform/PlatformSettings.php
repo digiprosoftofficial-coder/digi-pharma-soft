@@ -178,6 +178,7 @@ final class PlatformSettings
                 'pos' => true,
                 'reports' => true,
                 'stock_transfers' => true,
+                'package_sales' => false,
             ],
         ]);
     }
@@ -207,6 +208,7 @@ final class PlatformSettings
             'pos' => true,
             'reports' => true,
             'stock_transfers' => true,
+            'package_sales' => false,
         ], $row->feature_flags ?? []);
 
         return [
