@@ -79,6 +79,7 @@ final class ProductService
             ProductUnitResolver::syncProductUnits($product, $units);
 
             $this->createOpeningBatchIfProvided($product, $data, $default);
+            $this->syncBatchSalePricesFromProduct($product->fresh(['units', 'batches']));
 
             return $product->fresh(['units', 'batches']);
         });
@@ -213,7 +214,9 @@ final class ProductService
             ]);
 
             if ($units !== null) {
-                ProductUnitResolver::syncProductUnits($product->fresh(), $units);
+                $freshProduct = $product->fresh(['units']);
+                ProductUnitResolver::syncProductUnits($freshProduct, $units);
+                $this->syncBatchSalePricesFromProduct($freshProduct->fresh(['units', 'batches']));
             }
 
             $this->applyStockAdjustmentIfProvided($product->fresh(['units', 'batches']), $data);
@@ -221,6 +224,88 @@ final class ProductService
 
             return $product->fresh(['units', 'batches', 'batches.storageLocation', 'storageLocation']);
         });
+    }
+
+    public function syncSalePricesFromBatch(Product $product, ProductBatch $batch, float $salePrice): void
+    {
+        $product->loadMissing(['units', 'batches']);
+
+        $storedFactor = $batch->pack_sell_unit && $batch->pack_conversion_factor !== null
+            ? max(0.0001, (float) $batch->pack_conversion_factor)
+            : 1.0;
+        $salePerBase = $salePrice / $storedFactor;
+
+        $this->syncSalePricesFromBase($product, $salePerBase);
+    }
+
+    private function syncBatchSalePricesFromProduct(Product $product): void
+    {
+        $product->loadMissing(['units', 'batches']);
+        $salePerBase = $this->salePricePerBaseFromProduct($product);
+
+        if ($salePerBase === null) {
+            return;
+        }
+
+        $this->syncSalePricesFromBase($product, $salePerBase);
+    }
+
+    private function syncSalePricesFromBase(Product $product, float $salePerBase): void
+    {
+        $product->loadMissing(['units', 'batches']);
+        $baseUnit = $product->base_unit ?? 'strip';
+        $defaultSalePrice = null;
+
+        foreach ($product->units as $unit) {
+            $factor = $unit->sell_unit === $baseUnit
+                ? 1.0
+                : max(0.0001, (float) $unit->conversion_factor);
+            $unitSalePrice = $salePerBase * $factor;
+            $unit->update(['sale_price' => $unitSalePrice]);
+
+            if ($unit->is_default) {
+                $defaultSalePrice = $unitSalePrice;
+            }
+        }
+
+        if ($defaultSalePrice === null) {
+            $defaultSalePrice = $salePerBase;
+        }
+
+        $product->update(['sale_price' => $defaultSalePrice]);
+
+        foreach ($product->batches as $batch) {
+            $storedFactor = $batch->pack_sell_unit && $batch->pack_conversion_factor !== null
+                ? max(0.0001, (float) $batch->pack_conversion_factor)
+                : 1.0;
+            $batch->update(['sale_price' => $salePerBase * $storedFactor]);
+        }
+    }
+
+    private function salePricePerBaseFromProduct(Product $product): ?float
+    {
+        $product->loadMissing('units');
+        $baseUnit = $product->base_unit ?? 'strip';
+        $baseRow = $product->units->firstWhere('sell_unit', $baseUnit);
+
+        if ($baseRow && $baseRow->sale_price !== null) {
+            return (float) $baseRow->sale_price;
+        }
+
+        $defaultRow = $product->units->firstWhere('is_default', true) ?? $product->units->first();
+        if ($defaultRow && $defaultRow->sale_price !== null) {
+            $factor = $defaultRow->sell_unit === $baseUnit
+                ? 1.0
+                : max(0.0001, (float) $defaultRow->conversion_factor);
+
+            return (float) $defaultRow->sale_price / $factor;
+        }
+
+        if ($product->sale_price !== null) {
+            return (float) $product->sale_price;
+        }
+
+        return null;
     }
 
     /**

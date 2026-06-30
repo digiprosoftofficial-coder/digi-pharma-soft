@@ -118,6 +118,8 @@ return [
     'piece_unit_relation' => ':pieces পিস = ১ :base',
     'lot_price_preview_label' => 'লট প্রাইস প্রিভিউ',
     'lot_price_preview_hint' => 'লট “:batch”-এর হিসাব করা ক্রয় ও বিক্রয় দাম দেখানো হচ্ছে। লটের MRP/মার্কআপ উপরে এডিট করুন; নিচের প্রোডাক্ট ডিফল্ট প্রোডাক্ট সেভ না করা পর্যন্ত বদলাবে না।',
+    'last_purchase_info' => 'সর্বশেষ ক্রয়ের তথ্য',
+    'last_purchase_info_hint' => 'সাপ্লায়ার প্রস্তুতকারক থেকে আলাদা থাকবে; নিচের দাম সর্বশেষ ক্রয় লাইনের তথ্য।',
     'batch_per_unit' => ':unit প্রতি',
     'batch_cost_in_base_unit' => ':amount / :unit (বেস স্টক ইউনিট)',
     'product_details' => 'প্রোডাক্ট বিবরণ',

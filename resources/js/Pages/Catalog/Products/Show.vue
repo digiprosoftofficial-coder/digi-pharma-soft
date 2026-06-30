@@ -80,6 +80,54 @@
             </div>
         </div>
 
+        <div v-if="lastPurchaseDetail" class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <div class="fw-semibold">{{ t('catalog.last_purchase_info') }}</div>
+                <p class="small text-muted mb-0 mt-1">{{ t('catalog.last_purchase_info_hint') }}</p>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 small">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="text-muted">{{ t('purchases.supplier') }}</div>
+                        <div class="fw-semibold">{{ lastPurchaseDetail.supplier_name ?? '—' }}</div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="text-muted">{{ t('purchases.invoice') }}</div>
+                        <div class="fw-semibold">{{ lastPurchaseDetail.invoice_no ?? '—' }}</div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="text-muted">{{ t('purchases.date') }}</div>
+                        <div class="fw-semibold">{{ formatHumanDate(lastPurchaseDetail.purchased_at) }}</div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="text-muted">{{ t('purchases.batch') }}</div>
+                        <div class="fw-semibold">{{ lastPurchaseDetail.batch_no ?? '—' }}</div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="text-muted">{{ t('catalog.storage_location_shelf') }}</div>
+                        <div class="fw-semibold">{{ latestPurchaseShelfLabel }}</div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="text-muted">{{ t('catalog.sell_unit') }}</div>
+                        <div class="fw-semibold text-capitalize">
+                            {{ unitLabel(lastPurchaseDetail.sell_unit || product.base_unit) }}
+                            <span class="text-muted fw-normal">× {{ formatQty(lastPurchaseDetail.quantity) }}</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="text-muted">{{ t('catalog.purchase_price') }}</div>
+                        <div class="fw-semibold">{{ formatMoneyAfterCode(lastPurchaseDetail.unit_cost) }}</div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="text-muted">{{ t('catalog.sale_price') }}</div>
+                        <div class="fw-semibold">
+                            {{ lastPurchaseDetail.sale_price !== null ? formatMoneyAfterCode(lastPurchaseDetail.sale_price) : t('catalog.uses_markup_or_catalog') }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="row g-3 mb-4">
             <div class="col-lg-8">
                 <div class="card border-0 shadow-sm h-100">
@@ -339,6 +387,7 @@ const props = defineProps({
     purchasedQuantity: { type: String, default: '0' },
     stockByUnit: { type: Array, default: () => [] },
     stockPieces: { type: String, default: null },
+    lastPurchaseDetail: { type: Object, default: null },
 });
 
 const page = usePage();
@@ -362,6 +411,17 @@ const batches = computed(() => {
     return Array.isArray(raw) ? raw : raw.data ?? [];
 });
 
+const lastPurchaseDetail = computed(() => props.lastPurchaseDetail);
+
+const latestPurchaseBatch = computed(() => {
+    const batchNo = lastPurchaseDetail.value?.batch_no;
+    if (!batchNo) {
+        return null;
+    }
+
+    return batches.value.find((batch) => batch.batch_no === batchNo) ?? null;
+});
+
 watch(
     batches,
     (list) => {
@@ -369,6 +429,10 @@ watch(
             if (batchMarkups[b.id] === undefined) {
                 batchMarkups[b.id] = batchMarkupInputValue(b);
             }
+        }
+
+        if (!activeMarkupBatchId.value && latestPurchaseBatch.value) {
+            activeMarkupBatchId.value = latestPurchaseBatch.value.id;
         }
     },
     { immediate: true },
@@ -380,6 +444,14 @@ const activeMarkupBatch = computed(() => {
     }
 
     return batches.value.find((batch) => batch.id === activeMarkupBatchId.value) ?? null;
+});
+
+const latestPurchaseShelfLabel = computed(() => {
+    if (latestPurchaseBatch.value) {
+        return batchShelfLabel(latestPurchaseBatch.value);
+    }
+
+    return defaultShelfLabel.value;
 });
 
 function formatLocation(loc) {

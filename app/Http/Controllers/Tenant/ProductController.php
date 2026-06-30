@@ -6,6 +6,7 @@ use App\Domain\Catalog\Models\Category;
 use App\Domain\Catalog\Models\Manufacturer;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\StorageLocation;
+use App\Domain\Purchasing\Models\PurchaseLine;
 use App\Domain\Catalog\Repositories\ProductRepository;
 use App\Domain\Catalog\Services\ProductService;
 use App\Http\Controllers\Controller;
@@ -84,6 +85,15 @@ final class ProductController extends Controller
 
         $baseStock = $product->batches->sum(fn ($batch) => (float) $batch->quantity_on_hand);
         $purchasedQuantity = (float) $product->purchaseLines()->sum('quantity_base');
+        $latestPurchaseLine = PurchaseLine::query()
+            ->select('purchase_lines.*')
+            ->with(['purchase.supplier'])
+            ->join('purchases', 'purchases.id', '=', 'purchase_lines.purchase_id')
+            ->where('purchase_lines.product_id', $product->getKey())
+            ->where('purchases.status', '!=', 'voided')
+            ->orderByDesc('purchases.purchased_at')
+            ->orderByDesc('purchase_lines.id')
+            ->first();
 
         $stockByUnit = $product->units->map(function ($unit) use ($baseStock) {
             $factor = max(0.0001, (float) $unit->conversion_factor);
@@ -106,6 +116,17 @@ final class ProductController extends Controller
                 : null,
             'purchasedQuantity' => ProductStockCalculator::formatQuantity($purchasedQuantity),
             'stockByUnit' => $stockByUnit,
+            'lastPurchaseDetail' => $latestPurchaseLine ? [
+                'supplier_name' => $latestPurchaseLine->purchase?->supplier?->name,
+                'invoice_no' => $latestPurchaseLine->purchase?->invoice_no,
+                'purchased_at' => $latestPurchaseLine->purchase?->purchased_at?->toDateString(),
+                'batch_no' => $latestPurchaseLine->batch_no,
+                'sell_unit' => $latestPurchaseLine->sell_unit,
+                'quantity' => ProductStockCalculator::formatQuantity((float) $latestPurchaseLine->quantity),
+                'quantity_base' => ProductStockCalculator::formatQuantity((float) $latestPurchaseLine->quantity_base),
+                'unit_cost' => (string) $latestPurchaseLine->unit_cost,
+                'sale_price' => $latestPurchaseLine->sale_price !== null ? (string) $latestPurchaseLine->sale_price : null,
+            ] : null,
         ]);
     }
 

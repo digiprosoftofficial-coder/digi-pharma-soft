@@ -118,6 +118,8 @@ return [
     'piece_unit_relation' => ':pieces pieces = 1 :base',
     'lot_price_preview_label' => 'Preview lot prices',
     'lot_price_preview_hint' => 'Showing calculated purchase & sale prices for lot “:batch”. Edit lot MRP/markup above; product defaults below are unchanged until you save the product.',
+    'last_purchase_info' => 'Last purchase info',
+    'last_purchase_info_hint' => 'Supplier stays separate from manufacturer; prices below are from the latest purchase line.',
     'batch_per_unit' => 'per :unit',
     'batch_cost_in_base_unit' => ':amount per :unit (base stock unit)',
     'product_details' => 'Product details',

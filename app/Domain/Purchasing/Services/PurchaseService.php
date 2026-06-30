@@ -132,6 +132,7 @@ final class PurchaseService
                 $this->applyCatalogPrices(
                     $product,
                     $sellUnit,
+                    $factor,
                     (float) $line['unit_cost'],
                     isset($line['sale_price']) ? (float) $line['sale_price'] : null,
                 );
@@ -303,24 +304,54 @@ final class PurchaseService
         return $payment;
     }
 
-    private function applyCatalogPrices(Product $product, string $sellUnit, float $purchasePrice, ?float $salePrice): void
+    private function applyCatalogPrices(Product $product, string $sellUnit, float $conversionFactor, float $purchasePrice, ?float $salePrice): void
     {
-        $unitRow = $product->units->firstWhere('sell_unit', $sellUnit);
         $baseUnit = $product->base_unit ?? 'strip';
+        $factor = max(0.0001, $conversionFactor);
+        $purchasePerBase = $sellUnit === $baseUnit ? $purchasePrice : $purchasePrice / $factor;
+        $salePerBase = $salePrice !== null
+            ? ($sellUnit === $baseUnit ? $salePrice : $salePrice / $factor)
+            : null;
 
-        if ($unitRow) {
-            $unitRow->update(['purchase_price' => $purchasePrice]);
-            if ($salePrice !== null) {
-                $unitRow->update(['sale_price' => $salePrice]);
+        $defaultPurchasePrice = $purchasePerBase;
+        $defaultSalePrice = $salePerBase;
+
+        $product->units->each(function ($unitRow) use ($baseUnit, $purchasePerBase, $salePerBase, &$defaultPurchasePrice, &$defaultSalePrice): void {
+            $unitFactor = $unitRow->sell_unit === $baseUnit
+                ? 1.0
+                : max(0.0001, (float) $unitRow->conversion_factor);
+            $updates = ['purchase_price' => $purchasePerBase * $unitFactor];
+            if ($salePerBase !== null) {
+                $updates['sale_price'] = $salePerBase * $unitFactor;
             }
+            $unitRow->update($updates);
 
-            return;
+            if ($unitRow->is_default) {
+                $defaultPurchasePrice = $updates['purchase_price'];
+                $defaultSalePrice = $updates['sale_price'] ?? $defaultSalePrice;
+            }
+        });
+
+        $productUpdates = ['purchase_price' => $defaultPurchasePrice];
+        if ($defaultSalePrice !== null) {
+            $productUpdates['sale_price'] = $defaultSalePrice;
+        }
+        $product->update($productUpdates);
+
+        if ($salePerBase !== null) {
+            $product->loadMissing('batches');
+            foreach ($product->batches as $batch) {
+                $storedFactor = $batch->pack_sell_unit && $batch->pack_conversion_factor !== null
+                    ? max(0.0001, (float) $batch->pack_conversion_factor)
+                    : 1.0;
+                $batch->update(['sale_price' => $salePerBase * $storedFactor]);
+            }
         }
 
-        if ($sellUnit === $baseUnit) {
-            $updates = ['purchase_price' => $purchasePrice];
-            if ($salePrice !== null) {
-                $updates['sale_price'] = $salePrice;
+        if (! $product->units->contains('sell_unit', $sellUnit) && $sellUnit === $baseUnit) {
+            $updates = ['purchase_price' => $purchasePerBase];
+            if ($salePerBase !== null) {
+                $updates['sale_price'] = $salePerBase;
             }
             $product->update($updates);
         }

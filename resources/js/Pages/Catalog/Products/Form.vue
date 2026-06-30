@@ -451,7 +451,7 @@
                                         style="min-width: 5.5rem"
                                         :placeholder="batchEffectivePriceLabel(b)"
                                         @focus="previewBatchId = b.id"
-                                        @input="previewBatchId = b.id"
+                                        @input="onBatchSalePriceInput(b)"
                                         @blur="onBatchSalePriceBlur(b.id)"
                                     />
                                     <div class="text-muted small mt-1">
@@ -1052,6 +1052,40 @@ function batchEffectivePriceLabel(batch) {
     return '—';
 }
 
+function batchStoredPriceFactor(batch) {
+    const factor = Number(batch?.pack_conversion_factor ?? 0);
+    return batch?.pack_sell_unit && factor > 0 ? factor : 1;
+}
+
+function syncBatchSalePricesFromBase(salePerBase) {
+    batches.value.forEach((batch) => {
+        batchSalePrices[batch.id] = formatDerivedPrice(precisionDecimal(salePerBase * batchStoredPriceFactor(batch)));
+    });
+}
+
+function onBatchSalePriceInput(batch) {
+    previewBatchId.value = batch.id;
+
+    const rawValue = batchSalePrices[batch.id];
+    if (rawValue === '' || rawValue === null || rawValue === undefined) {
+        return;
+    }
+
+    const salePrice = Number(rawValue);
+    if (Number.isNaN(salePrice) || salePrice < 0) {
+        return;
+    }
+
+    const salePerBase = salePrice / batchStoredPriceFactor(batch);
+    form.units.forEach((row) => {
+        const factor = unitRowFactor(row);
+        if (factor > 0) {
+            row.sale_price = formatDerivedPrice(precisionDecimal(salePerBase * factor));
+        }
+    });
+    syncBatchSalePricesFromBase(salePerBase);
+}
+
 function onBatchSalePriceBlur(batchId) {
     const value = batchSalePrices[batchId];
     if (value === '' || value === null || value === undefined) {
@@ -1318,7 +1352,10 @@ function onUnitPriceBlur(row, field) {
 }
 
 function syncDerivedUnitPricesFromBase() {
-    const anchorRow = form.units.find((r) => r.sell_unit === form.base_unit);
+    syncDerivedUnitPricesFromAnchor(form.units.find((r) => r.sell_unit === form.base_unit));
+}
+
+function syncDerivedUnitPricesFromAnchor(anchorRow) {
     if (!anchorRow) {
         return;
     }
@@ -1337,7 +1374,7 @@ function syncDerivedUnitPricesFromBase() {
     const salePerBase = hasSale ? anchorSale / anchorFactor : null;
 
     form.units.forEach((row) => {
-        if (row.sell_unit === form.base_unit) {
+        if (row === anchorRow) {
             return;
         }
         const factor = unitRowFactor(row);
@@ -1351,13 +1388,14 @@ function syncDerivedUnitPricesFromBase() {
             row.sale_price = formatDerivedPrice(precisionDecimal(salePerBase * factor));
         }
     });
+
+    if (salePerBase !== null) {
+        syncBatchSalePricesFromBase(salePerBase);
+    }
 }
 
 function onBaseUnitPriceInput(row) {
-    if (row.sell_unit !== form.base_unit) {
-        return;
-    }
-    syncDerivedUnitPricesFromBase();
+    syncDerivedUnitPricesFromAnchor(row);
 }
 
 function onUnitConversionInput(row) {
@@ -1508,6 +1546,10 @@ watch(
 
 onMounted(() => {
     applyBaseUnitAsDefault();
+    syncPiecesPerStripToUnits();
+    syncStripsPerBoxToUnits();
+    syncBoxesPerCartonToUnits();
+    syncDerivedUnitPricesFromBase();
 });
 
 function setDefault(idx) {
