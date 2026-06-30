@@ -255,10 +255,21 @@
                                     </div>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">Discount ({{ currencyCode() }})</label>
+                                    <label class="form-label">{{ discountLabel }}</label>
                                     <div class="input-group">
-                                        <span class="input-group-text">{{ currencySymbol() }}</span>
+                                        <select
+                                            v-model="form.discount_type"
+                                            class="form-select"
+                                            style="max-width: 5.5rem"
+                                            :aria-label="t('purchases.discount_type')"
+                                        >
+                                            <option value="amount">{{ currencySymbol() }}</option>
+                                            <option value="percent">%</option>
+                                        </select>
                                         <input v-model.number="form.discount" type="number" min="0" step="0.01" class="form-control" />
+                                    </div>
+                                    <div v-if="form.discount_type === 'percent'" class="form-text">
+                                        {{ t('purchases.discount_amount_preview', { amount: formatMoney(normalizedDiscount) }) }}
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -378,6 +389,7 @@ const form = useForm({
     purchased_at: new Date().toISOString().slice(0, 10),
     notes: '',
     tax: 0,
+    discount_type: 'amount',
     discount: 0,
     paid: 0,
     payment_method: props.paymentMethods[0]?.value ?? 'cash',
@@ -397,10 +409,22 @@ const purchaseSubtotal = computed(() =>
     }, 0)
 );
 const normalizedTax = computed(() => Math.max(0, Number(form.tax) || 0));
-const normalizedDiscount = computed(() => Math.max(0, Number(form.discount) || 0));
+const discountInput = computed(() => Math.max(0, Number(form.discount) || 0));
+const normalizedDiscount = computed(() => {
+    if (form.discount_type === 'percent') {
+        return Math.min(purchaseSubtotal.value, purchaseSubtotal.value * Math.min(100, discountInput.value) / 100);
+    }
+
+    return Math.min(purchaseSubtotal.value, discountInput.value);
+});
 const normalizedPaid = computed(() => Math.max(0, Number(form.paid) || 0));
 const purchaseTotal = computed(() => Math.max(0, purchaseSubtotal.value + normalizedTax.value - normalizedDiscount.value));
 const purchaseDue = computed(() => Math.max(0, purchaseTotal.value - normalizedPaid.value));
+const discountLabel = computed(() =>
+    form.discount_type === 'percent'
+        ? t('purchases.discount_percent')
+        : t('purchases.discount_amount', { currency: currencyCode() }),
+);
 
 function debouncedSupplierSearch() {
     clearTimeout(supplierSearchTimer);

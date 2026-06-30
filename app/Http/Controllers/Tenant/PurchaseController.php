@@ -114,13 +114,20 @@ final class PurchaseController extends Controller
             $supplier = Supplier::query()->whereKey($supplierId)->firstOrFail();
         }
 
+        $lines = $request->validated('lines');
+        $discount = (float) $request->validated('discount', 0);
+        if ($request->validated('discount_type') === 'percent') {
+            $subtotal = collect($lines)->sum(fn (array $line) => (float) $line['quantity'] * (float) $line['unit_cost']);
+            $discount = min($subtotal, $subtotal * min(100, $discount) / 100);
+        }
+
         $this->purchases->recordPurchase(
             $supplier,
             $request->validated('invoice_no'),
             $request->validated('purchased_at'),
-            $request->validated('lines'),
+            $lines,
             (float) $request->validated('tax', 0),
-            (float) $request->validated('discount', 0),
+            $discount,
             (float) $request->validated('paid', 0),
             $request->validated('payment_method'),
             $request->validated('notes'),

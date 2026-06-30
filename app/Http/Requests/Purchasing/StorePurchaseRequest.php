@@ -31,6 +31,7 @@ class StorePurchaseRequest extends FormRequest
             'purchased_at' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'tax' => ['nullable', 'numeric', 'min:0'],
+            'discount_type' => ['nullable', 'string', Rule::in(['amount', 'percent'])],
             'discount' => ['nullable', 'numeric', 'min:0'],
             'paid' => ['nullable', 'numeric', 'min:0'],
             'payment_method' => [
@@ -62,6 +63,10 @@ class StorePurchaseRequest extends FormRequest
         $validator->after(function ($validator) {
             if (! $this->filled('supplier_id') && ! filled($this->input('new_supplier.name'))) {
                 $validator->errors()->add('supplier_id', __('purchases.supplier_required'));
+            }
+
+            if ($this->input('discount_type') === 'percent' && (float) $this->input('discount', 0) > 100) {
+                $validator->errors()->add('discount', __('purchases.discount_percent_invalid'));
             }
         });
     }
