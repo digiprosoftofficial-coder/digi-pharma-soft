@@ -183,12 +183,13 @@ final class PurchaseService
         return DB::transaction(function () use ($purchase, $method, $amount, $paidAt, $reference, $notes) {
             $purchase = Purchase::query()->withoutGlobalScope('branch')->whereKey($purchase->getKey())->lockForUpdate()->firstOrFail();
             $due = (float) $purchase->due;
+            $displayDue = round($due, 2);
 
             if ($amount <= 0) {
                 throw new RuntimeException(__('purchases.payment_amount_invalid'));
             }
 
-            if ($amount > $due + 0.0001) {
+            if (round($amount, 2) > $displayDue + 0.0001) {
                 throw new RuntimeException(__('purchases.payment_exceeds_due'));
             }
 

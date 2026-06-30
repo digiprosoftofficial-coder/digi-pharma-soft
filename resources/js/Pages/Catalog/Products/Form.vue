@@ -2,199 +2,269 @@
     <TenantShellLayout :page-title="existing ? t('catalog.edit_product') : t('catalog.new_product')">
         <Head :title="existing ? t('catalog.edit_product') : t('catalog.new_product')" />
         <h1 class="h4 mb-4 d-lg-none">{{ existing ? t('catalog.edit_product') : t('catalog.new_product') }}</h1>
-        <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">{{ t('catalog.product_name') }}</label>
-                    <input v-model="form.name" type="text" class="form-control" required />
-                    <div v-if="form.errors.name" class="text-danger small">{{ form.errors.name }}</div>
+        <form class="card border-0 shadow-sm card-body product-form-card" @submit.prevent="submit">
+            <div class="product-form-hero">
+                <div>
+                    <p class="text-uppercase text-primary fw-semibold small mb-1">{{ t('tenant_nav.products') }}</p>
+                    <h2 class="h5 mb-1">{{ existing ? t('catalog.edit_product') : t('catalog.new_product') }}</h2>
+                    <p class="text-muted small mb-0">Add product details, sell units, pricing, and opening stock from one clean form.</p>
                 </div>
-                <div v-if="advancedCatalogEnabled" class="col-md-4">
-                    <label class="form-label">{{ t('catalog.generic_name') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
-                    <input v-model="form.generic_name" type="text" class="form-control" :placeholder="t('catalog.generic_name_placeholder')" />
-                    <div v-if="form.errors.generic_name" class="text-danger small">{{ form.errors.generic_name }}</div>
-                </div>
-                <div v-if="advancedCatalogEnabled" class="col-md-2">
-                    <label class="form-label">{{ t('catalog.strength') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
-                    <input v-model="form.strength" type="text" class="form-control" :placeholder="t('catalog.strength_placeholder')" />
-                    <div v-if="form.errors.strength" class="text-danger small">{{ form.errors.strength }}</div>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">SKU</label>
-                    <input v-if="existing" v-model="form.sku" type="text" class="form-control" readonly />
-                    <input v-else type="text" class="form-control bg-light" disabled :placeholder="t('catalog.sku_auto_placeholder')" />
-                    <p v-if="!existing" class="form-text small mb-0">{{ t('catalog.sku_auto_hint') }}</p>
-                    <div v-if="form.errors.sku" class="text-danger small">{{ form.errors.sku }}</div>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">{{ t('catalog.barcode') }}</label>
-                    <input v-model="form.barcode" type="text" class="form-control" />
-                    <div v-if="existing" class="mt-2">
-                        <span class="small text-muted d-block mb-1">{{ t('catalog.label_preview') }}</span>
-                        <img :src="`/barcodes/${existing.id}`" :alt="t('catalog.barcode')" class="border rounded bg-white p-1" style="max-height: 64px" />
-                    </div>
-                </div>
-                <div v-if="wholesaleEnabled" class="col-md-4">
-                    <label class="form-label">{{ t('catalog.wholesale_price') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
-                    <input v-model="form.wholesale_price" type="number" min="0" step="0.01" class="form-control" />
-                    <div v-if="form.errors.wholesale_price" class="text-danger small">{{ form.errors.wholesale_price }}</div>
-                </div>
-                <div v-if="advancedCatalogEnabled" class="col-md-4">
-                    <label class="form-label">{{ t('catalog.vat_percent') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
-                    <input v-model="form.vat_percent" type="number" min="0" max="100" step="0.01" class="form-control" :placeholder="t('catalog.vat_placeholder')" />
-                    <div v-if="form.errors.vat_percent" class="text-danger small">{{ form.errors.vat_percent }}</div>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">{{ t('catalog.product_image') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
-                    <input type="file" accept="image/*" class="form-control" @change="onImageChange" />
-                    <div v-if="form.errors.image" class="text-danger small">{{ form.errors.image }}</div>
-                    <div v-if="imagePreviewUrl" class="mt-2">
-                        <img :src="imagePreviewUrl" :alt="t('catalog.product_image')" class="border rounded" style="max-height: 120px; max-width: 100%" />
-                    </div>
-                    <div v-if="existing?.image_url && !form.remove_image && !imagePreviewUrl" class="mt-2">
-                        <img :src="existing.image_url" :alt="t('catalog.product_image')" class="border rounded" style="max-height: 120px; max-width: 100%" />
-                    </div>
-                    <div v-if="existing?.image_url" class="form-check mt-2">
-                        <input id="remove_image" v-model="form.remove_image" type="checkbox" class="form-check-input" />
-                        <label class="form-check-label small" for="remove_image">{{ t('catalog.remove_current_image') }}</label>
-                    </div>
-                </div>
-                <div v-if="advancedCatalogEnabled" class="col-12">
-                    <label class="form-label">{{ t('catalog.short_description') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
-                    <textarea v-model="form.short_description" class="form-control" rows="2" maxlength="2000" />
-                    <div v-if="form.errors.short_description" class="text-danger small">{{ form.errors.short_description }}</div>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">{{ t('catalog.product_type') }}</label>
-                    <div class="d-flex align-items-center gap-2">
-                        <img
-                            v-if="selectedTypeIconUrl"
-                            :src="selectedTypeIconUrl"
-                            alt=""
-                            width="30"
-                            height="30"
-                            class="flex-shrink-0"
-                            style="object-fit: contain"
-                        />
-                        <ProductTypeIcon v-else :type="form.product_type" size="lg" class="flex-shrink-0" />
-                        <select v-model="form.product_type" class="form-select" required>
-                            <option v-for="pt in catalogOptions.productTypes" :key="pt" :value="pt">
-                                {{ labelForType(pt) }}
-                            </option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">{{ t('catalog.base_unit') }}</label>
-                    <select v-model="form.base_unit" class="form-select" required @change="onBaseUnitChange">
-                        <option v-for="u in availableSellUnits" :key="u" :value="u">{{ unitLabel(u) }}</option>
-                    </select>
-                    <p class="form-text small mb-0">{{ t('catalog.base_unit_hint') }}</p>
-                </div>
-                <div v-if="showPiecesPerStrip" class="col-md-4">
-                    <label class="form-label">{{ t('catalog.pieces_per_strip') }}</label>
-                    <input
-                        v-model="form.pieces_per_strip"
-                        type="number"
-                        min="1"
-                        step="1"
-                        class="form-control"
-                        :class="{ 'is-invalid': form.errors.pieces_per_strip }"
-                        :placeholder="t('catalog.pieces_per_strip_placeholder')"
-                        @input="syncPiecesPerStripToUnits"
-                    />
-                    <div v-if="form.errors.pieces_per_strip" class="text-danger small">{{ form.errors.pieces_per_strip }}</div>
-                    <p v-else class="form-text small mb-0">{{ t('catalog.pieces_per_strip_hint') }}</p>
-                </div>
-                <div v-if="showStripsPerBox" class="col-md-4">
-                    <label class="form-label">{{ t('catalog.strips_per_box') }}</label>
-                    <input
-                        v-model="form.strips_per_box"
-                        type="number"
-                        min="1"
-                        step="1"
-                        class="form-control"
-                        :class="{ 'is-invalid': form.errors.strips_per_box }"
-                        :placeholder="t('catalog.strips_per_box_placeholder')"
-                        @input="syncStripsPerBoxToUnits"
-                    />
-                    <div v-if="form.errors.strips_per_box" class="text-danger small">{{ form.errors.strips_per_box }}</div>
-                    <p v-else class="form-text small mb-0">{{ t('catalog.strips_per_box_hint') }}</p>
-                </div>
-                <div v-if="showBoxesPerCarton" class="col-md-4">
-                    <label class="form-label">{{ t('catalog.boxes_per_carton') }}</label>
-                    <input
-                        v-model="form.boxes_per_carton"
-                        type="number"
-                        min="1"
-                        step="1"
-                        class="form-control"
-                        :class="{ 'is-invalid': form.errors.boxes_per_carton }"
-                        :placeholder="t('catalog.boxes_per_carton_placeholder')"
-                        @input="syncBoxesPerCartonToUnits"
-                    />
-                    <div v-if="form.errors.boxes_per_carton" class="text-danger small">{{ form.errors.boxes_per_carton }}</div>
-                    <p v-else class="form-text small mb-0">
-                        {{ t('catalog.boxes_per_carton_hint') }}
-                        <span v-if="cartonConversionPreview" class="d-block">
-                            {{ t('catalog.carton_conversion_preview', { qty: formatQty(cartonConversionPreview), unit: unitLabel(form.base_unit) }) }}
-                        </span>
-                    </p>
-                </div>
-                <div v-if="markupPricingEnabled" class="col-md-4">
-                    <label class="form-label">{{ t('catalog.default_markup_percent') }}</label>
-                    <input
-                        v-model="form.default_markup_percent"
-                        type="number"
-                        min="0"
-                        max="1000"
-                        step="0.01"
-                        class="form-control"
-                        :placeholder="t('catalog.default_markup_placeholder')"
-                    />
-                    <p class="form-text small mb-2">{{ t('catalog.default_markup_hint') }}</p>
-                    <div class="alert alert-info small py-2 mb-0">
-                        <div class="fw-semibold mb-1">{{ t('catalog.markup_pricing_help_title') }}</div>
-                        <ul class="mb-0 ps-3">
-                            <li>{{ t('catalog.default_markup_blank_means') }}</li>
-                            <li>{{ t('catalog.default_markup_set_means') }}</li>
-                            <li>{{ t('catalog.default_markup_example') }}</li>
-                        </ul>
-                    </div>
-                    <div v-if="form.errors.default_markup_percent" class="text-danger small mt-1">
-                        {{ form.errors.default_markup_percent }}
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">{{ t('catalog.min_stock_alert') }}</label>
-                    <input v-model="form.min_stock" type="number" min="0" class="form-control" />
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">{{ t('catalog.category') }}</label>
-                    <select v-model="form.category_id" class="form-select">
-                        <option :value="null">{{ t('catalog.storage_location_none') }}</option>
-                        <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">{{ t('catalog.manufacturer') }}</label>
-                    <select v-model="form.manufacturer_id" class="form-select">
-                        <option :value="null">{{ t('catalog.storage_location_none') }}</option>
-                        <option v-for="m in manufacturers" :key="m.id" :value="m.id">{{ m.name }}</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">{{ t('catalog.default_storage_location') }}</label>
-                    <select v-model="form.storage_location_id" class="form-select">
-                        <option :value="null">{{ t('catalog.storage_location_none') }}</option>
-                        <option v-for="loc in storageLocations" :key="loc.id" :value="loc.id">
-                            {{ locationLabel(loc) }}
-                        </option>
-                    </select>
-                </div>
+                <span class="badge rounded-pill text-bg-light border">{{ form.is_active ? 'Active' : 'Inactive' }}</span>
             </div>
 
-            <div v-if="!existing" class="mt-4 card border-primary border-2">
+            <div class="product-section-title">
+                <span>Quick setup</span>
+            </div>
+            <div class="product-setup-layout">
+                <div class="product-setup-main">
+                    <div class="product-quick-card">
+                        <div class="product-card-heading">
+                            <span class="product-step-badge">1</span>
+                            <div>
+                                <h3 class="h6 mb-0">Required product setup</h3>
+                                <p class="small text-muted mb-0">Start with only the fields needed to save a product.</p>
+                            </div>
+                        </div>
+                        <div class="product-main-grid product-main-grid--required">
+                            <div class="col-md-6">
+                                <label class="form-label">{{ t('catalog.product_name') }}</label>
+                                <input v-model="form.name" type="text" class="form-control form-control-lg" required placeholder="e.g. Paracetamol 500mg" />
+                                <div v-if="form.errors.name" class="text-danger small">{{ form.errors.name }}</div>
+                            </div>
+                            <div v-if="advancedCatalogEnabled" class="col-md-4">
+                                <label class="form-label">{{ t('catalog.generic_name') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
+                                <input v-model="form.generic_name" type="text" class="form-control" :placeholder="t('catalog.generic_name_placeholder')" />
+                                <div v-if="form.errors.generic_name" class="text-danger small">{{ form.errors.generic_name }}</div>
+                            </div>
+                            <div v-if="advancedCatalogEnabled" class="col-md-2">
+                                <label class="form-label">{{ t('catalog.strength') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
+                                <input v-model="form.strength" type="text" class="form-control" :placeholder="t('catalog.strength_placeholder')" />
+                                <div v-if="form.errors.strength" class="text-danger small">{{ form.errors.strength }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{{ t('catalog.product_type') }}</label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <img
+                                        v-if="selectedTypeIconUrl"
+                                        :src="selectedTypeIconUrl"
+                                        alt=""
+                                        width="30"
+                                        height="30"
+                                        class="flex-shrink-0"
+                                        style="object-fit: contain"
+                                    />
+                                    <ProductTypeIcon v-else :type="form.product_type" size="lg" class="flex-shrink-0" />
+                                    <select v-model="form.product_type" class="form-select" required>
+                                        <option v-for="pt in catalogOptions.productTypes" :key="pt" :value="pt">
+                                            {{ labelForType(pt) }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{{ t('catalog.base_unit') }}</label>
+                                <select v-model="form.base_unit" class="form-select" required @change="onBaseUnitChange">
+                                    <option v-for="u in availableSellUnits" :key="u" :value="u">{{ unitLabel(u) }}</option>
+                                </select>
+                                <p class="form-text small mb-0">{{ t('catalog.base_unit_hint') }}</p>
+                            </div>
+                            <div v-if="showPiecesPerStrip" class="col-md-4">
+                                <label class="form-label">{{ t('catalog.pieces_per_strip') }}</label>
+                                <input
+                                    v-model="form.pieces_per_strip"
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    class="form-control"
+                                    :class="{ 'is-invalid': form.errors.pieces_per_strip }"
+                                    :placeholder="t('catalog.pieces_per_strip_placeholder')"
+                                    @input="syncPiecesPerStripToUnits"
+                                />
+                                <div v-if="form.errors.pieces_per_strip" class="text-danger small">{{ form.errors.pieces_per_strip }}</div>
+                                <p v-else class="form-text small mb-0">{{ t('catalog.pieces_per_strip_hint') }}</p>
+                            </div>
+                            <div v-if="showStripsPerBox" class="col-md-4">
+                                <label class="form-label">{{ t('catalog.strips_per_box') }}</label>
+                                <input
+                                    v-model="form.strips_per_box"
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    class="form-control"
+                                    :class="{ 'is-invalid': form.errors.strips_per_box }"
+                                    :placeholder="t('catalog.strips_per_box_placeholder')"
+                                    @input="syncStripsPerBoxToUnits"
+                                />
+                                <div v-if="form.errors.strips_per_box" class="text-danger small">{{ form.errors.strips_per_box }}</div>
+                                <p v-else class="form-text small mb-0">{{ t('catalog.strips_per_box_hint') }}</p>
+                            </div>
+                            <div v-if="showBoxesPerCarton" class="col-md-4">
+                                <label class="form-label">{{ t('catalog.boxes_per_carton') }}</label>
+                                <input
+                                    v-model="form.boxes_per_carton"
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    class="form-control"
+                                    :class="{ 'is-invalid': form.errors.boxes_per_carton }"
+                                    :placeholder="t('catalog.boxes_per_carton_placeholder')"
+                                    @input="syncBoxesPerCartonToUnits"
+                                />
+                                <div v-if="form.errors.boxes_per_carton" class="text-danger small">{{ form.errors.boxes_per_carton }}</div>
+                                <p v-else class="form-text small mb-0">
+                                    {{ t('catalog.boxes_per_carton_hint') }}
+                                    <span v-if="cartonConversionPreview" class="d-block">
+                                        {{ t('catalog.carton_conversion_preview', { qty: formatQty(cartonConversionPreview), unit: unitLabel(form.base_unit) }) }}
+                                    </span>
+                                </p>
+                            </div>
+                            <div v-if="markupPricingEnabled" class="col-md-6">
+                                <label class="form-label">{{ t('catalog.default_markup_percent') }}</label>
+                                <input
+                                    v-model="form.default_markup_percent"
+                                    type="number"
+                                    min="0"
+                                    max="1000"
+                                    step="0.01"
+                                    class="form-control"
+                                    :placeholder="t('catalog.default_markup_placeholder')"
+                                />
+                                <p class="form-text small mb-0">{{ t('catalog.default_markup_hint') }}</p>
+                                <div v-if="form.errors.default_markup_percent" class="text-danger small mt-1">
+                                    {{ form.errors.default_markup_percent }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{{ t('catalog.min_stock_alert') }}</label>
+                                <input v-model="form.min_stock" type="number" min="0" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">{{ t('catalog.category') }}</label>
+                                <select v-model="form.category_id" class="form-select">
+                                    <option :value="null">{{ t('catalog.storage_location_none') }}</option>
+                                    <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">{{ t('catalog.manufacturer') }}</label>
+                                <select v-model="form.manufacturer_id" class="form-select">
+                                    <option :value="null">{{ t('catalog.storage_location_none') }}</option>
+                                    <option v-for="m in manufacturers" :key="m.id" :value="m.id">{{ m.name }}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">{{ t('catalog.default_storage_location') }}</label>
+                                <select v-model="form.storage_location_id" class="form-select">
+                                    <option :value="null">{{ t('catalog.storage_location_none') }}</option>
+                                    <option v-for="loc in storageLocations" :key="loc.id" :value="loc.id">
+                                        {{ locationLabel(loc) }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <details class="product-advanced-details" open>
+                        <summary>
+                            <span>Optional details</span>
+                            <small>Barcode, image, VAT, generic name and description</small>
+                        </summary>
+                        <div class="product-main-grid product-main-grid--optional">
+                            <div class="col-md-3">
+                                <label class="form-label">SKU</label>
+                                <input v-if="existing" v-model="form.sku" type="text" class="form-control" readonly />
+                                <input v-else type="text" class="form-control bg-light" disabled :placeholder="t('catalog.sku_auto_placeholder')" />
+                                <p v-if="!existing" class="form-text small mb-0">{{ t('catalog.sku_auto_hint') }}</p>
+                                <div v-if="form.errors.sku" class="text-danger small">{{ form.errors.sku }}</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{{ t('catalog.barcode') }}</label>
+                                <input v-model="form.barcode" type="text" class="form-control" />
+                                <div v-if="existing" class="mt-2">
+                                    <span class="small text-muted d-block mb-1">{{ t('catalog.label_preview') }}</span>
+                                    <img :src="`/barcodes/${existing.id}`" :alt="t('catalog.barcode')" class="border rounded bg-white p-1" style="max-height: 64px" />
+                                </div>
+                            </div>
+                            <div v-if="wholesaleEnabled" class="col-md-4">
+                                <label class="form-label">{{ t('catalog.wholesale_price') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
+                                <input v-model="form.wholesale_price" type="number" min="0" step="0.01" class="form-control" />
+                                <div v-if="form.errors.wholesale_price" class="text-danger small">{{ form.errors.wholesale_price }}</div>
+                            </div>
+                            <div v-if="advancedCatalogEnabled" class="col-md-4">
+                                <label class="form-label">{{ t('catalog.vat_percent') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
+                                <input v-model="form.vat_percent" type="number" min="0" max="100" step="0.01" class="form-control" :placeholder="t('catalog.vat_placeholder')" />
+                                <div v-if="form.errors.vat_percent" class="text-danger small">{{ form.errors.vat_percent }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">{{ t('catalog.product_image') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
+                                <input type="file" accept="image/*" class="form-control" @change="onImageChange" />
+                                <div v-if="form.errors.image" class="text-danger small">{{ form.errors.image }}</div>
+                                <div v-if="imagePreviewUrl" class="mt-2">
+                                    <img :src="imagePreviewUrl" :alt="t('catalog.product_image')" class="border rounded" style="max-height: 120px; max-width: 100%" />
+                                </div>
+                                <div v-if="existing?.image_url && !form.remove_image && !imagePreviewUrl" class="mt-2">
+                                    <img :src="existing.image_url" :alt="t('catalog.product_image')" class="border rounded" style="max-height: 120px; max-width: 100%" />
+                                </div>
+                                <div v-if="existing?.image_url" class="form-check mt-2">
+                                    <input id="remove_image" v-model="form.remove_image" type="checkbox" class="form-check-input" />
+                                    <label class="form-check-label small" for="remove_image">{{ t('catalog.remove_current_image') }}</label>
+                                </div>
+                            </div>
+                            <div v-if="advancedCatalogEnabled" class="col-12">
+                                <label class="form-label">{{ t('catalog.short_description') }} <span class="text-muted fw-normal">({{ t('common.optional') }})</span></label>
+                                <textarea v-model="form.short_description" class="form-control" rows="2" maxlength="2000" />
+                                <div v-if="form.errors.short_description" class="text-danger small">{{ form.errors.short_description }}</div>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+
+                <aside class="product-setup-sidebar">
+                    <div class="product-preview-card">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <img
+                                v-if="selectedTypeIconUrl"
+                                :src="selectedTypeIconUrl"
+                                alt=""
+                                width="34"
+                                height="34"
+                                class="flex-shrink-0"
+                                style="object-fit: contain"
+                            />
+                            <ProductTypeIcon v-else :type="form.product_type" size="lg" class="flex-shrink-0" />
+                            <div class="min-w-0">
+                                <strong class="d-block text-truncate">{{ form.name || 'New product' }}</strong>
+                                <span class="small text-muted">{{ labelForType(form.product_type) }} · {{ unitLabel(form.base_unit) }}</span>
+                            </div>
+                        </div>
+                        <div class="product-preview-list">
+                            <div>
+                                <span>Category</span>
+                                <strong>{{ selectedCategoryName }}</strong>
+                            </div>
+                            <div>
+                                <span>Location</span>
+                                <strong>{{ selectedStorageLocationName }}</strong>
+                            </div>
+                            <div>
+                                <span>Sell units</span>
+                                <strong>{{ form.units.length }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="product-helper-card">
+                        <h3 class="h6 mb-2">Recommended flow</h3>
+                        <ol class="small mb-0 ps-3">
+                            <li>Name and product type</li>
+                            <li>Base unit and pack sizes</li>
+                            <li>Sell units and prices</li>
+                            <li>Opening stock if available</li>
+                        </ol>
+                    </div>
+                </aside>
+            </div>
+
+            <div v-if="!existing" class="mt-4 card border-primary border-2 product-stock-card">
                 <div class="card-header bg-primary-subtle py-3">
                     <h2 class="h5 mb-1">Opening stock</h2>
                     <p class="small text-muted mb-0">
@@ -243,7 +313,7 @@
                 </div>
             </div>
 
-            <div v-if="existing" class="mt-4 card border-warning border-2">
+            <div v-if="existing" class="mt-4 card border-warning border-2 product-stock-card">
                 <div class="card-header bg-warning-subtle py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
                     <div>
                         <h2 class="h5 mb-1">Stock</h2>
@@ -327,7 +397,7 @@
                 </div>
             </div>
 
-            <div v-if="existing && batches.length" class="mt-4 card border-0 shadow-sm">
+            <div v-if="existing && batches.length" class="mt-4 card border-0 shadow-sm product-stock-card">
                 <div class="card-header bg-white py-3">
                     <h2 class="h6 mb-1">{{ t('catalog.batch_pricing_title') }}</h2>
                     <p class="small text-muted mb-0">{{ t('catalog.batch_markup_help') }}</p>
@@ -424,7 +494,7 @@
                 </div>
             </div>
 
-            <div class="mt-4">
+            <div class="mt-4 product-units-section">
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                     <h2 class="h6 mb-0">Sell units &amp; prices</h2>
                     <div class="d-flex flex-wrap align-items-center gap-2">
@@ -459,7 +529,104 @@
                 <p v-if="priceAutoFillHint && !previewBatchId" class="small text-muted mb-2">
                     {{ priceAutoFillHint }}
                 </p>
-                <div class="table-responsive">
+                <div class="product-unit-cards d-md-none">
+                    <div
+                        v-for="(row, idx) in form.units"
+                        :key="`mobile-${idx}`"
+                        class="product-unit-card"
+                        :class="{ 'product-unit-card--preview': previewBatchId }"
+                    >
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                            <div class="min-w-0">
+                                <div class="fw-semibold">{{ unitLabel(row.sell_unit) }}</div>
+                                <div class="small text-muted">{{ unitRelationLabel(row) }}</div>
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <button
+                                    type="button"
+                                    class="btn btn-sm rounded-pill py-0"
+                                    :class="row.is_default ? 'btn-primary' : 'btn-outline-secondary'"
+                                    :disabled="!!previewBatchId"
+                                    @click="setDefault(idx)"
+                                >
+                                    {{ row.is_default ? t('catalog.default_unit') : 'Set' }}
+                                </button>
+                                <button
+                                    v-if="!previewBatchId"
+                                    type="button"
+                                    class="btn btn-sm btn-outline-danger py-0"
+                                    :disabled="form.units.length <= 1 || row.sell_unit === form.base_unit"
+                                    :title="row.sell_unit === form.base_unit ? 'Cannot remove base stock unit' : ''"
+                                    @click="removeUnitRow(idx)"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="product-unit-card__fields">
+                            <div>
+                                <label class="form-label small mb-1">Unit</label>
+                                <select
+                                    v-model="row.sell_unit"
+                                    class="form-select form-select-sm"
+                                    :disabled="previewBatchId || row.sell_unit === form.base_unit"
+                                >
+                                    <option v-for="u in availableSellUnits" :key="u" :value="u">{{ unitLabel(u) }}</option>
+                                </select>
+                            </div>
+                            <div v-if="!previewBatchId">
+                                <label class="form-label small mb-1">{{ t('catalog.pack_relation') }}</label>
+                                <input
+                                    v-model.number="row.conversion_factor"
+                                    type="number"
+                                    min="0.0001"
+                                    step="any"
+                                    class="form-control form-control-sm"
+                                    :disabled="row.sell_unit === form.base_unit"
+                                    @input="onUnitConversionInput(row)"
+                                    @blur="onConversionFactorBlur(row)"
+                                />
+                            </div>
+                            <div>
+                                <label class="form-label small mb-1">Purchase</label>
+                                <input
+                                    v-if="!previewBatchId"
+                                    v-model="row.purchase_price"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    class="form-control form-control-sm"
+                                    required
+                                    @input="onBaseUnitPriceInput(row)"
+                                    @blur="onUnitPriceBlur(row, 'purchase_price')"
+                                />
+                                <span v-else class="form-control form-control-sm bg-white text-end">
+                                    {{ lotPreviewPurchase(row.sell_unit) }}
+                                </span>
+                            </div>
+                            <div>
+                                <label class="form-label small mb-1">Sale</label>
+                                <input
+                                    v-if="!previewBatchId"
+                                    v-model="row.sale_price"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    class="form-control form-control-sm"
+                                    required
+                                    @input="onBaseUnitPriceInput(row)"
+                                    @blur="onUnitPriceBlur(row, 'sale_price')"
+                                />
+                                <span v-else class="form-control form-control-sm bg-white text-end">
+                                    {{ lotPreviewSale(row.sell_unit) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive d-none d-md-block">
                     <table class="table table-sm align-middle">
                         <thead class="table-light">
                             <tr>
@@ -569,14 +736,14 @@
                 </div>
             </div>
 
-            <div class="mt-3">
+            <div class="mt-3 product-active-section">
                 <div class="form-check">
                     <input id="active" v-model="form.is_active" type="checkbox" class="form-check-input" />
                     <label class="form-check-label" for="active">Active</label>
                 </div>
             </div>
 
-            <div class="mt-4 d-flex gap-2">
+            <div class="mt-4 d-flex gap-2 product-form-actions">
                 <button type="submit" class="btn btn-primary" :disabled="form.processing">Save</button>
                 <Link href="/products" class="btn btn-outline-secondary">Cancel</Link>
             </div>
@@ -652,6 +819,18 @@ const selectedTypeIconUrl = computed(() => {
     const match = options.find((o) => o.slug === form.product_type);
 
     return match?.icon_url ?? null;
+});
+
+const selectedCategoryName = computed(() => {
+    const category = props.categories.find((item) => Number(item.id) === Number(form.category_id));
+
+    return category?.name ?? 'Not set';
+});
+
+const selectedStorageLocationName = computed(() => {
+    const location = props.storageLocations.find((item) => Number(item.id) === Number(form.storage_location_id));
+
+    return location ? locationLabel(location) : 'Default';
 });
 
 function unitLabel(u) {
@@ -1504,3 +1683,469 @@ function submit() {
     }
 }
 </script>
+
+<style scoped>
+.product-form-card {
+    border-radius: 1rem;
+    padding: 1.25rem;
+}
+
+.product-form-hero {
+    align-items: flex-start;
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.08), rgba(13, 202, 240, 0.08));
+    border: 1px solid rgba(13, 110, 253, 0.12);
+    border-radius: 0.85rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+}
+
+.product-section-title {
+    align-items: center;
+    color: #495057;
+    display: flex;
+    font-size: 0.78rem;
+    font-weight: 700;
+    gap: 0.75rem;
+    letter-spacing: 0.04em;
+    margin: 1rem 0 0.75rem;
+    text-transform: uppercase;
+}
+
+.product-section-title::after {
+    background: #e9ecef;
+    content: '';
+    flex: 1;
+    height: 1px;
+}
+
+.product-setup-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 18rem;
+    gap: 1rem;
+    align-items: start;
+}
+
+.product-setup-main {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.product-quick-card,
+.product-advanced-details,
+.product-preview-card,
+.product-helper-card {
+    background: #fff;
+    border: 1px solid #edf0f2;
+    border-radius: 0.9rem;
+}
+
+.product-quick-card {
+    padding: 1rem;
+}
+
+.product-card-heading {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
+.product-step-badge {
+    align-items: center;
+    background: var(--bs-primary);
+    border-radius: 999px;
+    color: #fff;
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: 0.8rem;
+    font-weight: 700;
+    height: 1.8rem;
+    justify-content: center;
+    width: 1.8rem;
+}
+
+.product-advanced-details {
+    overflow: hidden;
+}
+
+.product-advanced-details summary {
+    align-items: center;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    list-style: none;
+    padding: 0.85rem 1rem;
+}
+
+.product-advanced-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.product-advanced-details summary span {
+    font-weight: 700;
+}
+
+.product-advanced-details summary small {
+    color: #6c757d;
+    text-align: right;
+}
+
+.product-advanced-details[open] summary {
+    border-bottom: 1px solid #edf0f2;
+}
+
+.product-advanced-details .product-main-grid {
+    border: 0;
+    border-radius: 0;
+}
+
+.product-setup-sidebar {
+    display: grid;
+    gap: 0.85rem;
+    position: sticky;
+    top: 1rem;
+}
+
+.product-preview-card,
+.product-helper-card {
+    padding: 0.9rem;
+}
+
+.product-preview-list {
+    display: grid;
+    gap: 0.4rem;
+}
+
+.product-preview-list > div {
+    align-items: center;
+    background: #f8f9fa;
+    border-radius: 0.55rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.6rem;
+    padding: 0.45rem 0.55rem;
+}
+
+.product-preview-list span {
+    color: #6c757d;
+    font-size: 0.78rem;
+}
+
+.product-preview-list strong {
+    font-size: 0.82rem;
+    min-width: 0;
+    overflow: hidden;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.product-main-grid {
+    --product-card-gap: 0.85rem;
+    display: grid;
+    gap: var(--product-card-gap);
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.product-main-grid > [class*='col-'] {
+    max-width: none;
+    padding: 0;
+    width: auto;
+}
+
+.product-main-grid > .col-12 {
+    grid-column: span 12;
+}
+
+.product-main-grid > .col-md-2 {
+    grid-column: span 2;
+}
+
+.product-main-grid > .col-md-3 {
+    grid-column: span 3;
+}
+
+.product-main-grid > .col-md-4 {
+    grid-column: span 4;
+}
+
+.product-main-grid > .col-md-6 {
+    grid-column: span 6;
+}
+
+.product-form-card .form-label {
+    color: #212529;
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+}
+
+.product-form-card .form-text {
+    font-size: 0.74rem;
+    line-height: 1.35;
+}
+
+.product-form-card .form-control,
+.product-form-card .form-select {
+    min-height: 2.35rem;
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+}
+
+.product-form-card input.form-control,
+.product-form-card select.form-select,
+.product-form-card input[type='file'].form-control {
+    height: 2.35rem;
+}
+
+.product-form-card .form-control-lg {
+    font-size: 1rem;
+    min-height: 2.35rem;
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+}
+
+.product-stock-card,
+.product-units-section {
+    border-radius: 0.9rem;
+    overflow: hidden;
+}
+
+.product-units-section {
+    background: #fff;
+    border: 1px solid #edf0f2;
+    padding: 1rem;
+}
+
+.product-units-section .table {
+    min-width: 760px;
+}
+
+.product-unit-cards {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.product-unit-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.75rem;
+    padding: 0.7rem;
+}
+
+.product-unit-card--preview {
+    background: #f8f9fa;
+}
+
+.product-unit-card__fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.product-active-section {
+    background: #f8f9fa;
+    border: 1px solid #edf0f2;
+    border-radius: 0.75rem;
+    padding: 0.75rem 0.9rem;
+}
+
+.product-form-actions {
+    background: #fff;
+    border-top: 1px solid #edf0f2;
+    padding-top: 1rem;
+}
+
+@media (min-width: 992px) {
+    .product-form-card {
+        padding: 1.5rem;
+    }
+
+    .product-main-grid {
+        align-items: stretch;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .product-setup-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .product-setup-sidebar {
+        order: -1;
+        position: static;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .product-main-grid {
+        --product-card-gap: 0.65rem;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .product-main-grid > [class*='col-'] {
+        grid-column: 1 / -1;
+    }
+
+    .product-setup-layout {
+        gap: 0.75rem;
+    }
+
+    .product-preview-card,
+    .product-helper-card {
+        padding: 0.8rem;
+    }
+
+    .product-preview-list {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .product-preview-list > div {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.15rem;
+    }
+
+    .product-preview-list strong {
+        text-align: left;
+        width: 100%;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .product-form-card {
+        border-radius: 0.85rem;
+        padding: 0.85rem;
+    }
+
+    .product-form-hero {
+        border-radius: 0.75rem;
+        margin-bottom: 0.8rem;
+        padding: 0.8rem;
+    }
+
+    .product-form-hero h2 {
+        font-size: 1rem;
+    }
+
+    .product-section-title {
+        font-size: 0.72rem;
+        margin: 0.8rem 0 0.55rem;
+    }
+
+    .product-form-card .form-label {
+        font-size: 0.8rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .product-form-card .form-control,
+    .product-form-card .form-select {
+        font-size: 0.88rem;
+        min-height: 2.2rem;
+        padding: 0.38rem 0.55rem;
+    }
+
+    .product-form-card input.form-control,
+    .product-form-card select.form-select,
+    .product-form-card input[type='file'].form-control {
+        height: 2.2rem;
+    }
+
+    .product-quick-card,
+    .product-preview-card,
+    .product-helper-card {
+        padding: 0.75rem;
+    }
+
+    .product-preview-list {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .product-card-heading {
+        align-items: flex-start;
+        gap: 0.55rem;
+        margin-bottom: 0.65rem;
+    }
+
+    .product-advanced-details summary {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.15rem;
+        padding: 0.7rem 0.75rem;
+    }
+
+    .product-advanced-details summary small {
+        text-align: left;
+    }
+
+    .product-form-card textarea.form-control {
+        min-height: 4.5rem;
+    }
+
+    .product-form-card .form-text,
+    .product-form-card .text-danger.small,
+    .product-form-card .text-muted.small {
+        font-size: 0.72rem;
+        line-height: 1.25;
+    }
+
+    .product-stock-card .card-header,
+    .product-stock-card .card-body,
+    .product-units-section {
+        padding: 0.75rem;
+    }
+
+    .product-stock-card h2,
+    .product-units-section h2 {
+        font-size: 0.95rem;
+    }
+
+    .product-units-section .table-responsive {
+        margin: 0 -0.25rem;
+    }
+
+    .product-units-section .table {
+        font-size: 0.82rem;
+        min-width: 680px;
+    }
+
+    .product-unit-card {
+        padding: 0.65rem;
+    }
+
+    .product-unit-card__fields {
+        gap: 0.45rem;
+    }
+
+    .product-unit-card .btn {
+        font-size: 0.76rem;
+        min-height: 1.85rem;
+        padding-right: 0.45rem;
+        padding-left: 0.45rem;
+    }
+
+    .product-active-section {
+        padding: 0.65rem;
+    }
+
+    .product-form-actions {
+        bottom: 0;
+        box-shadow: 0 -0.5rem 1rem rgba(15, 23, 42, 0.06);
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-right: -0.85rem;
+        margin-left: -0.85rem;
+        padding: 0.75rem 0.85rem;
+        position: sticky;
+        z-index: 5;
+    }
+
+    .product-form-actions .btn {
+        min-height: 2.35rem;
+    }
+}
+</style>

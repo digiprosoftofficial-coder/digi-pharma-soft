@@ -30,7 +30,7 @@ final class PurchaseController extends Controller
         ];
 
         $query = Purchase::query()
-            ->with('supplier')
+            ->with(['supplier', 'lines.product'])
             ->orderByDesc('purchased_at');
 
         if ($filters['supplier_id'] !== '') {

@@ -8,6 +8,13 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StorePurchasePaymentRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('amount') && is_numeric($this->input('amount'))) {
+            $this->merge(['amount' => round((float) $this->input('amount'), 2)]);
+        }
+    }
+
     public function authorize(): bool
     {
         $purchase = $this->resolvePurchase();
@@ -40,8 +47,10 @@ class StorePurchasePaymentRequest extends FormRequest
                 return;
             }
 
-            $amount = (float) $this->input('amount', 0);
-            if ($amount > (float) $purchase->due + 0.0001) {
+            $amount = round((float) $this->input('amount', 0), 2);
+            $due = round((float) $purchase->due, 2);
+
+            if ($amount > $due + 0.0001) {
                 $validator->errors()->add('amount', __('purchases.payment_exceeds_due'));
             }
         });

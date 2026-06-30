@@ -1,9 +1,9 @@
 <template>
     <TenantShellLayout page-title="Purchases">
         <Head title="Purchases" />
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 purchases-page-header">
             <h1 class="h4 mb-0">{{ t('purchases.purchase_list') }}</h1>
-            <div class="d-flex gap-2">
+            <div class="d-flex flex-wrap gap-2 purchases-page-actions">
                 <a :href="exportUrl" class="btn btn-sm btn-outline-secondary">{{ t('purchases.export_csv') }}</a>
                 <Link
                     v-if="$page.props.auth?.user?.permissions?.includes('purchases.manage')"
@@ -15,9 +15,9 @@
             </div>
         </div>
 
-        <form class="card border-0 shadow-sm card-body mb-3" @submit.prevent="applyFilters">
+        <form class="card border-0 shadow-sm card-body mb-3 purchase-filter-card" @submit.prevent="applyFilters">
             <div class="row g-2 align-items-end">
-                <div class="col-md-3">
+                <div class="col-12 col-md-3 purchase-filter-field">
                     <label class="form-label small mb-0">{{ t('purchases.search') }}</label>
                     <input
                         v-model="filterForm.q"
@@ -26,22 +26,22 @@
                         :placeholder="t('purchases.search_placeholder')"
                     />
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-md-2 purchase-filter-field">
                     <label class="form-label small mb-0">{{ t('purchases.supplier') }}</label>
                     <select v-model="filterForm.supplier_id" class="form-select form-select-sm">
                         <option value="">{{ t('purchases.all_suppliers') }}</option>
                         <option v-for="s in suppliers" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-md-2 purchase-filter-field">
                     <label class="form-label small mb-0">{{ t('purchases.date_from') }}</label>
                     <input v-model="filterForm.date_from" type="date" class="form-control form-control-sm" />
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-md-2 purchase-filter-field">
                     <label class="form-label small mb-0">{{ t('purchases.date_to') }}</label>
                     <input v-model="filterForm.date_to" type="date" class="form-control form-control-sm" />
                 </div>
-                <div class="col-md-3 d-flex gap-1">
+                <div class="col-6 col-md-3 d-grid d-sm-flex gap-1 purchase-filter-actions">
                     <button type="submit" class="btn btn-sm btn-primary">{{ t('purchases.filter') }}</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary" @click="clearFilters">
                         {{ t('purchases.reset') }}
@@ -50,13 +50,77 @@
             </div>
         </form>
 
-        <div class="card border-0 shadow-sm">
-            <div class="table-responsive">
+        <div class="purchase-mobile-list d-md-none">
+            <div v-if="!purchases.data?.length" class="card border-0 shadow-sm card-body text-muted text-center small">
+                {{ t('purchases.no_results') }}
+            </div>
+            <div v-for="p in purchases.data" :key="p.id" class="card border-0 shadow-sm mb-2 purchase-mobile-card">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                        <div class="min-w-0">
+                            <Link :href="`/purchases/${p.id}`" class="fw-semibold text-decoration-none text-truncate d-block">
+                                {{ p.invoice_no }}
+                            </Link>
+                            <div class="small text-muted text-truncate">{{ p.supplier?.name || t('purchases.supplier') }}</div>
+                            <div class="small text-muted text-truncate">
+                                {{ compactProductNames(p) }}
+                            </div>
+                            <div class="small text-muted text-truncate">
+                                {{ compactLineDates(p) }}
+                            </div>
+                        </div>
+                        <span class="badge text-bg-light border flex-shrink-0">{{ formatDate(p.purchased_at) }}</span>
+                    </div>
+
+                    <div class="purchase-mobile-card__amounts">
+                        <div>
+                            <span class="text-muted">{{ t('purchases.total') }}</span>
+                            <strong>{{ formatMoney(p.total) }}</strong>
+                        </div>
+                        <div>
+                            <span class="text-muted">{{ t('purchases.due') }}</span>
+                            <strong :class="{ 'text-danger': Number(p.due) > 0 }">{{ formatMoney(p.due) }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="purchase-mobile-card__actions mt-2">
+                        <Link :href="`/purchases/${p.id}`" class="btn btn-sm btn-outline-primary">
+                            {{ t('purchases.view') }}
+                        </Link>
+                        <a
+                            :href="`/purchases/${p.id}/print`"
+                            target="_blank"
+                            rel="noopener"
+                            class="btn btn-sm btn-outline-secondary"
+                        >
+                            {{ t('purchases.print') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div v-if="purchases.links?.length > 3" class="card border-0 shadow-sm overflow-hidden mt-2">
+                <nav class="d-flex flex-wrap gap-1 justify-content-center p-2">
+                    <Link
+                        v-for="link in purchases.links"
+                        :key="link.label"
+                        :href="link.url || '#'"
+                        class="btn btn-sm"
+                        :class="link.active ? 'btn-primary' : 'btn-outline-secondary'"
+                        :disabled="!link.url"
+                        v-html="link.label"
+                    />
+                </nav>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm d-none d-md-block">
+            <div class="table-responsive purchases-table">
                 <table class="table table-sm mb-0">
                     <thead class="table-light">
                         <tr>
                             <th>{{ t('purchases.invoice') }}</th>
                             <th>{{ t('purchases.supplier') }}</th>
+                            <th>{{ t('purchases.item') }}</th>
                             <th>{{ t('purchases.date') }}</th>
                             <th class="text-end">{{ t('purchases.total') }} ({{ currencyCode() }})</th>
                             <th class="text-end">{{ t('purchases.due') }} ({{ currencyCode() }})</th>
@@ -71,7 +135,13 @@
                                 </Link>
                             </td>
                             <td>{{ p.supplier?.name }}</td>
-                            <td>{{ p.purchased_at }}</td>
+                            <td class="purchase-items-cell">
+                                <span :title="productSummaries(p).join(', ')">{{ compactProductNames(p) }}</span>
+                                <small class="text-muted" :title="lineDateSummaries(p).join(', ')">
+                                    {{ compactLineDates(p) }}
+                                </small>
+                            </td>
+                            <td>{{ formatDate(p.purchased_at) }}</td>
                             <td class="text-end">{{ formatMoney(p.total) }}</td>
                             <td class="text-end" :class="{ 'text-danger fw-medium': Number(p.due) > 0 }">
                                 {{ formatMoney(p.due) }}
@@ -91,7 +161,7 @@
                             </td>
                         </tr>
                         <tr v-if="!purchases.data?.length">
-                            <td colspan="6" class="text-muted text-center py-4">{{ t('purchases.no_results') }}</td>
+                            <td colspan="7" class="text-muted text-center py-4">{{ t('purchases.no_results') }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -117,6 +187,7 @@
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
+import { formatHumanDate as formatDate } from '@/utils/dates';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, reactive } from 'vue';
 
@@ -131,6 +202,66 @@ const props = defineProps({
 
 const { t } = useLocale();
 const { formatMoney, currencyCode } = useMoney();
+
+function productNames(purchase) {
+    return (purchase.lines ?? [])
+        .map((line) => line.product?.name)
+        .filter(Boolean);
+}
+
+function productSummaries(purchase) {
+    return (purchase.lines ?? [])
+        .map((line) => {
+            const name = line.product?.name;
+            if (!name) {
+                return null;
+            }
+
+            const mfg = line.manufactured_at ? `MFG: ${formatDate(line.manufactured_at)}` : null;
+            const exp = line.expiry_date ? `EXP: ${formatDate(line.expiry_date)}` : null;
+            const dates = [mfg, exp].filter(Boolean).join(', ');
+
+            return dates ? `${name} (${dates})` : name;
+        })
+        .filter(Boolean);
+}
+
+function compactProductNames(purchase) {
+    const names = productNames(purchase);
+    if (!names.length) {
+        return '—';
+    }
+
+    const visible = names.slice(0, 2).join(', ');
+    const more = names.length - 2;
+
+    return more > 0 ? `${visible} +${more} more` : visible;
+}
+
+function lineDateSummaries(purchase) {
+    return (purchase.lines ?? [])
+        .map((line) => {
+            const name = line.product?.name ?? t('purchases.item');
+            const mfg = line.manufactured_at ? `MFG ${formatDate(line.manufactured_at)}` : null;
+            const exp = line.expiry_date ? `EXP ${formatDate(line.expiry_date)}` : null;
+            const dates = [mfg, exp].filter(Boolean).join(' · ');
+
+            return dates ? `${name}: ${dates}` : null;
+        })
+        .filter(Boolean);
+}
+
+function compactLineDates(purchase) {
+    const summaries = lineDateSummaries(purchase);
+    if (!summaries.length) {
+        return 'MFG/EXP: —';
+    }
+
+    const visible = summaries.slice(0, 1).join(', ');
+    const more = summaries.length - 1;
+
+    return more > 0 ? `${visible} +${more} more` : visible;
+}
 
 const filterForm = reactive({
     q: props.filters.q ?? '',
@@ -161,3 +292,90 @@ const exportUrl = computed(() => {
     return qs ? `/purchases/export?${qs}` : '/purchases/export';
 });
 </script>
+
+<style scoped>
+.purchases-table table {
+    min-width: 900px;
+}
+
+.purchase-items-cell {
+    max-width: 16rem;
+}
+
+.purchase-items-cell span,
+.purchase-items-cell small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.purchase-mobile-card__amounts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.purchase-mobile-card__amounts > div {
+    align-items: flex-start;
+    background: #f8f9fa;
+    border: 1px solid #eef0f2;
+    border-radius: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.55rem 0.65rem;
+}
+
+.purchase-mobile-card__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+@media (max-width: 575.98px) {
+    .purchases-page-header {
+        align-items: stretch !important;
+    }
+
+    .purchases-page-actions {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+    }
+
+    .purchase-filter-card {
+        padding: 0.85rem;
+    }
+
+    .purchase-filter-field .form-label {
+        font-size: 0.76rem;
+        font-weight: 600;
+    }
+
+    .purchase-filter-card .form-control,
+    .purchase-filter-card .form-select {
+        font-size: 0.86rem;
+        min-height: 2.1rem;
+        padding: 0.35rem 0.5rem;
+    }
+
+    .purchase-filter-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .purchase-mobile-card .card-body {
+        padding: 0.85rem !important;
+    }
+
+    .purchase-mobile-card__amounts > div {
+        padding: 0.45rem 0.55rem;
+    }
+
+    .purchase-mobile-card__actions .btn,
+    .purchases-page-actions .btn {
+        font-size: 0.8rem;
+        min-height: 2.15rem;
+    }
+}
+</style>
