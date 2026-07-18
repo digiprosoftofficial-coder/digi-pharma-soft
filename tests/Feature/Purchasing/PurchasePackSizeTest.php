@@ -102,14 +102,16 @@ class PurchasePackSizeTest extends TestCase
         $this->seed();
         $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
         $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
-        $product->units()->create([
-            'sell_unit' => 'carton',
-            'conversion_factor' => 120,
-            'purchase_price' => 5000,
-            'sale_price' => 7000,
-            'is_default' => false,
-            'sort_order' => 2,
-        ]);
+        $product->units()->updateOrCreate(
+            ['sell_unit' => 'carton'],
+            [
+                'conversion_factor' => 120,
+                'purchase_price' => 5000,
+                'sale_price' => 7000,
+                'is_default' => false,
+                'sort_order' => 4,
+            ],
+        );
         $product->update(['boxes_per_carton' => 12]);
         $supplier = Supplier::query()->firstOrFail();
 
@@ -143,14 +145,16 @@ class PurchasePackSizeTest extends TestCase
         $this->seed();
         $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
         $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
-        $product->units()->create([
-            'sell_unit' => 'carton',
-            'conversion_factor' => 120,
-            'purchase_price' => 5000,
-            'sale_price' => 7000,
-            'is_default' => false,
-            'sort_order' => 2,
-        ]);
+        $product->units()->updateOrCreate(
+            ['sell_unit' => 'carton'],
+            [
+                'conversion_factor' => 120,
+                'purchase_price' => 5000,
+                'sale_price' => 7000,
+                'is_default' => false,
+                'sort_order' => 4,
+            ],
+        );
         $supplier = Supplier::query()->firstOrFail();
 
         $this->actingAs($user)->post('/purchases', [

@@ -99,4 +99,13 @@ return [
     'payment_sale_not_posted' => 'শুধু পোস্টেড বিক্রয়ে পেমেন্ট রেকর্ড করা যাবে।',
     'collect_due' => 'বাকি আদায়',
     'date' => 'তারিখ',
+    'pos_online' => 'অনলাইন',
+    'pos_offline' => 'অফলাইন',
+    'pos_offline_mode_hint' => 'ক্যাশ করা পণ্য ব্যবহার হচ্ছে। ইন্টারনেট ফিরলে সেল সিঙ্ক হবে।',
+    'pos_offline_cache_hint' => 'অফলাইনের জন্য :countটি পণ্য ক্যাশ আছে।',
+    'pos_pending_sales' => ':countটি সেল সিঙ্কের অপেক্ষায়।',
+    'pos_sync_now' => 'এখনই সিঙ্ক',
+    'pos_syncing' => 'সিঙ্ক হচ্ছে…',
+    'pos_offline_sale_queued' => 'সেল অফলাইনে সেভ হয়েছে। ইন্টারনেট ফিরলে আপনাআপনি সিঙ্ক হবে।',
+    'pos_offline_queue_failed' => 'এই ডিভাইসে অফলাইন সেল সেভ করা যায়নি।',
 ];

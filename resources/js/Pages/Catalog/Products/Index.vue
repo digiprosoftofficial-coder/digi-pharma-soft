@@ -4,7 +4,10 @@
         <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <h1 class="h4 mb-0 d-lg-none">{{ t('tenant_nav.products') }}</h1>
-            <Link v-if="can('products.manage')" href="/products/create" class="btn btn-primary">{{ t('catalog.add_product') }}</Link>
+            <div class="d-flex flex-wrap gap-2">
+                <Link v-if="can('products.view')" href="/catalog/master" class="btn btn-outline-primary">{{ t('catalog.master_catalog_add_from') }}</Link>
+                <Link v-if="can('products.manage')" href="/products/create" class="btn btn-primary">{{ t('catalog.add_product') }}</Link>
+            </div>
         </div>
         <form class="card border-0 shadow-sm card-body mb-3 product-filter-card" @submit.prevent="applyFilters">
             <div class="row g-2 align-items-end">

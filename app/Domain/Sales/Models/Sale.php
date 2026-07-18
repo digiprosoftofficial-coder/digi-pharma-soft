@@ -16,6 +16,7 @@ class Sale extends TenantModel
         'tenant_id', 'branch_id', 'customer_id', 'invoice_no', 'sold_at',
         'subtotal', 'discount', 'tax', 'total', 'rounded_total', 'round_adjustment',
         'paid', 'amount_tendered', 'change_returned', 'due', 'status',
+        'offline_client_id',
     ];
 
     protected function casts(): array

@@ -4,18 +4,21 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Sales\Models\Customer;
+use App\Domain\Sales\Models\Sale;
 use App\Domain\Sales\Services\SaleService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Catalog\ProductResource;
 use App\Http\Requests\Sales\StorePosSaleRequest;
 use App\Support\Sales\InvoiceRounding;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
+use Throwable;
 
 final class PosController extends Controller
 {
@@ -41,28 +44,8 @@ final class PosController extends Controller
 
     public function store(StorePosSaleRequest $request): RedirectResponse
     {
-        $customerId = $request->validated('customer_id');
-
-        // Create new customer on-the-fly if provided
-        $newCustomerData = $request->validated('new_customer');
-        if ($newCustomerData && ! $customerId) {
-            $customer = Customer::query()->create([
-                'name' => $newCustomerData['name'],
-                'phone' => $newCustomerData['phone'] ?? null,
-                'balance_due' => 0,
-            ]);
-            $customerId = $customer->getKey();
-        }
-
         try {
-            $sale = $this->sales->checkout(
-                $customerId,
-                $request->validated('lines'),
-                $request->validated('payments'),
-                (float) $request->validated('discount_percent', 0),
-                (float) $request->validated('tax', 0),
-                $request->validated('coupon_code'),
-            );
+            $sale = $this->checkoutFromRequest($request);
         } catch (RuntimeException $e) {
             return redirect()
                 ->route('tenant.pos.index')
@@ -73,6 +56,95 @@ final class PosController extends Controller
             ->route('tenant.pos.index')
             ->with('success', __('Sale completed.'))
             ->with('last_sale_id', $sale->getKey());
+    }
+
+    public function sync(StorePosSaleRequest $request): JsonResponse
+    {
+        $clientId = $request->validated('offline_client_id');
+
+        if (is_string($clientId) && $clientId !== '') {
+            $existing = Sale::query()
+                ->where('offline_client_id', $clientId)
+                ->first();
+
+            if ($existing) {
+                return response()->json([
+                    'ok' => true,
+                    'duplicate' => true,
+                    'sale_id' => $existing->getKey(),
+                    'offline_client_id' => $clientId,
+                ]);
+            }
+        }
+
+        try {
+            $sale = $this->checkoutFromRequest($request);
+        } catch (RuntimeException $e) {
+            return response()->json([
+                'ok' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'ok' => false,
+                'message' => __('Unable to sync offline sale.'),
+            ], 500);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'duplicate' => false,
+            'sale_id' => $sale->getKey(),
+            'offline_client_id' => $sale->offline_client_id,
+        ]);
+    }
+
+    public function offlineCatalog(): JsonResponse
+    {
+        $this->authorize('create', Sale::class);
+
+        $products = $this->productCardQuery()
+            ->orderBy('name')
+            ->limit(300)
+            ->get();
+
+        return response()->json([
+            'data' => $this->resolveProducts($products),
+            'cached_at' => now()->toIso8601String(),
+        ]);
+    }
+
+    private function checkoutFromRequest(StorePosSaleRequest $request): Sale
+    {
+        $customerId = $request->validated('customer_id');
+        $newCustomerData = $request->validated('new_customer');
+        $offlineClientId = $request->validated('offline_client_id');
+
+        if ($newCustomerData && ! $customerId) {
+            $customer = Customer::query()->create([
+                'name' => $newCustomerData['name'],
+                'phone' => $newCustomerData['phone'] ?? null,
+                'balance_due' => 0,
+            ]);
+            $customerId = $customer->getKey();
+        }
+
+        $sale = $this->sales->checkout(
+            $customerId,
+            $request->validated('lines'),
+            $request->validated('payments'),
+            (float) $request->validated('discount_percent', 0),
+            (float) $request->validated('tax', 0),
+            $request->validated('coupon_code'),
+        );
+
+        if (is_string($offlineClientId) && $offlineClientId !== '') {
+            $sale->forceFill(['offline_client_id' => $offlineClientId])->save();
+        }
+
+        return $sale->fresh() ?? $sale;
     }
 
     private function latestProducts(): array

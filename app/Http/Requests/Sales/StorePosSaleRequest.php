@@ -36,6 +36,7 @@ class StorePosSaleRequest extends FormRequest
             'payments.*.method' => ['required', 'string', 'max:32'],
             'payments.*.amount' => ['required', 'numeric', 'min:0'],
             'coupon_code' => ['nullable', 'string', 'max:32'],
+            'offline_client_id' => ['nullable', 'string', 'max:64'],
         ];
     }
 }

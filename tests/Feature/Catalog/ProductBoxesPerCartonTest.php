@@ -45,14 +45,8 @@ class ProductBoxesPerCartonTest extends TestCase
         $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
         $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
 
-        $product->units()->create([
-            'sell_unit' => 'carton',
-            'conversion_factor' => 100,
-            'purchase_price' => 4000,
-            'sale_price' => 6000,
-            'is_default' => false,
-            'sort_order' => 2,
-        ]);
+        // Seeder already provides a box unit (12 strips per box) for PAR-500.
+        $boxFactor = (float) $product->units()->where('sell_unit', 'box')->firstOrFail()->conversion_factor;
 
         $units = $product->units->map(fn ($u) => [
             'sell_unit' => $u->sell_unit,
@@ -70,7 +64,8 @@ class ProductBoxesPerCartonTest extends TestCase
         $product->refresh();
         $this->assertSame('10.0000', (string) $product->boxes_per_carton);
 
+        // Carton conversion is derived from box conversion x boxes-per-carton.
         $carton = $product->units()->where('sell_unit', 'carton')->firstOrFail();
-        $this->assertSame(100.0, (float) $carton->conversion_factor);
+        $this->assertSame($boxFactor * 10.0, (float) $carton->conversion_factor);
     }
 }

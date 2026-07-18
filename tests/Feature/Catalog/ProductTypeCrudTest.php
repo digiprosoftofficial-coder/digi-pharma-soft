@@ -44,7 +44,7 @@ class ProductTypeCrudTest extends TestCase
     {
         $this->seed();
         $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
-        $type = CatalogProductType::query()->where('slug', 'capsule')->firstOrFail();
+        $type = CatalogProductType::query()->where('slug', 'injection')->firstOrFail();
 
         $this->actingAs($user)
             ->delete("/product-types/{$type->getKey()}")

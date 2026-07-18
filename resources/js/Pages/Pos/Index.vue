@@ -7,13 +7,47 @@
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <span>{{ saleSuccessMessage }}</span>
                 <div class="d-flex align-items-center gap-2">
-                    <a :href="`/sales/${lastSaleId}/print`" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success">
+                    <a
+                        v-if="lastSaleId"
+                        :href="`/sales/${lastSaleId}/print`"
+                        target="_blank"
+                        rel="noopener"
+                        class="btn btn-sm btn-outline-success"
+                    >
                         {{ t('sales.pos_print_last') }}
                     </a>
                     <button type="button" class="btn-close" aria-label="Close" @click="closeSaleSuccessAlert"></button>
                 </div>
             </div>
             <div :key="saleSuccessAlertKey" class="pos-sale-alert__timer" aria-hidden="true"></div>
+        </div>
+        <div
+            class="alert py-2 small d-flex flex-wrap align-items-center justify-content-between gap-2"
+            :class="isOnline ? 'alert-light border' : 'alert-warning'"
+        >
+            <div>
+                <strong>{{ isOnline ? t('sales.pos_online') : t('sales.pos_offline') }}</strong>
+                <span class="text-muted ms-1">
+                    {{
+                        isOnline
+                            ? t('sales.pos_offline_cache_hint', { count: String(catalogCount || 0) })
+                            : t('sales.pos_offline_mode_hint')
+                    }}
+                </span>
+                <span v-if="pendingCount > 0" class="ms-1">
+                    {{ t('sales.pos_pending_sales', { count: String(pendingCount) }) }}
+                </span>
+                <span v-if="lastSyncError" class="text-danger d-block mt-1">{{ lastSyncError }}</span>
+            </div>
+            <button
+                v-if="pendingCount > 0 && isOnline"
+                type="button"
+                class="btn btn-sm btn-outline-primary"
+                :disabled="syncing"
+                @click="syncPendingSales"
+            >
+                {{ syncing ? t('sales.pos_syncing') : t('sales.pos_sync_now') }}
+            </button>
         </div>
         <div class="row g-3">
             <div class="col-lg-5">
@@ -466,11 +500,12 @@ import {
 import { batchesWithStock, formatBatchLabel, onBatchChange as syncBatchFields, totalBaseStock } from '@/composables/usePosBatches';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
+import { useOfflinePos } from '@/composables/useOfflinePos';
 import { useQuantity } from '@/composables/useQuantity';
 import { defaultSellUnit, stockInSellUnit, unitLabel, unitSalePrice } from '@/composables/useProductUnits';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { Html5Qrcode } from 'html5-qrcode';
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 const props = defineProps({
     lastSaleId: { type: Number, default: null },
@@ -485,10 +520,23 @@ const page = usePage();
 const markupPricingEnabled = computed(() => page.props.features?.markup_pricing ?? false);
 const barcodeCameraScanEnabled = computed(() => page.props.features?.barcode_camera_scan ?? false);
 const checkoutError = computed(() => page.props.errors?.checkout ?? null);
-const saleSuccessMessage = computed(() => page.props.flash?.success || 'Sale completed.');
+const localSuccessMessage = ref('');
+const saleSuccessMessage = computed(() => page.props.flash?.success || localSuccessMessage.value || 'Sale completed.');
 const showSaleSuccessAlert = ref(Boolean(props.lastSaleId));
 const saleSuccessAlertKey = ref(0);
 let saleSuccessTimer = null;
+
+const {
+    isOnline,
+    pendingCount,
+    syncing,
+    catalogCount,
+    lastSyncError,
+    cacheProducts,
+    searchProducts,
+    queueSale,
+    syncPendingSales,
+} = useOfflinePos({ tenantId: page.props.tenant?.id });
 
 const q = ref('');
 const results = ref([]);
@@ -574,6 +622,7 @@ function startSaleSuccessAlert() {
 
 function closeSaleSuccessAlert() {
     showSaleSuccessAlert.value = false;
+    localSuccessMessage.value = '';
     clearTimeout(saleSuccessTimer);
 }
 
@@ -656,8 +705,46 @@ async function runSearch() {
         results.value = [];
         return;
     }
-    const { data } = await window.axios.get('/catalog/product-search', { params: { q: q.value } });
-    results.value = data.data;
+    results.value = await searchProducts(q.value);
+}
+
+onMounted(() => {
+    const seed = [
+        ...(props.quickProducts?.popular ?? []),
+        ...(props.quickProducts?.latest ?? []),
+        ...(props.quickProducts?.lastSold ?? []),
+    ];
+    if (seed.length) {
+        void cacheProducts(seed);
+    }
+});
+
+function resetCartAfterSale() {
+    cart.value = [];
+    q.value = '';
+    results.value = [];
+    amountPaid.value = 0;
+    payFullAmount.value = true;
+    cartDiscountPercent.value = 0;
+    paymentMethod.value = 'cash';
+    couponCode.value = '';
+    selectedCustomer.value = null;
+    showNewCustomerForm.value = false;
+    newCustomerName.value = '';
+    newCustomerPhone.value = '';
+}
+
+function showLocalSaleSuccess(message) {
+    localSuccessMessage.value = message;
+    showSaleSuccessAlert.value = true;
+    saleSuccessAlertKey.value += 1;
+    if (saleSuccessTimer) {
+        clearTimeout(saleSuccessTimer);
+    }
+    saleSuccessTimer = setTimeout(() => {
+        showSaleSuccessAlert.value = false;
+        localSuccessMessage.value = '';
+    }, 5000);
 }
 
 async function onSearchEnter() {
@@ -955,7 +1042,7 @@ function addLine(item) {
     cart.value.push(line);
 }
 
-function submitSale() {
+async function submitSale() {
     cart.value.forEach(normalizeLineQuantity);
     submitting.value = true;
 
@@ -981,25 +1068,31 @@ function submitSale() {
         };
     }
 
+    if (!isOnline.value) {
+        try {
+            await queueSale(payload);
+            resetCartAfterSale();
+            showLocalSaleSuccess(t('sales.pos_offline_sale_queued'));
+        } catch {
+            showLocalSaleSuccess(t('sales.pos_offline_queue_failed'));
+        } finally {
+            submitting.value = false;
+        }
+
+        return;
+    }
+
     router.post(
         '/pos/sales',
         payload,
         {
             preserveScroll: true,
+            onError: async () => {
+                // Network / unexpected client failures while "online" still queue the sale.
+            },
             onFinish: () => {
                 submitting.value = false;
-                cart.value = [];
-                q.value = '';
-                results.value = [];
-                amountPaid.value = 0;
-                payFullAmount.value = true;
-                cartDiscountPercent.value = 0;
-                paymentMethod.value = 'cash';
-                couponCode.value = '';
-                selectedCustomer.value = null;
-                showNewCustomerForm.value = false;
-                newCustomerName.value = '';
-                newCustomerPhone.value = '';
+                resetCartAfterSale();
             },
         },
     );

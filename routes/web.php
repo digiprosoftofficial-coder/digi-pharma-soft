@@ -37,6 +37,7 @@ use App\Http\Controllers\Tenant\PosController;
 use App\Http\Controllers\Tenant\CategoryController;
 use App\Http\Controllers\Tenant\StorageLocationController;
 use App\Http\Controllers\Tenant\ManufacturerController;
+use App\Http\Controllers\Tenant\MasterCatalogController;
 use App\Http\Controllers\Tenant\ProductBatchController;
 use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\ProductImportController;
@@ -103,7 +104,9 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
             Route::post('/sales/returns', [SaleReturnController::class, 'store'])->name('sales.returns.store');
 
             Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
+            Route::get('/pos/offline-catalog', [PosController::class, 'offlineCatalog'])->name('pos.offline-catalog');
             Route::post('/pos/sales', [PosController::class, 'store'])->name('pos.sales.store');
+            Route::post('/pos/sales/sync', [PosController::class, 'sync'])->name('pos.sales.sync');
 
             Route::get('/purchases', [PurchaseController::class, 'index'])->name('purchases.index');
             Route::get('/purchases/create', [PurchaseController::class, 'create'])->name('purchases.create');
@@ -133,6 +136,10 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
             Route::resource('product-types', ProductTypeController::class)->except(['show']);
             Route::resource('manufacturers', ManufacturerController::class)->except(['show']);
             Route::resource('storage-locations', StorageLocationController::class)->except(['show']);
+            Route::get('/catalog/master', [MasterCatalogController::class, 'index'])->name('catalog.master.index');
+            Route::get('/catalog/master/search', [MasterCatalogController::class, 'search'])->name('catalog.master.search');
+            Route::post('/catalog/master/{masterProduct}/activate', [MasterCatalogController::class, 'activate'])->name('catalog.master.activate');
+
             Route::get('/catalog/import', [ProductImportController::class, 'index'])->name('catalog.import.index');
             Route::get('/catalog/import/sample', [ProductImportController::class, 'sample'])->name('catalog.import.sample');
             Route::post('/catalog/import/preview', [ProductImportController::class, 'preview'])->name('catalog.import.preview');

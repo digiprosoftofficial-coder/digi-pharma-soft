@@ -54,6 +54,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call(RolePermissionSeeder::class);
+        $this->call(MasterCatalogSeeder::class);
         SeedDefaultProductTypes::forTenant((int) $tenant->getKey());
         $defaultBranch = BranchProvisioner::provisionForTenant((int) $tenant->getKey());
 

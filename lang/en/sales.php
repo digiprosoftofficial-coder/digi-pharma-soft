@@ -99,4 +99,13 @@ return [
     'payment_sale_not_posted' => 'Payments can only be recorded on posted sales.',
     'collect_due' => 'Collect due',
     'date' => 'Date',
+    'pos_online' => 'Online',
+    'pos_offline' => 'Offline',
+    'pos_offline_mode_hint' => 'Using cached products. Sales will sync when the internet returns.',
+    'pos_offline_cache_hint' => ':count products cached for offline use.',
+    'pos_pending_sales' => ':count sale(s) waiting to sync.',
+    'pos_sync_now' => 'Sync now',
+    'pos_syncing' => 'Syncing…',
+    'pos_offline_sale_queued' => 'Sale saved offline. It will sync automatically when you are back online.',
+    'pos_offline_queue_failed' => 'Could not save the sale offline on this device.',
 ];

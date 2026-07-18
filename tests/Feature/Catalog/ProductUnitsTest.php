@@ -64,7 +64,8 @@ class ProductUnitsTest extends TestCase
 
         $row = collect($response->inertiaProps('products.data'))->firstWhere('sku', 'PAR-500');
         $this->assertNotNull($row);
-        $this->assertSame(530.0, (float) $row['stock_on_hand']);
+        // Seeded PAR-500 holds 384 base units (240 + 144) plus the 30 purchased here.
+        $this->assertSame(414.0, (float) $row['stock_on_hand']);
         $this->assertSame(30.0, (float) $row['purchased_quantity']);
     }
 
@@ -80,12 +81,12 @@ class ProductUnitsTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Catalog/Products/Show')
                 ->where('product.sku', 'PAR-500')
-                ->where('stockBase', '500')
-                ->has('stockByUnit', 2)
+                ->where('stockBase', '384')
+                ->has('stockByUnit', 4)
                 ->where('stockByUnit.0.sell_unit', 'strip')
-                ->where('stockByUnit.0.quantity_on_hand', '500')
-                ->where('stockByUnit.1.sell_unit', 'box')
-                ->where('stockByUnit.1.quantity_on_hand', '50'));
+                ->where('stockByUnit.0.quantity_on_hand', '384')
+                ->where('stockByUnit.2.sell_unit', 'box')
+                ->where('stockByUnit.2.quantity_on_hand', '32'));
     }
 
     public function test_product_edit_page_includes_resolved_product_data(): void
@@ -101,14 +102,15 @@ class ProductUnitsTest extends TestCase
                 ->component('Catalog/Products/Form')
                 ->where('product.name', 'Paracetamol 500mg')
                 ->where('product.sku', 'PAR-500')
-                ->has('product.units', 2));
+                ->has('product.units', 4));
     }
 
     public function test_product_update_adjusts_stock_on_single_batch(): void
     {
         $this->seed();
         $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
-        $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
+        // AMX-250 is seeded with a single batch, so no batch selection is required.
+        $product = Product::query()->where('sku', 'AMX-250')->firstOrFail();
         $batch = ProductBatch::query()->where('product_id', $product->getKey())->firstOrFail();
         $before = (float) $batch->quantity_on_hand;
 
@@ -167,11 +169,12 @@ class ProductUnitsTest extends TestCase
         ])->assertRedirect();
 
         $batch->refresh();
-        $this->assertSame($before - 20.0, (float) $batch->quantity_on_hand);
+        // Seeded PAR-500 box unit converts to 12 base strips, so 2 boxes = 24 base.
+        $this->assertSame($before - 24.0, (float) $batch->quantity_on_hand);
 
         $line = SaleLine::query()->latest('id')->first();
         $this->assertSame('box', $line->sell_unit);
-        $this->assertSame(20.0, (float) $line->quantity_base);
+        $this->assertSame(24.0, (float) $line->quantity_base);
     }
 
     public function test_product_can_be_created_with_carton_sell_unit(): void
@@ -203,14 +206,17 @@ class ProductUnitsTest extends TestCase
         $this->seed();
         $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
         $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
-        $product->units()->create([
-            'sell_unit' => 'carton',
-            'conversion_factor' => 100,
-            'purchase_price' => 4500,
-            'sale_price' => 6000,
-            'is_default' => false,
-            'sort_order' => 2,
-        ]);
+        // Seeder already defines a carton unit; set a factor that fits within one batch.
+        $product->units()->updateOrCreate(
+            ['sell_unit' => 'carton'],
+            [
+                'conversion_factor' => 100,
+                'purchase_price' => 4500,
+                'sale_price' => 6000,
+                'is_default' => false,
+                'sort_order' => 4,
+            ],
+        );
         $batch = ProductBatch::query()->where('product_id', $product->getKey())->firstOrFail();
         $before = (float) $batch->quantity_on_hand;
 
