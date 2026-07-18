@@ -9,6 +9,7 @@ use App\Http\Controllers\Central\PlatformAuditController;
 use App\Http\Controllers\Central\PlatformAnnouncementController;
 use App\Http\Controllers\Central\PlatformBillingController;
 use App\Http\Controllers\Central\PlatformCatalogTemplateController;
+use App\Http\Controllers\Central\PlatformMasterCatalogController;
 use App\Http\Controllers\Central\PlatformProductTypeController;
 use App\Http\Controllers\Central\PlatformResellerController;
 use App\Http\Controllers\Central\PlatformDashboardController;
@@ -277,6 +278,18 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
         Route::put('/settings', [PlatformSettingsController::class, 'update'])->name('settings.update');
         Route::resource('resellers', PlatformResellerController::class)->except(['show']);
         Route::resource('product-types', PlatformProductTypeController::class)->except(['show']);
+
+        Route::get('/master-catalog', [PlatformMasterCatalogController::class, 'index'])->name('master-catalog.index');
+        Route::get('/master-catalog/create', [PlatformMasterCatalogController::class, 'create'])->name('master-catalog.create');
+        Route::post('/master-catalog', [PlatformMasterCatalogController::class, 'store'])->name('master-catalog.store');
+        Route::get('/master-catalog/import', [PlatformMasterCatalogController::class, 'importForm'])->name('master-catalog.import');
+        Route::get('/master-catalog/import/sample', [PlatformMasterCatalogController::class, 'sample'])->name('master-catalog.sample');
+        Route::post('/master-catalog/import/preview', [PlatformMasterCatalogController::class, 'preview'])->name('master-catalog.preview');
+        Route::post('/master-catalog/import', [PlatformMasterCatalogController::class, 'importStore'])->name('master-catalog.import.store');
+        Route::get('/master-catalog/{masterProduct}/edit', [PlatformMasterCatalogController::class, 'edit'])->name('master-catalog.edit');
+        Route::put('/master-catalog/{masterProduct}', [PlatformMasterCatalogController::class, 'update'])->name('master-catalog.update');
+        Route::delete('/master-catalog/{masterProduct}', [PlatformMasterCatalogController::class, 'destroy'])->name('master-catalog.destroy');
+
         Route::resource('catalog-templates', PlatformCatalogTemplateController::class);
         Route::post('catalog-templates/{catalog_template}/items', [PlatformCatalogTemplateController::class, 'storeItem'])
             ->name('catalog-templates.items.store');

@@ -43,7 +43,9 @@ use App\Policies\SalePolicy;
 use App\Policies\SaleReturnPolicy;
 use App\Policies\StockTransferPolicy;
 use App\Policies\SupplierPolicy;
+use App\Domain\Catalog\Models\MasterProduct;
 use App\Policies\Platform\CatalogTemplatePolicy;
+use App\Policies\Platform\MasterProductPolicy;
 use App\Policies\Platform\PlatformProductTypePolicy;
 use App\Policies\Platform\PlatformAnnouncementPolicy;
 use App\Policies\Platform\PlatformInvoicePolicy;
@@ -117,6 +119,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(PlatformInvoice::class, PlatformInvoicePolicy::class);
         Gate::policy(Reseller::class, ResellerPolicy::class);
         Gate::policy(CatalogTemplate::class, CatalogTemplatePolicy::class);
+        Gate::policy(MasterProduct::class, MasterProductPolicy::class);
         Gate::policy(PlatformProductType::class, PlatformProductTypePolicy::class);
         Gate::policy(PlatformAnnouncement::class, PlatformAnnouncementPolicy::class);
 
