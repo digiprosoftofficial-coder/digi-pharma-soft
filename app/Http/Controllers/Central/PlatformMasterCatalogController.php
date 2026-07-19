@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Central;
 
 use App\Domain\Catalog\Actions\ImportMasterProductsFromCsvAction;
 use App\Domain\Catalog\Models\MasterProduct;
+use App\Domain\Catalog\Models\MasterProductSuggestion;
 use App\Domain\Catalog\Models\Product;
 use App\Http\Controllers\Controller;
 use App\Support\Catalog\MasterProductImportCsv;
@@ -81,6 +82,9 @@ final class PlatformMasterCatalogController extends Controller
                     ->value('aggregate'),
             ],
             'productTypes' => ProductType::values(),
+            'pendingSuggestions' => MasterProductSuggestion::query()
+                ->where('status', MasterProductSuggestion::STATUS_PENDING)
+                ->count(),
         ]);
     }
 
@@ -138,23 +142,24 @@ final class PlatformMasterCatalogController extends Controller
             ->with('success', __('platform.master_updated'));
     }
 
+    public function toggleActive(MasterProduct $masterProduct): RedirectResponse
+    {
+        $this->authorize('update', $masterProduct);
+
+        $masterProduct->update(['is_active' => ! $masterProduct->is_active]);
+
+        return redirect()
+            ->route('platform.master-catalog.index')
+            ->with('success', $masterProduct->is_active
+                ? __('platform.master_activated')
+                : __('platform.master_deactivated'));
+    }
+
     public function destroy(MasterProduct $masterProduct): RedirectResponse
     {
         $this->authorize('delete', $masterProduct);
 
-        $inUse = Product::query()
-            ->withoutGlobalScopes()
-            ->where('master_product_id', $masterProduct->getKey())
-            ->exists();
-
-        if ($inUse) {
-            $masterProduct->update(['is_active' => false]);
-
-            return redirect()
-                ->route('platform.master-catalog.index')
-                ->with('success', __('platform.master_deactivated_in_use'));
-        }
-
+        // Pharmacy products stay; FK nullOnDelete clears their master_product_id link.
         $masterProduct->delete();
 
         return redirect()

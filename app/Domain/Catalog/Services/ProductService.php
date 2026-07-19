@@ -5,6 +5,7 @@ namespace App\Domain\Catalog\Services;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductBatch;
 use App\Domain\Catalog\Repositories\ProductRepository;
+use App\Domain\Catalog\Services\MasterProductSuggestionService;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Support\Catalog\ProductCatalogOptions;
 use App\Support\Catalog\ProductImageStorage;
@@ -19,7 +20,10 @@ use Illuminate\Validation\ValidationException;
 
 final class ProductService
 {
-    public function __construct(private readonly ProductRepository $products) {}
+    public function __construct(
+        private readonly ProductRepository $products,
+        private readonly MasterProductSuggestionService $masterSuggestions,
+    ) {}
 
     public function createProduct(array $data, ?UploadedFile $image = null): Product
     {
@@ -81,7 +85,12 @@ final class ProductService
             $this->createOpeningBatchIfProvided($product, $data, $default);
             $this->syncBatchSalePricesFromProduct($product->fresh(['units', 'batches']));
 
-            return $product->fresh(['units', 'batches']);
+            $fresh = $product->fresh(['units', 'batches', 'manufacturer']);
+            if (($data['master_product_id'] ?? null) === null && $fresh->master_product_id === null) {
+                $this->masterSuggestions->suggestFromProduct($fresh, auth()->user());
+            }
+
+            return $fresh->fresh(['units', 'batches']);
         });
     }
 

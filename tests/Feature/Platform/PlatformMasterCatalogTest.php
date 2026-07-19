@@ -99,7 +99,7 @@ class PlatformMasterCatalogTest extends TestCase
         ]);
     }
 
-    public function test_delete_deactivates_when_activated_by_pharmacy(): void
+    public function test_toggle_active_and_delete_keeps_pharmacy_product(): void
     {
         $this->seed();
         $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
@@ -115,7 +115,7 @@ class PlatformMasterCatalogTest extends TestCase
             'is_active' => true,
         ]);
 
-        Product::query()->create([
+        $product = Product::query()->create([
             'tenant_id' => $owner->tenant_id,
             'master_product_id' => $master->getKey(),
             'name' => 'Linked Med',
@@ -130,12 +130,21 @@ class PlatformMasterCatalogTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->delete(route('platform.master-catalog.destroy', $master))
+            ->post(route('platform.master-catalog.toggle-active', $master))
             ->assertRedirect(route('platform.master-catalog.index'));
 
         $master->refresh();
         $this->assertFalse($master->is_active);
-        $this->assertDatabaseHas('master_products', ['id' => $master->getKey()]);
+
+        $this->actingAs($admin)
+            ->delete(route('platform.master-catalog.destroy', $master))
+            ->assertRedirect(route('platform.master-catalog.index'));
+
+        $this->assertDatabaseMissing('master_products', ['id' => $master->getKey()]);
+
+        $product->refresh();
+        $this->assertNull($product->master_product_id);
+        $this->assertSame('Linked Med', $product->name);
     }
 
     public function test_pharmacy_owner_cannot_access_platform_master_catalog(): void

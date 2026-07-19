@@ -66,6 +66,7 @@ const navItems = computed(() => [
     { href: '/platform/plans', label: t('platform.nav_plans') },
     { href: '/platform/resellers', label: t('platform.nav_resellers') },
     { href: '/platform/master-catalog', label: t('platform.nav_master_catalog') },
+    { href: '/platform/master-catalog/suggestions', label: t('platform.nav_master_suggestions') },
     { href: '/platform/catalog-templates', label: t('platform.nav_catalog') },
     { href: '/platform/product-types', label: t('platform.nav_product_types') },
     { href: '/platform/announcements', label: t('platform.nav_announcements') },
@@ -88,6 +89,13 @@ function navActive(prefix) {
 
     if (prefix === '/platform/settings') {
         return u === '/platform/settings' ? 'active bg-primary text-white' : '';
+    }
+
+    // Keep master-catalog and suggestions nav items independent.
+    if (prefix === '/platform/master-catalog') {
+        return u === '/platform/master-catalog' || (u.startsWith('/platform/master-catalog/') && !u.startsWith('/platform/master-catalog/suggestions'))
+            ? 'active bg-primary text-white'
+            : '';
     }
 
     return u === prefix || u.startsWith(prefix + '/') ? 'active bg-primary text-white' : '';

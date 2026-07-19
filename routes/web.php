@@ -10,6 +10,7 @@ use App\Http\Controllers\Central\PlatformAnnouncementController;
 use App\Http\Controllers\Central\PlatformBillingController;
 use App\Http\Controllers\Central\PlatformCatalogTemplateController;
 use App\Http\Controllers\Central\PlatformMasterCatalogController;
+use App\Http\Controllers\Central\PlatformMasterSuggestionController;
 use App\Http\Controllers\Central\PlatformProductTypeController;
 use App\Http\Controllers\Central\PlatformResellerController;
 use App\Http\Controllers\Central\PlatformDashboardController;
@@ -286,8 +287,13 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
         Route::get('/master-catalog/import/sample', [PlatformMasterCatalogController::class, 'sample'])->name('master-catalog.sample');
         Route::post('/master-catalog/import/preview', [PlatformMasterCatalogController::class, 'preview'])->name('master-catalog.preview');
         Route::post('/master-catalog/import', [PlatformMasterCatalogController::class, 'importStore'])->name('master-catalog.import.store');
+        Route::get('/master-catalog/suggestions', [PlatformMasterSuggestionController::class, 'index'])->name('master-catalog.suggestions.index');
+        Route::post('/master-catalog/suggestions/{suggestion}/approve', [PlatformMasterSuggestionController::class, 'approve'])->name('master-catalog.suggestions.approve');
+        Route::post('/master-catalog/suggestions/{suggestion}/merge', [PlatformMasterSuggestionController::class, 'merge'])->name('master-catalog.suggestions.merge');
+        Route::post('/master-catalog/suggestions/{suggestion}/reject', [PlatformMasterSuggestionController::class, 'reject'])->name('master-catalog.suggestions.reject');
         Route::get('/master-catalog/{masterProduct}/edit', [PlatformMasterCatalogController::class, 'edit'])->name('master-catalog.edit');
         Route::put('/master-catalog/{masterProduct}', [PlatformMasterCatalogController::class, 'update'])->name('master-catalog.update');
+        Route::post('/master-catalog/{masterProduct}/toggle-active', [PlatformMasterCatalogController::class, 'toggleActive'])->name('master-catalog.toggle-active');
         Route::delete('/master-catalog/{masterProduct}', [PlatformMasterCatalogController::class, 'destroy'])->name('master-catalog.destroy');
 
         Route::resource('catalog-templates', PlatformCatalogTemplateController::class);

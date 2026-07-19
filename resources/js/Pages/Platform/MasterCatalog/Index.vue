@@ -10,7 +10,11 @@
                     <p class="mb-0 opacity-90" style="max-width: 36rem">{{ t('platform.master_sub') }}</p>
                 </div>
                 <div class="col-lg-5 d-flex flex-wrap justify-content-lg-end gap-2">
-                    <Link href="/platform/master-catalog/import" class="btn btn-light fw-semibold">
+                    <Link href="/platform/master-catalog/suggestions" class="btn btn-light fw-semibold">
+                        {{ t('platform.nav_master_suggestions') }}
+                        <span v-if="pendingSuggestions > 0" class="badge text-bg-warning ms-1">{{ pendingSuggestions }}</span>
+                    </Link>
+                    <Link href="/platform/master-catalog/import" class="btn btn-outline-light fw-semibold">
                         {{ t('platform.master_import_btn') }}
                     </Link>
                     <Link href="/platform/master-catalog/create" class="btn btn-outline-light fw-semibold">
@@ -93,7 +97,7 @@
                             <th class="d-none d-lg-table-cell">{{ t('platform.master_manufacturer') }}</th>
                             <th class="text-end">{{ t('platform.master_mrp') }}</th>
                             <th>{{ t('catalog.status') }}</th>
-                            <th class="text-end"></th>
+                            <th class="text-end">{{ t('common.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -114,9 +118,18 @@
                             <td class="d-none d-lg-table-cell">{{ item.manufacturer_name || '—' }}</td>
                             <td class="text-end fw-medium">{{ formatMoney(item.mrp) }}</td>
                             <td>
-                                <span class="badge rounded-pill" :class="item.is_active ? 'text-bg-success-subtle text-success border border-success-subtle' : 'text-bg-secondary-subtle text-secondary border'">
+                                <button
+                                    type="button"
+                                    class="badge rounded-pill border status-toggle"
+                                    :class="item.is_active
+                                        ? 'text-bg-success-subtle text-success border-success-subtle'
+                                        : 'text-bg-secondary-subtle text-secondary'"
+                                    :title="item.is_active ? t('platform.master_deactivate') : t('platform.master_activate')"
+                                    :disabled="togglingId === item.id"
+                                    @click="toggleActive(item)"
+                                >
                                     {{ item.is_active ? t('common.active') : t('common.inactive') }}
-                                </span>
+                                </button>
                             </td>
                             <td class="text-end text-nowrap">
                                 <Link :href="`/platform/master-catalog/${item.id}/edit`" class="btn btn-sm btn-outline-primary me-1">
@@ -174,17 +187,19 @@ import PlatformShellLayout from '@/Layouts/PlatformShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
 
 const props = defineProps({
     products: { type: Object, required: true },
     filters: { type: Object, default: () => ({}) },
     stats: { type: Object, required: true },
     productTypes: { type: Array, default: () => [] },
+    pendingSuggestions: { type: Number, default: 0 },
 });
 
 const { t } = useLocale();
 const { formatMoney } = useMoney();
+const togglingId = ref(null);
 
 const local = reactive({
     q: props.filters.q ?? '',
@@ -209,6 +224,24 @@ function clearFilters() {
     local.status = 'all';
     local.product_type = '';
     applyFilters();
+}
+
+function toggleActive(item) {
+    if (togglingId.value) {
+        return;
+    }
+    togglingId.value = item.id;
+    // Optimistic UI so the badge flips immediately on click.
+    item.is_active = !item.is_active;
+    router.post(`/platform/master-catalog/${item.id}/toggle-active`, {}, {
+        preserveScroll: true,
+        onError: () => {
+            item.is_active = !item.is_active;
+        },
+        onFinish: () => {
+            togglingId.value = null;
+        },
+    });
 }
 
 function remove(item) {
@@ -276,5 +309,22 @@ function remove(item) {
     color: #0f766e;
     font-size: 1.25rem;
     font-weight: 700;
+}
+
+.status-toggle {
+    cursor: pointer;
+    padding: 0.4em 0.75em;
+    font-weight: 600;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+}
+
+.status-toggle:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.status-toggle:disabled {
+    opacity: 0.65;
+    cursor: wait;
 }
 </style>
