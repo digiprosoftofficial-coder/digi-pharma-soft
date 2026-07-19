@@ -10,8 +10,8 @@
             </div>
         </div>
         <form class="card border-0 shadow-sm card-body mb-3 product-filter-card" @submit.prevent="applyFilters">
-            <div class="row g-2 align-items-end">
-                <div class="col-12 col-md-4 product-filter-field product-filter-field--search">
+            <div class="product-filters">
+                <div class="product-filter-field product-filter-field--search">
                     <label class="form-label small mb-0">{{ t('common.search') }}</label>
                     <input
                         v-model="filterForm.q"
@@ -21,14 +21,14 @@
                         @input="debouncedApplyFilters"
                     />
                 </div>
-                <div class="col-6 col-md-3 product-filter-field">
+                <div class="product-filter-field">
                     <label class="form-label small mb-0">{{ t('catalog.product_type') }}</label>
                     <select v-model="filterForm.product_type" class="form-select form-select-sm">
                         <option value="">{{ t('catalog.all_product_types') }}</option>
                         <option v-for="pt in productTypes" :key="pt" :value="pt">{{ labelForType(pt) }}</option>
                     </select>
                 </div>
-                <div class="col-6 col-md-3 product-filter-field">
+                <div class="product-filter-field">
                     <label class="form-label small mb-0">{{ t('catalog.storage_location_shelf') }}</label>
                     <select v-model="filterForm.storage_location_id" class="form-select form-select-sm">
                         <option value="">{{ t('catalog.storage_location_all') }}</option>
@@ -37,7 +37,7 @@
                         </option>
                     </select>
                 </div>
-                <div class="col-6 col-md-3 product-filter-field">
+                <div class="product-filter-field">
                     <label class="form-label small mb-0">{{ t('catalog.status') }}</label>
                     <select v-model="filterForm.is_active" class="form-select form-select-sm">
                         <option value="">{{ t('reports.all') }}</option>
@@ -45,7 +45,7 @@
                         <option value="0">{{ t('common.inactive') }}</option>
                     </select>
                 </div>
-                <div class="col-6 col-md-2 d-grid d-sm-flex gap-1 product-filter-actions">
+                <div class="product-filter-actions">
                     <button type="submit" class="btn btn-sm btn-primary" :disabled="filterLoading">
                         {{ filterLoading ? t('common.searching') : t('purchases.filter') }}
                     </button>
@@ -86,6 +86,14 @@
                         @click="setViewMode('grid')"
                     >
                         {{ t('catalog.products_view_grid') }}
+                    </button>
+                    <button
+                        type="button"
+                        class="btn"
+                        :class="viewMode === 'dense' ? 'btn-primary' : 'btn-outline-secondary'"
+                        @click="setViewMode('dense')"
+                    >
+                        {{ t('catalog.products_view_dense') }}
                     </button>
                     <button
                         type="button"
@@ -238,7 +246,7 @@
             </div>
         </div>
 
-        <!-- Grid view -->
+        <!-- Grid view (4 across on xl) -->
         <div v-else-if="viewMode === 'grid'">
             <div v-if="!products.data?.length" class="card border-0 shadow-sm card-body text-muted text-center py-4">
                 {{ t('catalog.products_showing_none') }}
@@ -260,7 +268,7 @@
                                     {{ p.name }}
                                 </Link>
                                 <span class="badge flex-shrink-0" :class="p.is_active ? 'text-bg-success' : 'text-bg-secondary'">
-                                    {{ p.is_active ? 'Active' : 'Inactive' }}
+                                    {{ p.is_active ? t('common.active') : t('common.inactive') }}
                                 </span>
                             </div>
                             <p v-if="p.generic_name" class="small text-muted mb-1">{{ p.generic_name }}</p>
@@ -280,6 +288,44 @@
                                     <a :href="`/barcodes/${p.id}`" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">{{ t('catalog.barcode') }}</a>
                                     <Link v-if="can('products.manage')" :href="`/products/${p.id}/edit`" class="btn btn-sm btn-outline-secondary">{{ t('common.edit') }}</Link>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dense grid view (up to 8 across) -->
+        <div v-else-if="viewMode === 'dense'">
+            <div v-if="!products.data?.length" class="card border-0 shadow-sm card-body text-muted text-center py-4">
+                {{ t('catalog.products_showing_none') }}
+            </div>
+            <div v-else class="row row-cols-2 row-cols-md-4 row-cols-xl-6 g-2 product-grid product-grid--dense">
+                <div v-for="p in products.data" :key="p.id" class="col">
+                    <div class="card border-0 shadow-sm h-100 product-grid-card product-grid-card--dense">
+                        <div class="ratio ratio-1x1 border-bottom product-card-image-wrap">
+                            <img
+                                :src="cardImage(p)"
+                                :alt="p.name"
+                                class="product-card-image"
+                                :class="{ 'product-card-image--placeholder': !p.image_url }"
+                            />
+                        </div>
+                        <div class="card-body product-grid-card__body product-grid-card__body--dense">
+                            <Link :href="`/products/${p.id}`" class="text-decoration-none fw-semibold stretched-link product-dense-title">
+                                {{ p.name }}
+                            </Link>
+                            <div class="d-flex justify-content-between align-items-baseline gap-1 mt-1">
+                                <span class="text-primary fw-semibold product-dense-price">{{ formatMoney(p.sale_price) }}</span>
+                                <span
+                                    class="badge product-dense-badge"
+                                    :class="p.is_active ? 'text-bg-success' : 'text-bg-secondary'"
+                                >
+                                    {{ p.is_active ? t('common.active') : t('common.inactive') }}
+                                </span>
+                            </div>
+                            <div class="small text-muted mt-1 product-dense-meta">
+                                {{ formatQty(p.stock_on_hand) }} {{ unitLabel(p.base_unit || p.unit) }}
                             </div>
                         </div>
                     </div>
@@ -478,7 +524,7 @@ const ProductRowActions = defineComponent({
 function loadViewMode() {
     try {
         const saved = localStorage.getItem(VIEW_MODE_KEY);
-        if (saved === 'table' || saved === 'grid' || saved === 'compact') {
+        if (saved === 'table' || saved === 'grid' || saved === 'dense' || saved === 'compact') {
             return saved;
         }
     } catch {
@@ -608,6 +654,45 @@ onBeforeUnmount(() => {
     overflow: hidden;
 }
 
+.product-grid-card--dense .product-card-image--placeholder {
+    padding: 0.4rem;
+}
+
+.product-grid-card__body--dense {
+    padding: 0.5rem 0.55rem 0.6rem;
+}
+
+.product-dense-title {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 0.78rem;
+    line-height: 1.2;
+    color: var(--bs-body-color);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.product-dense-price {
+    font-size: 0.82rem;
+}
+
+.product-dense-badge {
+    font-size: 0.58rem;
+    padding: 0.2em 0.4em;
+}
+
+.product-dense-meta {
+    font-size: 0.68rem;
+    line-height: 1.2;
+}
+
+@media (min-width: 1400px) {
+    .product-grid--dense > .col {
+        flex: 0 0 auto;
+        width: 12.5%;
+    }
+}
+
 .product-mobile-card,
 .product-compact-mobile-card {
     overflow: hidden;
@@ -652,6 +737,65 @@ onBeforeUnmount(() => {
     min-width: 860px;
 }
 
+.product-filters {
+    display: grid;
+    gap: 0.5rem;
+    align-items: end;
+    /* Responsive: 2 lines — search on top, filters + actions below */
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.product-filter-field--search {
+    grid-column: 1 / -1;
+}
+
+.product-filter-actions {
+    display: flex;
+    gap: 0.35rem;
+    grid-column: 4 / 5;
+}
+
+.product-filter-actions .btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-right: 0.4rem;
+    padding-left: 0.4rem;
+}
+
+@media (max-width: 575.98px) {
+    .product-filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .product-filter-actions {
+        grid-column: 1 / -1;
+    }
+}
+
+/* Desktop: all filters on one line */
+@media (min-width: 992px) {
+    .product-filters {
+        grid-template-columns:
+            minmax(14rem, 1.8fr)
+            minmax(8rem, 0.85fr)
+            minmax(8rem, 0.85fr)
+            minmax(7rem, 0.7fr)
+            auto;
+    }
+
+    .product-filter-field--search,
+    .product-filter-actions {
+        grid-column: auto;
+    }
+
+    .product-filter-actions .btn {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        padding-right: 0.65rem;
+        padding-left: 0.65rem;
+    }
+}
+
 @media (max-width: 575.98px) {
     .product-filter-card {
         padding: 0.75rem !important;
@@ -670,10 +814,6 @@ onBeforeUnmount(() => {
     .product-filter-actions .btn {
         min-height: 2.15rem;
         font-size: 0.8rem;
-    }
-
-    .product-filter-actions {
-        grid-template-columns: 1fr 1fr;
     }
 
     .product-filter-actions .btn {

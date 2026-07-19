@@ -71,6 +71,20 @@
                 </select>
                 <div class="form-text">{{ t('sales.pos_rounding_hint') }}</div>
             </div>
+            <div class="border-top pt-3 mt-3 mb-3">
+                <h2 class="h6 mb-2">{{ t('common.smart_search_title') }}</h2>
+                <div class="form-check">
+                    <input
+                        id="smartSearch"
+                        v-model="form.settings.features.smart_search"
+                        type="checkbox"
+                        class="form-check-input"
+                        :disabled="!can('settings.manage')"
+                    />
+                    <label class="form-check-label" for="smartSearch">{{ t('common.smart_search_enable') }}</label>
+                </div>
+                <p class="form-text small mb-0">{{ t('common.smart_search_enable_hint') }}</p>
+            </div>
             <div v-if="packageSalesAvailable" class="border-top pt-3 mt-3 mb-3">
                 <h2 class="h6 mb-2">{{ t('tenant_nav.package_sell') }}</h2>
                 <div class="form-check">
@@ -123,6 +137,7 @@ const form = useForm({
         },
         features: {
             package_sales: props.tenant.settings?.features?.package_sales ?? false,
+            smart_search: props.tenant.settings?.features?.smart_search ?? true,
         },
     },
 });

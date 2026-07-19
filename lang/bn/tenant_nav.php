@@ -45,4 +45,6 @@ return [
     'marketing' => 'মার্কেটিং',
     'administration' => 'প্রশাসন',
     'branches' => 'শাখা',
+    'home' => 'হোম',
+    'more' => 'আরও',
 ];

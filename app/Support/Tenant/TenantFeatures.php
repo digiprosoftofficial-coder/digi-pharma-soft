@@ -29,6 +29,8 @@ final class TenantFeatures
 
     public const PACKAGE_SALES = 'package_sales';
 
+    public const SMART_SEARCH = 'smart_search';
+
     /**
      * Catalog fields only available when the advanced_catalog feature is on.
      *
@@ -118,6 +120,23 @@ final class TenantFeatures
         }
 
         return (bool) (($tenant->settings['features'][self::PACKAGE_SALES] ?? false));
+    }
+
+    /**
+     * Floating smart product search FAB. Default on; tenant can disable in settings.
+     */
+    public static function smartSearchEnabled(?Tenant $tenant): bool
+    {
+        if ($tenant === null) {
+            return true;
+        }
+
+        $features = $tenant->settings['features'] ?? [];
+        if (! array_key_exists(self::SMART_SEARCH, $features)) {
+            return true;
+        }
+
+        return (bool) $features[self::SMART_SEARCH];
     }
 
     public static function enabled(?Tenant $tenant, string $feature, bool $default = false): bool
@@ -270,6 +289,7 @@ final class TenantFeatures
             'barcode_camera_scan' => self::barcodeCameraScanEnabled($tenant),
             'package_sales_available' => self::packageSalesAvailable($tenant),
             'package_sales' => self::packageSalesEnabled($tenant),
+            'smart_search' => self::smartSearchEnabled($tenant),
         ];
     }
 }

@@ -56,6 +56,7 @@ final class TenantSettingsController extends Controller
             'settings.supplier_payments.cross_branch' => ['nullable', 'boolean'],
             'settings.supplier_payments.managers_can_pay' => ['nullable', 'boolean'],
             'settings.features.package_sales' => ['nullable', 'boolean'],
+            'settings.features.smart_search' => ['nullable', 'boolean'],
         ]);
 
         $tenant->name = $validated['name'];
@@ -80,6 +81,9 @@ final class TenantSettingsController extends Controller
                 if (array_key_exists(TenantFeatures::PACKAGE_SALES, $incoming['features'])) {
                     $features[TenantFeatures::PACKAGE_SALES] = TenantFeatures::packageSalesAvailable($tenant)
                         && (bool) $incoming['features'][TenantFeatures::PACKAGE_SALES];
+                }
+                if (array_key_exists(TenantFeatures::SMART_SEARCH, $incoming['features'])) {
+                    $features[TenantFeatures::SMART_SEARCH] = (bool) $incoming['features'][TenantFeatures::SMART_SEARCH];
                 }
                 $settings['features'] = $features;
                 unset($incoming['features']);

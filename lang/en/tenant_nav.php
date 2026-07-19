@@ -45,4 +45,6 @@ return [
     'marketing' => 'Marketing',
     'administration' => 'Administration',
     'branches' => 'Branches',
+    'home' => 'Home',
+    'more' => 'More',
 ];

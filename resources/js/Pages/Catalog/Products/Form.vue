@@ -1843,6 +1843,11 @@ function submit() {
 .product-advanced-details .product-main-grid {
     border: 0;
     border-radius: 0;
+    padding: 1rem;
+}
+
+.product-advanced-details .product-main-grid--optional {
+    padding: 1rem 1.1rem 1.15rem;
 }
 
 .product-setup-sidebar {
@@ -2118,6 +2123,11 @@ function submit() {
         flex-direction: column;
         gap: 0.15rem;
         padding: 0.7rem 0.75rem;
+    }
+
+    .product-advanced-details .product-main-grid,
+    .product-advanced-details .product-main-grid--optional {
+        padding: 0.85rem 0.75rem 1rem;
     }
 
     .product-advanced-details summary small {

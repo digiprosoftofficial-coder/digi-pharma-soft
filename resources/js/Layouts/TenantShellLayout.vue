@@ -71,17 +71,6 @@
             </aside>
             <div class="flex-grow-1 d-flex flex-column min-vh-100 min-w-0">
                 <header class="tenant-topbar border-bottom bg-white px-3 py-2 d-flex flex-wrap align-items-center gap-2">
-                    <button
-                        type="button"
-                        class="btn btn-sm btn-outline-primary tenant-mobile-menu d-lg-none"
-                        aria-controls="tenant-mobile-navigation"
-                        :aria-expanded="mobileNavOpen"
-                        @click="openMobileNav"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <path d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
                     <Link href="/dashboard" class="tenant-mobile-brand d-lg-none text-decoration-none text-dark me-auto">
                         <span class="tenant-mobile-brand__icon text-primary">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
@@ -95,8 +84,15 @@
                         </span>
                     </Link>
                     <h1 class="h5 mb-0 text-primary me-auto d-none d-lg-block">{{ pageTitle }}</h1>
-                    <form class="topbar-search flex-grow-1 position-relative" style="max-width: 390px" @submit.prevent="runSearch">
+
+                    <!-- Desktop: inline product search -->
+                    <form
+                        class="topbar-search d-none d-lg-block flex-grow-1 position-relative"
+                        style="max-width: 390px"
+                        @submit.prevent="onSearchEnter()"
+                    >
                         <div class="input-group input-group-sm">
+                            <span class="input-group-text topbar-search__scope">{{ t('common.search_scope_products') }}</span>
                             <input
                                 v-model="searchQ"
                                 type="search"
@@ -108,7 +104,7 @@
                                 @blur="closeSearchSuggestionsSoon"
                                 @keydown.down.prevent="moveSearchHighlight(1)"
                                 @keydown.up.prevent="moveSearchHighlight(-1)"
-                                @keydown.enter.prevent="onSearchEnter"
+                                @keydown.enter.prevent="onSearchEnter()"
                                 @keydown.esc.prevent="closeSearchSuggestions"
                             />
                             <button class="btn btn-outline-secondary topbar-search__button" type="submit" :title="t('common.search')" :aria-label="t('common.search')">
@@ -138,18 +134,34 @@
                                         <span v-if="product.barcode">{{ product.barcode }}</span>
                                         <span>{{ t('common.stock') }}: {{ product.stock_on_hand ?? '0' }}</span>
                                     </span>
+                                    <span class="d-block small text-primary mt-1">{{ t('common.open_product') }}</span>
                                 </button>
                                 <button
                                     type="button"
                                     class="topbar-search__item w-100 border-0 bg-light text-start px-3 py-2 small fw-semibold text-primary"
-                                    @mousedown.prevent="runSearch"
+                                    @mousedown.prevent="runSearch()"
                                 >
-                                    {{ t('common.view_all_results') }}
+                                    {{ t('common.view_all_matching_products') }}
                                 </button>
                             </template>
                             <div v-else-if="searchQ.trim().length >= 1" class="px-3 py-2 small text-muted">{{ t('common.no_results') }}</div>
                         </div>
                     </form>
+
+                    <!-- Mobile: search icon → overlay (when floating smart search is off) -->
+                    <button
+                        v-if="!smartSearchEnabled"
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary tenant-topbar-search-btn d-lg-none"
+                        :aria-label="t('common.smart_search_title')"
+                        :title="t('common.smart_search_title')"
+                        @click="mobileSearchOpen = true"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <circle cx="11" cy="11" r="7" />
+                            <path d="m20 20-3.5-3.5" />
+                        </svg>
+                    </button>
                     <form
                         v-if="multiBranch && branches.length > 1"
                         class="tenant-branch-switcher d-flex align-items-center gap-1"
@@ -166,25 +178,32 @@
                         </select>
                     </form>
                     <div class="tenant-topbar-actions d-flex align-items-center gap-2">
-                        <Link v-if="can('pos.access')" href="/pos" class="btn btn-sm btn-primary tenant-topbar-action">{{ t('tenant_nav.new_sale') }}</Link>
+                        <Link v-if="can('pos.access')" href="/pos" class="btn btn-sm btn-primary tenant-topbar-action d-none d-lg-inline-flex">{{ t('tenant_nav.new_sale') }}</Link>
                         <span class="small text-muted d-none d-md-inline">{{ userName }}</span>
                         <Link href="/logout" method="post" as="button" class="btn btn-sm btn-outline-secondary tenant-topbar-action">{{ t('common.logout') }}</Link>
                     </div>
                 </header>
-                <main class="flex-grow-1 p-2 p-md-4 overflow-auto">
+                <main class="tenant-main flex-grow-1 p-2 p-md-4 overflow-auto">
                     <slot />
                 </main>
             </div>
         </div>
+        <TenantBottomNav @open-more="openMobileNav" />
+        <ProductSearchOverlay v-model:open="mobileSearchOpen" />
+        <SmartSearchFab />
     </div>
 </template>
 
 <script setup>
+import ProductSearchOverlay from '@/Components/Tenant/ProductSearchOverlay.vue';
+import SmartSearchFab from '@/Components/Tenant/SmartSearchFab.vue';
+import TenantBottomNav from '@/Components/Tenant/TenantBottomNav.vue';
 import TenantSidebarNav from '@/Components/Tenant/TenantSidebarNav.vue';
 import { useLocale } from '@/composables/useLocale';
 import { usePermissions } from '@/composables/usePermissions';
-import { Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { useProductSearch } from '@/composables/useProductSearch';
+import { Link, useForm, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 
 const { t } = useLocale();
 
@@ -200,9 +219,27 @@ const userName = computed(() => page.props.auth?.user?.name ?? 'User');
 const impersonation = computed(() => page.props.impersonation);
 const networkAnnouncement = computed(() => page.props.networkAnnouncement);
 const multiBranch = computed(() => page.props.features?.multi_branch ?? false);
+const smartSearchEnabled = computed(() => page.props.features?.smart_search ?? true);
 const branches = computed(() => page.props.branches ?? []);
 const activeBranchId = ref(page.props.branch?.id ?? null);
 const mobileNavOpen = ref(false);
+const mobileSearchOpen = ref(false);
+
+const {
+    searchQ,
+    searchResults,
+    searchLoading,
+    highlightedSearchIndex,
+    showSearchDropdown,
+    debouncedProductSearch,
+    openSearchSuggestions,
+    closeSearchSuggestionsSoon,
+    closeSearchSuggestions,
+    moveSearchHighlight,
+    onSearchEnter,
+    selectSearchResult,
+    runSearch,
+} = useProductSearch();
 
 watch(
     () => page.props.branch?.id,
@@ -215,6 +252,7 @@ watch(
     () => page.url,
     () => {
         closeMobileNav();
+        mobileSearchOpen.value = false;
     },
 );
 
@@ -241,108 +279,6 @@ const announcementAlertClass = computed(() => {
         warning: 'alert alert-warning',
         danger: 'alert alert-danger',
     }[severity] ?? 'alert alert-info';
-});
-
-const searchQ = ref('');
-const searchResults = ref([]);
-const searchLoading = ref(false);
-const searchOpen = ref(false);
-const highlightedSearchIndex = ref(-1);
-let searchTimer;
-let closeSearchTimer;
-
-const showSearchDropdown = computed(() =>
-    searchOpen.value
-    && (searchLoading.value || searchResults.value.length > 0 || searchQ.value.trim().length >= 1),
-);
-
-function debouncedProductSearch() {
-    clearTimeout(searchTimer);
-    highlightedSearchIndex.value = -1;
-    searchTimer = setTimeout(runProductSuggestSearch, 250);
-}
-
-async function runProductSuggestSearch() {
-    const q = searchQ.value.trim();
-    if (q.length < 1) {
-        searchResults.value = [];
-        searchLoading.value = false;
-        return;
-    }
-
-    searchOpen.value = true;
-    searchLoading.value = true;
-    try {
-        const { data } = await window.axios.get('/catalog/product-search', { params: { q } });
-        searchResults.value = (data.data ?? []).slice(0, 6);
-    } catch {
-        searchResults.value = [];
-    } finally {
-        searchLoading.value = false;
-    }
-}
-
-function openSearchSuggestions() {
-    clearTimeout(closeSearchTimer);
-    if (searchQ.value.trim().length >= 1) {
-        searchOpen.value = true;
-        if (!searchResults.value.length) {
-            debouncedProductSearch();
-        }
-    }
-}
-
-function closeSearchSuggestionsSoon() {
-    clearTimeout(closeSearchTimer);
-    closeSearchTimer = setTimeout(closeSearchSuggestions, 150);
-}
-
-function closeSearchSuggestions() {
-    searchOpen.value = false;
-    highlightedSearchIndex.value = -1;
-}
-
-function moveSearchHighlight(direction) {
-    if (!searchResults.value.length) {
-        return;
-    }
-
-    searchOpen.value = true;
-    highlightedSearchIndex.value = (highlightedSearchIndex.value + direction + searchResults.value.length) % searchResults.value.length;
-}
-
-function onSearchEnter() {
-    if (searchOpen.value && highlightedSearchIndex.value >= 0 && searchResults.value[highlightedSearchIndex.value]) {
-        selectSearchResult(searchResults.value[highlightedSearchIndex.value]);
-        return;
-    }
-
-    runSearch();
-}
-
-function selectSearchResult(product) {
-    if (!product?.id) {
-        return;
-    }
-
-    searchQ.value = product.name ?? '';
-    closeSearchSuggestions();
-    router.visit(`/products/${product.id}`);
-}
-
-function runSearch() {
-    const q = searchQ.value?.trim();
-    closeSearchSuggestions();
-    if (!q) {
-        router.visit('/products');
-        return;
-    }
-    router.visit('/products', { data: { q }, preserveState: true });
-}
-
-onBeforeUnmount(() => {
-    clearTimeout(searchTimer);
-    clearTimeout(closeSearchTimer);
 });
 </script>
 
@@ -427,6 +363,15 @@ onBeforeUnmount(() => {
     font-size: 0.72rem;
 }
 
+.topbar-search__scope {
+    color: var(--bs-primary);
+    background: rgba(var(--bs-primary-rgb), 0.08);
+    border-color: var(--bs-border-color);
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
 .topbar-search__dropdown {
     position: absolute;
     top: calc(100% + 0.35rem);
@@ -470,7 +415,19 @@ onBeforeUnmount(() => {
     background: #f1f5f9 !important;
 }
 
+.tenant-topbar-search-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+}
+
 @media (max-width: 991.98px) {
+    .tenant-main {
+        padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
     .tenant-topbar {
         position: sticky;
         top: 0;
@@ -482,12 +439,6 @@ onBeforeUnmount(() => {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-    }
-
-    .topbar-search {
-        order: 5;
-        flex-basis: 100%;
-        max-width: none !important;
     }
 
     .tenant-branch-switcher {
@@ -506,7 +457,6 @@ onBeforeUnmount(() => {
         padding-left: 0.5rem !important;
     }
 
-    .tenant-mobile-menu,
     .tenant-topbar-action {
         min-height: 2.25rem;
     }

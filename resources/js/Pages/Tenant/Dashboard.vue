@@ -6,19 +6,28 @@
 
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
-                <p class="text-muted small text-uppercase fw-semibold mb-1">{{ t('dashboard.owner_overview') }}</p>
+                <p class="text-muted small fw-semibold mb-1">{{ t('dashboard.owner_overview') }}</p>
                 <h1 class="h3 mb-0">{{ headline }}</h1>
             </div>
             <span class="badge bg-primary-subtle text-primary">{{ t('dashboard.ceo_dashboard') }}</span>
         </div>
 
         <div class="row g-3 mb-4">
-            <div v-for="card in kpiCards" :key="card.label" class="col-sm-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4" :class="card.border">
-                    <div class="card-body">
-                        <div class="text-muted small text-uppercase">{{ card.label }}</div>
-                        <div class="h3 fw-semibold mb-1">{{ card.money ? formatMoney(card.value) : formatNumber(card.value) }}</div>
-                        <div class="small text-muted">{{ card.help }}</div>
+            <div v-for="card in kpiCards" :key="card.label" class="col-6 col-xl-3">
+                <div class="card kpi-card border-0 shadow-sm h-100" :class="`kpi-card--${card.tone}`">
+                    <div class="card-body d-flex align-items-start gap-3">
+                        <span class="kpi-card__icon" :class="`kpi-card__icon--${card.tone}`">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path v-for="(d, i) in card.iconPaths" :key="i" :d="d" />
+                            </svg>
+                        </span>
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="kpi-card__label">{{ card.label }}</div>
+                            <div class="kpi-card__value" :class="`kpi-card__value--${card.tone}`">
+                                {{ card.money ? formatMoney(card.value) : formatNumber(card.value) }}
+                            </div>
+                            <div class="kpi-card__help">{{ card.help }}</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -129,11 +138,18 @@
         <div class="row g-3">
             <div class="col-xl-5">
                 <div class="card border-0 shadow-sm h-100">
-                    <div class="card-header bg-white fw-semibold">{{ t('dashboard.critical_stock') }}</div>
+                    <div class="card-header bg-danger-subtle text-danger-emphasis fw-semibold d-flex align-items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                            <path d="M12 9v4" />
+                            <path d="M12 17h.01" />
+                        </svg>
+                        {{ t('dashboard.critical_stock') }}
+                    </div>
                     <ul class="list-group list-group-flush">
                         <li v-for="b in criticalStock" :key="b.id" class="list-group-item d-flex justify-content-between align-items-center">
                             <span>{{ b.product?.name ?? t('dashboard.product') }}</span>
-                            <span class="badge bg-danger-subtle text-danger">{{ formatQty(b.quantity_on_hand) }}</span>
+                            <span class="badge bg-danger text-white">{{ formatQty(b.quantity_on_hand) }}</span>
                         </li>
                         <li v-if="!criticalStock?.length" class="list-group-item text-muted small">{{ t('dashboard.no_low_stock_batches') }}</li>
                     </ul>
@@ -192,27 +208,58 @@ const { t } = useLocale();
 const { formatMoney } = useMoney();
 const { formatQty } = useQuantity();
 
+const kpiIcons = {
+    sales: ['M12 1v22', 'M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'],
+    profit: ['M23 6 13.5 15.5 8.5 10.5 1 18', 'M17 6h6v6'],
+    purchase: [
+        'M9 22a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
+        'M20 22a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
+        'M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6',
+    ],
+    stock: [
+        'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z',
+        'M3.27 6.96 12 12.01l8.73-5.05',
+        'M12 22.08V12',
+    ],
+    customerDue: [
+        'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2',
+        'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+        'M23 21v-2a4 4 0 0 0-3-3.87',
+        'M16 3.13a4 4 0 0 1 0 7.75',
+    ],
+    supplierDue: [
+        'M1 3h15v13H1z',
+        'M16 8h4l3 3v5h-7V8z',
+        'M5.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
+        'M18.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
+    ],
+    expired: ['M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z', 'M12 9v4', 'M12 17h.01'],
+    nearExpiry: ['M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z', 'M12 6v6l4 2'],
+};
+
 const kpiCards = computed(() => [
     {
         label: t('dashboard.todays_sales'),
         value: props.kpis.revenueToday,
         money: true,
         help: t('dashboard.yesterday_amount', { amount: formatMoney(props.kpis.revenueYesterday) }),
-        border: 'border-primary',
+        tone: 'success',
+        iconPaths: kpiIcons.sales,
     },
-    { label: t('dashboard.todays_profit'), value: props.kpis.profitToday, money: true, help: t('dashboard.gross_line_profit'), border: 'border-success' },
-    { label: t('dashboard.todays_purchase'), value: props.kpis.purchaseToday, money: true, help: t('dashboard.posted_purchase_total'), border: 'border-info' },
-    { label: t('dashboard.total_stock_value'), value: props.kpis.stockValue, money: true, help: t('dashboard.current_inventory_value'), border: 'border-secondary' },
+    { label: t('dashboard.todays_profit'), value: props.kpis.profitToday, money: true, help: t('dashboard.gross_line_profit'), tone: 'primary', iconPaths: kpiIcons.profit },
+    { label: t('dashboard.todays_purchase'), value: props.kpis.purchaseToday, money: true, help: t('dashboard.posted_purchase_total'), tone: 'info', iconPaths: kpiIcons.purchase },
+    { label: t('dashboard.total_stock_value'), value: props.kpis.stockValue, money: true, help: t('dashboard.current_inventory_value'), tone: 'teal', iconPaths: kpiIcons.stock },
     {
         label: t('dashboard.total_due_customer'),
         value: props.kpis.customerDue,
         money: true,
         help: t('dashboard.due_sales_count', { count: formatNumber(props.kpis.pendingOrders) }),
-        border: 'border-danger',
+        tone: 'danger',
+        iconPaths: kpiIcons.customerDue,
     },
-    { label: t('dashboard.total_due_supplier'), value: props.kpis.supplierDue, money: true, help: t('dashboard.open_supplier_payable'), border: 'border-warning' },
-    { label: t('dashboard.expired_products'), value: props.kpis.expiredProducts, money: false, help: t('dashboard.batches_past_expiry'), border: 'border-danger' },
-    { label: t('dashboard.near_expiry_products'), value: props.kpis.nearExpiryProducts, money: false, help: t('dashboard.expiring_within_30_days'), border: 'border-warning' },
+    { label: t('dashboard.total_due_supplier'), value: props.kpis.supplierDue, money: true, help: t('dashboard.open_supplier_payable'), tone: 'warning', iconPaths: kpiIcons.supplierDue },
+    { label: t('dashboard.expired_products'), value: props.kpis.expiredProducts, money: false, help: t('dashboard.batches_past_expiry'), tone: 'danger', iconPaths: kpiIcons.expired },
+    { label: t('dashboard.near_expiry_products'), value: props.kpis.nearExpiryProducts, money: false, help: t('dashboard.expiring_within_30_days'), tone: 'warning', iconPaths: kpiIcons.nearExpiry },
 ]);
 
 const chartGridLines = [32, 78, 124, 170, 216];
@@ -337,6 +384,75 @@ function formatNumber(value) {
 </script>
 
 <style scoped>
+.kpi-card {
+    --kpi-color: #2563eb;
+    --kpi-tint: rgba(37, 99, 235, 0.1);
+    border-radius: 0.9rem;
+    background: #ffffff;
+    border-inline-start: 5px solid var(--kpi-color) !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.65rem 1.5rem rgba(15, 23, 42, 0.12) !important;
+}
+
+.kpi-card--success { --kpi-color: #16a34a; --kpi-tint: rgba(22, 163, 74, 0.12); }
+.kpi-card--primary { --kpi-color: #2563eb; --kpi-tint: rgba(37, 99, 235, 0.12); }
+.kpi-card--info { --kpi-color: #0891b2; --kpi-tint: rgba(8, 145, 178, 0.12); }
+.kpi-card--teal { --kpi-color: #0d9488; --kpi-tint: rgba(13, 148, 136, 0.12); }
+.kpi-card--danger { --kpi-color: #dc2626; --kpi-tint: rgba(220, 38, 38, 0.12); }
+.kpi-card--warning { --kpi-color: #d97706; --kpi-tint: rgba(217, 119, 6, 0.14); }
+.kpi-card--secondary { --kpi-color: #475569; --kpi-tint: rgba(71, 85, 105, 0.12); }
+
+.kpi-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.85rem;
+    color: #ffffff;
+    background: var(--kpi-color);
+    box-shadow: 0 0.35rem 0.75rem var(--kpi-tint);
+}
+
+.kpi-card__label {
+    color: #64748b;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.kpi-card__value {
+    color: var(--kpi-color);
+    font-size: 1.55rem;
+    font-weight: 800;
+    line-height: 1.15;
+    margin: 0.15rem 0;
+    word-break: break-word;
+}
+
+.kpi-card__help {
+    color: #94a3b8;
+    font-size: 0.76rem;
+    line-height: 1.3;
+}
+
+@media (max-width: 575.98px) {
+    .kpi-card__icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.7rem;
+    }
+
+    .kpi-card__value {
+        font-size: 1.25rem;
+    }
+}
+
 .sales-chart {
     min-height: 235px;
 }
