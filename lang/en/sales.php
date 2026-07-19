@@ -12,6 +12,8 @@ return [
     'product' => 'Product',
     'pos_title' => 'Point of sale',
     'pos_search_product' => 'Search product',
+    'pos_sell_here' => 'Sell from here',
+    'pos_search_placeholder' => 'Type medicine name or scan barcode…',
     'cart' => 'Cart',
     'cart_empty_hint' => 'Add products from search.',
     'coupon_code' => 'Coupon code',

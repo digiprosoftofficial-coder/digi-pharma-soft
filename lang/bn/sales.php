@@ -12,6 +12,8 @@ return [
     'product' => 'পণ্য',
     'pos_title' => 'পয়েন্ট অফ সেল',
     'pos_search_product' => 'পণ্য খুঁজুন',
+    'pos_sell_here' => 'এখান থেকে বিক্রি করুন',
+    'pos_search_placeholder' => 'ওষুধের নাম লিখুন বা বারকোড স্ক্যান করুন…',
     'cart' => 'কার্ট',
     'cart_empty_hint' => 'সার্চ থেকে পণ্য যোগ করুন।',
     'coupon_code' => 'কুপন কোড',

@@ -51,9 +51,12 @@
         </div>
         <div class="row g-3">
             <div class="col-lg-5">
-                <div class="card card-body">
+                <div class="card card-body pos-search-panel">
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-                        <label class="form-label mb-0">{{ t('sales.pos_search_product') }}</label>
+                        <div>
+                            <div class="pos-search-panel__eyebrow">{{ t('sales.pos_sell_here') }}</div>
+                            <label class="form-label mb-0 fw-semibold" for="pos-product-search">{{ t('sales.pos_search_product') }}</label>
+                        </div>
                         <div class="pos-product-search-actions d-flex flex-wrap gap-2">
                             <a href="/products" class="btn btn-sm btn-outline-secondary pos-all-products-button">
                                 {{ t('tenant_nav.product_list', 'All Products') }}
@@ -70,17 +73,26 @@
                             </button>
                         </div>
                     </div>
-                    <input
-                        ref="searchInput"
-                        v-model="q"
-                        type="search"
-                        class="form-control"
-                        :placeholder="t('catalog.products_search_placeholder')"
-                        autocomplete="off"
-                        @input="debouncedSearch"
-                        @keydown.enter.prevent="onSearchEnter"
-                    />
-                    <p class="form-text small mb-0">{{ t('sales.pos_scan_hint') }}</p>
+                    <div class="pos-search-box input-group input-group-lg">
+                        <span class="input-group-text pos-search-box__icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="7" />
+                                <path d="m20 20-3.5-3.5" />
+                            </svg>
+                        </span>
+                        <input
+                            id="pos-product-search"
+                            ref="searchInput"
+                            v-model="q"
+                            type="search"
+                            class="form-control pos-search-box__input"
+                            :placeholder="t('sales.pos_search_placeholder')"
+                            autocomplete="off"
+                            @input="debouncedSearch"
+                            @keydown.enter.prevent="onSearchEnter"
+                        />
+                    </div>
+                    <p class="form-text small mb-0 mt-2">{{ t('sales.pos_scan_hint') }}</p>
                     <div v-if="barcodeCameraScanEnabled && (cameraScanActive || cameraScanError)" class="pos-barcode-scanner mt-2">
                         <div v-if="cameraScanError" class="alert alert-warning py-2 mb-2 small">{{ cameraScanError }}</div>
                         <div v-if="cameraScanActive" class="border rounded bg-dark p-2">
@@ -1139,6 +1151,56 @@ async function submitSale() {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.75rem;
+}
+
+.pos-search-panel {
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.18);
+    box-shadow: 0 0.35rem 1rem rgba(37, 99, 235, 0.08);
+}
+
+.pos-search-panel__eyebrow {
+    color: var(--bs-primary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.1rem;
+}
+
+.pos-search-box {
+    --pos-search-border: rgba(var(--bs-primary-rgb), 0.45);
+    border: 2px solid var(--pos-search-border);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background: rgba(var(--bs-primary-rgb), 0.06);
+    box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.08);
+}
+
+.pos-search-box__icon {
+    color: var(--bs-primary);
+    background: transparent;
+    border: 0;
+    padding-left: 0.95rem;
+}
+
+.pos-search-box__input {
+    border: 0 !important;
+    background: transparent !important;
+    font-size: 1.05rem;
+    font-weight: 600;
+    min-height: 3.15rem;
+    box-shadow: none !important;
+}
+
+.pos-search-box__input::placeholder {
+    color: #64748b;
+    font-weight: 500;
+    opacity: 1;
+}
+
+.pos-search-box:focus-within {
+    --pos-search-border: var(--bs-primary);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(var(--bs-primary-rgb), 0.18);
 }
 
 .pos-product-search-actions {
