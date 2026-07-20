@@ -78,8 +78,14 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
+Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
+
+Route::middleware(['guest'])->group(function () {
+    Route::get('/platform/login', [\App\Http\Controllers\Central\PlatformLoginController::class, 'create'])
+        ->name('platform.login');
+    Route::post('/platform/login', [\App\Http\Controllers\Central\PlatformLoginController::class, 'store'])
+        ->middleware('throttle:platform-login')
+        ->name('platform.login.store');
 });
 
 Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function () {
@@ -242,7 +248,9 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
         });
     });
 
-    Route::middleware(['role:super admin'])->prefix('platform')->name('platform.')->group(function () {
+    Route::middleware(['role:super admin', 'platform.2fa'])->prefix('platform')->name('platform.')->group(function () {
+        Route::get('/two-factor', [\App\Http\Controllers\Central\PlatformTwoFactorSetupController::class, 'show'])
+            ->name('two-factor.setup');
         Route::get('/dashboard', [PlatformDashboardController::class, 'index'])->name('dashboard');
         Route::get('/health', [PlatformHealthController::class, 'index'])->name('health.index');
         Route::get('/tenants', [PlatformTenantController::class, 'index'])->name('tenants.index');

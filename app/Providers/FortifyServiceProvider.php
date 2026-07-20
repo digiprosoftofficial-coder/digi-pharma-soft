@@ -12,6 +12,7 @@ use App\Http\Responses\Fortify\InertiaPasswordConfirmedResponse;
 use App\Http\Responses\Fortify\InertiaRegisterResponse;
 use App\Http\Responses\Fortify\InertiaTwoFactorLoginResponse;
 use App\Http\Responses\Fortify\InertiaVerifyEmailResponse;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -55,11 +56,40 @@ class FortifyServiceProvider extends ServiceProvider
         ]));
         Fortify::verifyEmailView(fn () => Inertia::render('Auth/VerifyEmail'));
         Fortify::confirmPasswordView(fn () => Inertia::render('Auth/ConfirmPassword'));
+        Fortify::twoFactorChallengeView(fn () => Inertia::render('Auth/TwoFactorChallenge'));
 
         RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
+            $email = Str::lower((string) $request->input(Fortify::username()));
+            $throttleKey = Str::transliterate($email.'|'.$request->ip());
+            $maxAttempts = $this->isElevatedLoginTarget($email) ? 3 : 5;
 
-            return Limit::perMinute(5)->by($throttleKey);
+            return Limit::perMinute($maxAttempts)->by($throttleKey);
         });
+
+        RateLimiter::for('two-factor', function (Request $request) {
+            return Limit::perMinute(5)->by($request->session()->get('login.id').$request->ip());
+        });
+
+        RateLimiter::for('platform-login', function (Request $request) {
+            $email = Str::lower((string) $request->input(Fortify::username()));
+            $throttleKey = Str::transliterate($email.'|'.$request->ip().'|platform');
+
+            return Limit::perMinute(3)->by($throttleKey);
+        });
+    }
+
+    private function isElevatedLoginTarget(string $email): bool
+    {
+        if ($email === '') {
+            return false;
+        }
+
+        return User::query()
+            ->where('email', $email)
+            ->where(function ($query): void {
+                $query->where('is_platform_super_admin', true)
+                    ->orWhereNull('tenant_id');
+            })
+            ->exists();
     }
 }

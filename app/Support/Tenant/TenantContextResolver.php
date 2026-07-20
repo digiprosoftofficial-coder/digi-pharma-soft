@@ -17,9 +17,6 @@ final class TenantContextResolver
         }
 
         $user = $request->user();
-        if ($user === null) {
-            return null;
-        }
 
         if ($user instanceof User && $user->shouldUsePlatformDashboard()) {
             if ($this->impersonation->isActive()) {
@@ -29,17 +26,48 @@ final class TenantContextResolver
             return null;
         }
 
-        $slug = $request->header('X-Tenant-Slug')
-            ?? $request->route('tenant');
+        if ($user instanceof User) {
+            $slug = $request->header('X-Tenant-Slug')
+                ?? $request->route('tenant');
 
-        if (is_string($slug) && $slug !== '') {
-            return Tenant::query()->where('slug', $slug)->where('is_active', true)->first();
+            if (is_string($slug) && $slug !== '') {
+                return Tenant::query()->where('slug', $slug)->where('is_active', true)->first();
+            }
+
+            if ($user->tenant_id) {
+                return Tenant::query()->whereKey($user->tenant_id)->where('is_active', true)->first();
+            }
+
+            return null;
         }
 
-        if ($user->tenant_id) {
-            return Tenant::query()->whereKey($user->tenant_id)->where('is_active', true)->first();
+        return $this->resolveGuestBrandingTenant($request);
+    }
+
+    private function resolveGuestBrandingTenant(Request $request): ?Tenant
+    {
+        $slug = $request->query('tenant');
+        if (! is_string($slug) || $slug === '') {
+            $slug = $request->session()->get('guest_tenant_slug');
         }
 
-        return null;
+        if (! is_string($slug) || $slug === '') {
+            return null;
+        }
+
+        $tenant = Tenant::query()
+            ->where('slug', $slug)
+            ->where('is_active', true)
+            ->first();
+
+        if ($tenant === null) {
+            $request->session()->forget('guest_tenant_slug');
+
+            return null;
+        }
+
+        $request->session()->put('guest_tenant_slug', $tenant->slug);
+
+        return $tenant;
     }
 }

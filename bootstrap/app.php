@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'tenant.staff' => \App\Support\Middleware\EnsureTenantStaff::class,
             'tenant.subscription' => \App\Support\Middleware\EnsureTenantSubscriptionActive::class,
+            'platform.2fa' => \App\Support\Middleware\EnsurePlatformTwoFactorEnabled::class,
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,

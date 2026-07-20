@@ -61,10 +61,13 @@ use App\Support\Tenant\BranchContextResolver;
 use App\Support\Tenant\TenantContext;
 use App\Support\Tenant\TenantContextResolver;
 use App\Support\Tenant\TenantImpersonation;
+use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -141,6 +144,35 @@ class AppServiceProvider extends ServiceProvider
                 ->withProperties(['ip' => request()->ip(), 'user_agent' => request()->userAgent()])
                 ->event('login')
                 ->log('User logged in');
+        });
+
+        Event::listen(Failed::class, function (Failed $event): void {
+            $email = is_string($event->credentials['email'] ?? null)
+                ? Str::lower((string) $event->credentials['email'])
+                : null;
+
+            if ($email === null || $email === '') {
+                return;
+            }
+
+            $target = User::query()
+                ->where('email', $email)
+                ->where(function ($query): void {
+                    $query->where('is_platform_super_admin', true)
+                        ->orWhereNull('tenant_id');
+                })
+                ->first();
+
+            if ($target === null) {
+                return;
+            }
+
+            Log::warning('Failed login attempt against elevated account', [
+                'email' => $email,
+                'user_id' => $target->getKey(),
+                'ip' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
         });
     }
 }

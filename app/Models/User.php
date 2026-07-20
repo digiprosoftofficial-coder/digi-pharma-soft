@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Support\Permission\PlatformTeam;
+use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\PermissionRegistrar;
@@ -16,7 +17,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, HasRoles, LogsActivity, Notifiable;
+    use HasFactory, HasRoles, LogsActivity, Notifiable, TwoFactorAuthenticatable;
 
     protected $fillable = [
         'name',
@@ -29,6 +30,8 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     protected function casts(): array
@@ -38,6 +41,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'last_login_at' => 'datetime',
             'password' => 'hashed',
             'is_platform_super_admin' => 'boolean',
+            'two_factor_confirmed_at' => 'datetime',
         ];
     }
 
