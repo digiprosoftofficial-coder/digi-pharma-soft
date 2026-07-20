@@ -81,6 +81,49 @@ final class ProductRepository
         return $q->limit($limit)->get();
     }
 
+    /**
+     * @param  list<int>  $ids
+     */
+    public function findManyForPurchase(array $ids): Collection
+    {
+        $ids = array_values(array_unique(array_filter(
+            array_map('intval', $ids),
+            fn (int $id) => $id > 0,
+        )));
+
+        if ($ids === []) {
+            return new Collection;
+        }
+
+        $products = Product::query()
+            ->with([
+                'units',
+                'storageLocation',
+                'batches' => fn ($b) => $b->with('storageLocation')
+                    ->where('quantity_on_hand', '>', 0)
+                    ->where(function ($q) {
+                        $q->whereNull('expiry_date')
+                            ->orWhere('expiry_date', '>=', now()->toDateString());
+                    })
+                    ->orderByRaw('expiry_date IS NULL')
+                    ->orderBy('expiry_date')
+                    ->orderBy('id'),
+            ])
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy('id');
+
+        $ordered = [];
+        foreach ($ids as $id) {
+            $product = $products->get($id);
+            if ($product !== null) {
+                $ordered[] = $product;
+            }
+        }
+
+        return new Collection($ordered);
+    }
+
     public function store(array $attributes): Product
     {
         return Product::query()->create($attributes);

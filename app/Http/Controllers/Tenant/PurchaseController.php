@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Domain\Catalog\Models\StorageLocation;
+use App\Domain\Catalog\Repositories\ProductRepository;
 use App\Domain\Purchasing\Models\Purchase;
 use App\Domain\Purchasing\Models\Supplier;
 use App\Domain\Purchasing\Services\PurchaseService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Purchasing\StorePurchaseRequest;
+use App\Http\Resources\Catalog\ProductResource;
 use App\Support\Payments\PaymentMethods;
+use App\Support\Purchasing\LastPurchasePriceLookup;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -16,7 +19,11 @@ use Inertia\Response;
 
 final class PurchaseController extends Controller
 {
-    public function __construct(private readonly PurchaseService $purchases) {}
+    public function __construct(
+        private readonly PurchaseService $purchases,
+        private readonly ProductRepository $products,
+        private readonly LastPurchasePriceLookup $lastPurchase,
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -84,9 +91,18 @@ final class PurchaseController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         $this->authorize('create', Purchase::class);
+
+        $prefillProducts = [];
+        $ids = $this->parseProductIds($request->input('product_ids'));
+
+        if ($ids !== []) {
+            $items = $this->products->findManyForPurchase($ids);
+            $this->lastPurchase->attachToProducts($items);
+            $prefillProducts = ProductResource::collection($items)->resolve();
+        }
 
         return Inertia::render('Purchases/Create', [
             'paymentMethods' => PaymentMethods::options(),
@@ -95,7 +111,30 @@ final class PurchaseController extends Controller
                 ->orderBy('sort_order')
                 ->orderBy('name')
                 ->get(['id', 'name', 'code']),
+            'prefillProducts' => $prefillProducts,
         ]);
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function parseProductIds(mixed $raw): array
+    {
+        if (is_array($raw)) {
+            $parts = $raw;
+        } elseif (is_string($raw) && $raw !== '') {
+            $parts = preg_split('/[,\s]+/', $raw) ?: [];
+        } else {
+            return [];
+        }
+
+        return collect($parts)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->take(50)
+            ->values()
+            ->all();
     }
 
     public function store(StorePurchaseRequest $request): RedirectResponse

@@ -119,6 +119,60 @@
             </div>
         </div>
 
+        <div
+            v-if="products.data?.length"
+            class="product-selection-bar d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2"
+            :class="{ 'product-selection-bar--active': selectedCount > 0 }"
+        >
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="form-check mb-0">
+                    <input
+                        id="select-all-page"
+                        class="form-check-input"
+                        type="checkbox"
+                        :checked="allPageSelected"
+                        :indeterminate="somePageSelected && !allPageSelected"
+                        @change="toggleSelectAllPage"
+                    />
+                    <label class="form-check-label small" for="select-all-page">
+                        {{ t('catalog.products_select_all_page') }}
+                    </label>
+                </div>
+                <span v-if="selectedCount > 0" class="badge text-bg-primary">
+                    {{ t('catalog.products_selected_count', { count: selectedCount }) }}
+                </span>
+            </div>
+            <div v-if="selectedCount > 0" class="d-flex flex-wrap align-items-center gap-2">
+                <div class="form-check mb-0">
+                    <input
+                        id="copy-include-strength"
+                        v-model="includeStrengthInCopy"
+                        class="form-check-input"
+                        type="checkbox"
+                        @change="persistCopyIncludeStrength"
+                    />
+                    <label class="form-check-label small" for="copy-include-strength">
+                        {{ t('catalog.products_copy_include_strength') }}
+                    </label>
+                </div>
+                <button type="button" class="btn btn-sm btn-primary" :disabled="copyingNames" @click="copySelectedNames">
+                    {{ t('catalog.products_copy_names') }}
+                </button>
+                <Link
+                    v-if="can('purchases.manage')"
+                    :href="purchasePrefillHref"
+                    class="btn btn-sm btn-outline-primary"
+                >
+                    {{ t('catalog.products_add_to_purchase') }}
+                </Link>
+                <button type="button" class="btn btn-sm btn-outline-secondary" @click="clearSelection">
+                    {{ t('catalog.products_clear_selection') }}
+                </button>
+            </div>
+        </div>
+        <div v-if="copyFeedback" class="alert alert-success py-2 small mb-2">{{ copyFeedback }}</div>
+        <div v-if="copyError" class="alert alert-danger py-2 small mb-2">{{ copyError }}</div>
+
         <!-- Table view -->
         <div v-if="viewMode === 'table'">
             <div class="product-mobile-list d-md-none">
@@ -129,7 +183,15 @@
                     <div v-for="p in products.data" :key="p.id" class="card border-0 shadow-sm mb-2 product-mobile-card">
                         <div class="card-body p-3">
                             <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                                <div class="min-w-0">
+                                <div class="d-flex align-items-start gap-2 min-w-0">
+                                    <input
+                                        class="form-check-input mt-1 flex-shrink-0"
+                                        type="checkbox"
+                                        :checked="isSelected(p.id)"
+                                        :aria-label="p.name"
+                                        @change="toggleSelect(p)"
+                                    />
+                                    <div class="min-w-0">
                                     <Link :href="`/products/${p.id}`" class="fw-semibold text-decoration-none product-mobile-card__title">
                                         {{ p.name }}
                                     </Link>
@@ -137,6 +199,7 @@
                                         <span v-if="p.generic_name">{{ p.generic_name }}</span>
                                         <span v-if="p.generic_name && p.sku"> · </span>
                                         <span>{{ p.sku }}</span>
+                                    </div>
                                     </div>
                                 </div>
                                 <span class="badge flex-shrink-0" :class="p.is_active ? 'text-bg-success' : 'text-bg-secondary'">
@@ -190,6 +253,16 @@
                 <table class="table table-striped mb-0">
                 <thead>
                     <tr>
+                        <th style="width: 2.25rem">
+                            <input
+                                class="form-check-input"
+                                type="checkbox"
+                                :checked="allPageSelected"
+                                :indeterminate="somePageSelected && !allPageSelected"
+                                :aria-label="t('catalog.products_select_all_page')"
+                                @change="toggleSelectAllPage"
+                            />
+                        </th>
                         <th>{{ t('catalog.product_name') }}</th>
                         <th>{{ t('catalog.generic_name') }}</th>
                         <th>{{ t('catalog.strength') }}</th>
@@ -207,6 +280,15 @@
                 </thead>
                 <tbody>
                     <tr v-for="p in products.data" :key="p.id">
+                        <td>
+                            <input
+                                class="form-check-input"
+                                type="checkbox"
+                                :checked="isSelected(p.id)"
+                                :aria-label="p.name"
+                                @change="toggleSelect(p)"
+                            />
+                        </td>
                         <td>
                             <Link :href="`/products/${p.id}`" class="text-decoration-none fw-medium">{{ p.name }}</Link>
                         </td>
@@ -245,7 +327,7 @@
                         </td>
                     </tr>
                     <tr v-if="!products.data?.length">
-                        <td colspan="13" class="text-muted text-center py-4">{{ t('catalog.products_showing_none') }}</td>
+                        <td colspan="14" class="text-muted text-center py-4">{{ t('catalog.products_showing_none') }}</td>
                     </tr>
                 </tbody>
                 </table>
@@ -259,7 +341,7 @@
             </div>
             <div v-else class="row row-cols-2 row-cols-lg-3 row-cols-xl-4 g-2 g-md-3 product-grid">
                 <div v-for="p in products.data" :key="p.id" class="col">
-                    <div class="card border-0 shadow-sm h-100 product-grid-card">
+                    <div class="card border-0 shadow-sm h-100 product-grid-card" :class="{ 'product-card--selected': isSelected(p.id) }">
                         <div class="ratio ratio-4x3 border-bottom product-card-image-wrap">
                             <img
                                 :src="cardImage(p)"
@@ -267,6 +349,16 @@
                                 class="product-card-image"
                                 :class="{ 'product-card-image--placeholder': !p.image_url }"
                             />
+                            <div class="product-card-select position-absolute top-0 start-0 p-2" style="z-index: 3">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    :checked="isSelected(p.id)"
+                                    :aria-label="p.name"
+                                    @change="toggleSelect(p)"
+                                    @click.stop
+                                />
+                            </div>
                         </div>
                         <div class="card-body d-flex flex-column product-grid-card__body">
                             <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
@@ -310,7 +402,7 @@
             </div>
             <div v-else class="row row-cols-2 row-cols-md-4 row-cols-xl-6 g-2 product-grid product-grid--dense">
                 <div v-for="p in products.data" :key="p.id" class="col">
-                    <div class="card border-0 shadow-sm h-100 product-grid-card product-grid-card--dense">
+                    <div class="card border-0 shadow-sm h-100 product-grid-card product-grid-card--dense" :class="{ 'product-card--selected': isSelected(p.id) }">
                         <div class="ratio ratio-1x1 border-bottom product-card-image-wrap">
                             <img
                                 :src="cardImage(p)"
@@ -318,6 +410,16 @@
                                 class="product-card-image"
                                 :class="{ 'product-card-image--placeholder': !p.image_url }"
                             />
+                            <div class="product-card-select position-absolute top-0 start-0 p-1" style="z-index: 3">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    :checked="isSelected(p.id)"
+                                    :aria-label="p.name"
+                                    @change="toggleSelect(p)"
+                                    @click.stop
+                                />
+                            </div>
                         </div>
                         <div class="card-body product-grid-card__body product-grid-card__body--dense">
                             <Link :href="`/products/${p.id}`" class="text-decoration-none fw-semibold stretched-link product-dense-title">
@@ -359,13 +461,22 @@
                     <div v-for="p in products.data" :key="p.id" class="card border-0 shadow-sm mb-2 product-compact-mobile-card">
                         <div class="card-body p-2">
                             <div class="d-flex justify-content-between align-items-start gap-2">
-                                <div class="min-w-0">
+                                <div class="d-flex align-items-start gap-2 min-w-0">
+                                    <input
+                                        class="form-check-input mt-1 flex-shrink-0"
+                                        type="checkbox"
+                                        :checked="isSelected(p.id)"
+                                        :aria-label="p.name"
+                                        @change="toggleSelect(p)"
+                                    />
+                                    <div class="min-w-0">
                                     <Link :href="`/products/${p.id}`" class="fw-semibold text-decoration-none product-compact-mobile-card__title">
                                         {{ p.name }}
                                     </Link>
                                     <div class="small text-muted text-truncate">
                                         <span>{{ p.sku }}</span>
                                         <span v-if="p.generic_name"> · {{ p.generic_name }}</span>
+                                    </div>
                                     </div>
                                 </div>
                                 <span class="badge flex-shrink-0" :class="p.is_active ? 'text-bg-success' : 'text-bg-secondary'">
@@ -400,6 +511,16 @@
                 <table class="table table-sm table-hover mb-0 align-middle">
                 <thead class="table-light">
                     <tr>
+                        <th style="width: 2.25rem">
+                            <input
+                                class="form-check-input"
+                                type="checkbox"
+                                :checked="allPageSelected"
+                                :indeterminate="somePageSelected && !allPageSelected"
+                                :aria-label="t('catalog.products_select_all_page')"
+                                @change="toggleSelectAllPage"
+                            />
+                        </th>
                         <th>{{ t('catalog.product_name') }}</th>
                         <th>{{ t('catalog.product_type') }}</th>
                         <th class="text-end">{{ t('catalog.sale_price') }} ({{ currencyCode() }})</th>
@@ -410,6 +531,15 @@
                 </thead>
                 <tbody>
                     <tr v-for="p in products.data" :key="p.id">
+                        <td>
+                            <input
+                                class="form-check-input"
+                                type="checkbox"
+                                :checked="isSelected(p.id)"
+                                :aria-label="p.name"
+                                @change="toggleSelect(p)"
+                            />
+                        </td>
                         <td>
                             <Link :href="`/products/${p.id}`" class="text-decoration-none fw-medium">{{ p.name }}</Link>
                             <div class="small text-muted">
@@ -448,7 +578,7 @@
                         </td>
                     </tr>
                     <tr v-if="!products.data?.length">
-                        <td colspan="6" class="text-muted text-center py-4">{{ t('catalog.products_showing_none') }}</td>
+                        <td colspan="7" class="text-muted text-center py-4">{{ t('catalog.products_showing_none') }}</td>
                     </tr>
                 </tbody>
                 </table>
@@ -478,6 +608,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, defineComponent, h, onBeforeUnmount, reactive, ref } from 'vue';
 
 const VIEW_MODE_KEY = 'catalog.products.viewMode';
+const COPY_INCLUDE_STRENGTH_KEY = 'catalog.products.copyIncludeStrength';
 const PRODUCT_PLACEHOLDER_URL = '/images/product-placeholder.png';
 
 const props = defineProps({
@@ -496,7 +627,13 @@ const { can } = usePermissions();
 
 const viewMode = ref(loadViewMode());
 const filterLoading = ref(false);
+const selectedById = ref({});
+const includeStrengthInCopy = ref(loadCopyIncludeStrength());
+const copyingNames = ref(false);
+const copyFeedback = ref('');
+const copyError = ref('');
 let filterTimer;
+let copyFeedbackTimer;
 
 const ProductRowActions = defineComponent({
     name: 'ProductRowActions',
@@ -565,6 +702,29 @@ function loadViewMode() {
     return 'table';
 }
 
+function loadCopyIncludeStrength() {
+    try {
+        const saved = localStorage.getItem(COPY_INCLUDE_STRENGTH_KEY);
+        if (saved === '0' || saved === 'false') {
+            return false;
+        }
+        if (saved === '1' || saved === 'true') {
+            return true;
+        }
+    } catch {
+        // ignore
+    }
+    return true;
+}
+
+function persistCopyIncludeStrength() {
+    try {
+        localStorage.setItem(COPY_INCLUDE_STRENGTH_KEY, includeStrengthInCopy.value ? '1' : '0');
+    } catch {
+        // ignore
+    }
+}
+
 function setViewMode(mode) {
     viewMode.value = mode;
     try {
@@ -620,6 +780,113 @@ const resultsSummary = computed(() => {
     return t('catalog.products_showing_range', { from, to, total });
 });
 
+const pageProducts = computed(() => props.products.data ?? []);
+
+const selectedCount = computed(() => Object.keys(selectedById.value).length);
+
+const purchasePrefillHref = computed(() => {
+    const ids = Object.keys(selectedById.value);
+    if (!ids.length) {
+        return '/purchases/create';
+    }
+
+    return `/purchases/create?product_ids=${ids.join(',')}`;
+});
+
+const allPageSelected = computed(() => {
+    const rows = pageProducts.value;
+    return rows.length > 0 && rows.every((p) => selectedById.value[p.id] != null);
+});
+
+const somePageSelected = computed(() => pageProducts.value.some((p) => selectedById.value[p.id] != null));
+
+function isSelected(id) {
+    return selectedById.value[id] != null;
+}
+
+function selectionSnapshot(product) {
+    return {
+        id: product.id,
+        name: product.name,
+        strength: product.strength || '',
+    };
+}
+
+function toggleSelect(product) {
+    const next = { ...selectedById.value };
+    if (next[product.id]) {
+        delete next[product.id];
+    } else {
+        next[product.id] = selectionSnapshot(product);
+    }
+    selectedById.value = next;
+}
+
+function toggleSelectAllPage(event) {
+    const checked = event?.target?.checked ?? !allPageSelected.value;
+    const next = { ...selectedById.value };
+    for (const product of pageProducts.value) {
+        if (checked) {
+            next[product.id] = selectionSnapshot(product);
+        } else {
+            delete next[product.id];
+        }
+    }
+    selectedById.value = next;
+}
+
+function clearSelection() {
+    selectedById.value = {};
+    copyFeedback.value = '';
+    copyError.value = '';
+}
+
+function formatNameLine(product, index) {
+    const strength = String(product.strength || '').trim();
+    const label = includeStrengthInCopy.value && strength
+        ? `${product.name} ${strength}`
+        : product.name;
+    return `${index}. ${label}`;
+}
+
+async function copySelectedNames() {
+    const items = Object.values(selectedById.value);
+    if (!items.length) {
+        return;
+    }
+
+    copyingNames.value = true;
+    copyError.value = '';
+    copyFeedback.value = '';
+    clearTimeout(copyFeedbackTimer);
+
+    const text = items.map((item, i) => formatNameLine(item, i + 1)).join('\n');
+
+    try {
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text);
+        } else {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+        copyFeedback.value = t('catalog.products_copied_names', { count: items.length });
+        copyFeedbackTimer = setTimeout(() => {
+            copyFeedback.value = '';
+        }, 4000);
+    } catch {
+        copyError.value = t('catalog.products_copy_failed');
+    } finally {
+        copyingNames.value = false;
+    }
+}
+
 function debouncedApplyFilters() {
     clearTimeout(filterTimer);
     filterTimer = setTimeout(() => applyFilters(), 350);
@@ -660,12 +927,14 @@ function confirmDelete(product) {
 
 onBeforeUnmount(() => {
     clearTimeout(filterTimer);
+    clearTimeout(copyFeedbackTimer);
 });
 </script>
 
 <style scoped>
 .product-card-image-wrap {
     background: #111;
+    position: relative;
 }
 
 .product-card-image {
@@ -681,6 +950,23 @@ onBeforeUnmount(() => {
 
 .product-grid-card {
     overflow: hidden;
+}
+
+.product-card--selected {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: -1px;
+}
+
+.product-selection-bar {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    background: var(--bs-tertiary-bg);
+}
+
+.product-selection-bar--active {
+    border-color: rgba(var(--bs-primary-rgb), 0.35);
+    background: rgba(var(--bs-primary-rgb), 0.08);
 }
 
 .product-grid-card--dense .product-card-image--placeholder {

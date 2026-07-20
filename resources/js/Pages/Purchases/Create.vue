@@ -109,137 +109,119 @@
                 {{ purchaseBatchTip }}
             </div>
 
-            <h2 class="h6">Purchase lines</h2>
-            <p v-if="!form.lines.length" class="text-muted small">Search and click a product above to add lines.</p>
+            <h2 class="h6">{{ t('purchases.purchase_lines') }}</h2>
+            <p v-if="!form.lines.length" class="text-muted small">{{ t('purchases.lines_hint') }}</p>
             <div v-if="form.errors.lines" class="text-danger small mb-2">{{ form.errors.lines }}</div>
+            <div v-if="lineEditorError" class="alert alert-warning py-2 small mb-2">{{ lineEditorError }}</div>
 
-            <div v-for="(line, i) in form.lines" :key="line._key" class="purchase-line-card border rounded p-3 mb-2 bg-white">
-                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
-                    <div>
-                        <span class="fw-semibold">{{ line.product_name }}</span>
-                        <span class="text-muted small ms-2">{{ line.product_sku }}</span>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-danger purchase-line-remove" @click="removeLine(i)">Remove</button>
-                </div>
-                <div class="row g-2 align-items-end">
-                    <div class="col-md-3">
-                        <label class="form-label small">Batch</label>
-                        <select v-model="line.batch_pick" class="form-select form-select-sm" @change="applyBatchPick(line)">
-                            <option value="__new__">+ New batch (from invoice)</option>
-                            <option v-for="b in line.existing_batches" :key="b.id" :value="b.batch_no">
-                                {{ b.batch_no }} · on hand {{ formatQty(b.quantity_on_hand) }}
-                            </option>
-                        </select>
-                    </div>
-                    <div v-if="line.batch_pick === '__new__'" class="col-md-3">
-                        <label class="form-label small">New batch no</label>
-                        <input v-model="line.batch_no" type="text" class="form-control form-control-sm" required placeholder="e.g. LOT-2026-01" />
-                    </div>
-                    <div v-else class="col-md-3">
-                        <label class="form-label small">Batch no</label>
-                        <input :value="line.batch_no" type="text" class="form-control form-control-sm" disabled />
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label small">{{ t('purchases.expiry') }}</label>
-                        <input v-model="line.expiry_date" type="date" class="form-control form-control-sm" />
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label small">{{ t('purchases.manufactured_at') }}</label>
-                        <input v-model="line.manufactured_at" type="date" class="form-control form-control-sm" />
-                    </div>
-                    <div v-if="props.storageLocations.length" class="col-md-3">
-                        <label class="form-label small">{{ t('catalog.storage_location_shelf') }}</label>
-                        <select v-model="line.storage_location_id" class="form-select form-select-sm">
-                            <option :value="null">{{ t('catalog.storage_location_use_default') }}</option>
-                            <option v-for="loc in props.storageLocations" :key="loc.id" :value="loc.id">
-                                {{ locationLabel(loc) }}
-                            </option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label small">Unit</label>
-                        <select v-model="line.sell_unit" class="form-select form-select-sm" @change="onUnitChange(line)">
-                            <option v-for="u in line.unit_options" :key="u.sell_unit" :value="u.sell_unit">
-                                {{ unitLabel(u.sell_unit) }}
-                            </option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label small">Qty</label>
-                        <input v-model.number="line.quantity" type="number" min="0.0001" step="0.0001" class="form-control form-control-sm" required />
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label small">{{ t('purchases.unit_cost') }} ({{ currencyCode() }})</label>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text">{{ currencySymbol() }}</span>
-                            <input v-model.number="line.unit_cost" type="number" min="0" step="0.01" class="form-control" required />
+            <!-- Mobile: compact summaries -->
+            <div class="d-md-none">
+                <div
+                    v-for="(line, i) in form.lines"
+                    :key="line._key"
+                    class="purchase-line-summary card border-0 shadow-sm mb-2"
+                >
+                    <button type="button" class="purchase-line-summary__body text-start" @click="openLineEditor(i)">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <div class="min-w-0">
+                                <div class="fw-semibold text-truncate">{{ line.product_name }}</div>
+                                <div class="small text-muted text-truncate">{{ line.product_sku }}</div>
+                            </div>
+                            <span class="badge text-bg-light text-dark border flex-shrink-0">{{ i + 1 }}</span>
                         </div>
-                        <div v-if="priceComparisonLabel(line)" class="form-text" :class="priceComparisonClass(line)">
-                            {{ priceComparisonLabel(line) }}
+                        <div class="purchase-line-summary__meta mt-2">
+                            <div>
+                                <span class="text-muted">{{ t('purchases.qty') }}</span>
+                                <strong>{{ formatQty(line.quantity) }} {{ unitLabel(line.sell_unit) }}</strong>
+                            </div>
+                            <div>
+                                <span class="text-muted">{{ t('purchases.unit_cost') }}</span>
+                                <strong>{{ formatMoney(line.unit_cost) }}</strong>
+                            </div>
+                            <div>
+                                <span class="text-muted">{{ t('purchases.line_total') }}</span>
+                                <strong>{{ formatMoney(Number(line.quantity || 0) * Number(line.unit_cost || 0)) }}</strong>
+                            </div>
+                            <div>
+                                <span class="text-muted">Batch</span>
+                                <strong>{{ line.batch_no || t('purchases.new_batch_needed') }}</strong>
+                            </div>
                         </div>
-                        <div v-if="Number(line.quantity) > 0 && Number(line.unit_cost) > 0" class="form-text">
-                            = {{ formatMoney(Number(line.quantity) * Number(line.unit_cost)) }}
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label small">{{ t('purchases.sale_price_mrp') }} ({{ currencyCode() }})</label>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text">{{ currencySymbol() }}</span>
-                            <input v-model.number="line.sale_price" type="number" min="0" step="0.01" class="form-control" />
-                        </div>
-                    </div>
-                </div>
-                <div v-if="needsPackSize(line)" class="row g-2 mt-1 pt-2 border-top">
-                    <div class="col-md-4">
-                        <label class="form-label small mb-0">
-                            {{ packSizeLabel(line) }}
-                        </label>
-                        <input
-                            v-if="usesStripsPerBox(line)"
-                            v-model.number="line.pack_strips_per_box"
-                            type="number"
-                            min="0.0001"
-                            step="any"
-                            class="form-control form-control-sm mt-1"
-                            required
-                            @input="syncLineConversionFromPackInput(line)"
-                        />
-                        <input
-                            v-else-if="usesBoxesPerCarton(line)"
-                            v-model.number="line.pack_boxes_per_carton"
-                            type="number"
-                            min="0.0001"
-                            step="any"
-                            class="form-control form-control-sm mt-1"
-                            required
-                            @input="syncLineConversionFromPackInput(line)"
-                        />
-                        <input
-                            v-else
-                            v-model.number="line.conversion_factor"
-                            type="number"
-                            min="0.0001"
-                            step="any"
-                            class="form-control form-control-sm mt-1"
-                            required
-                        />
-                    </div>
-                    <div class="col-md-8 d-flex align-items-end">
-                        <div v-if="lineQuantityBase(line) > 0" class="small text-muted mb-1">
-                            <p v-if="usesPackSizeFriendlyInput(line) && packSizeBreakdown(line)" class="mb-1">
-                                {{ packSizeBreakdown(line) }}
-                            </p>
-                            <p class="mb-0">
-                                Adds <strong>{{ formatQty(lineQuantityBase(line)) }}</strong>
-                                {{ unitLabel(line.base_unit) }}(s) to stock
-                                <span v-if="packSizeDiffersFromDefault(line)" class="text-warning">
-                                    ({{ packSizeDefaultHint(line) }})
-                                </span>
-                            </p>
-                        </div>
+                        <div class="small text-primary mt-2">{{ t('purchases.tap_to_edit_line') }}</div>
+                    </button>
+                    <div class="purchase-line-summary__actions px-3 pb-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary" @click="openLineEditor(i)">
+                            {{ t('common.edit') }}
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" @click="removeLine(i)">
+                            {{ t('common.delete') }}
+                        </button>
                     </div>
                 </div>
             </div>
+
+            <!-- Desktop: full inline editors -->
+            <div class="d-none d-md-block">
+                <div v-for="(line, i) in form.lines" :key="line._key" class="purchase-line-card border rounded p-3 mb-2 bg-white">
+                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+                        <div>
+                            <span class="fw-semibold">{{ line.product_name }}</span>
+                            <span class="text-muted small ms-2">{{ line.product_sku }}</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger purchase-line-remove" @click="removeLine(i)">
+                            {{ t('common.delete') }}
+                        </button>
+                    </div>
+                    <PurchaseLineFields
+                        :line="line"
+                        :storage-locations="storageLocations"
+                        :require-fields="true"
+                        @batch-change="applyBatchPick"
+                        @unit-change="onUnitChange"
+                    />
+                </div>
+            </div>
+
+            <!-- Mobile bottom sheet editor -->
+            <Teleport to="body">
+                <div
+                    v-if="editingLineIndex !== null && editingLine"
+                    class="purchase-line-sheet-root"
+                >
+                    <div class="purchase-line-sheet-backdrop" @click="closeLineEditor" />
+                    <div
+                        class="purchase-line-sheet"
+                        role="dialog"
+                        aria-modal="true"
+                        :aria-label="t('purchases.edit_line')"
+                    >
+                        <div class="purchase-line-sheet__handle" aria-hidden="true" />
+                        <div class="purchase-line-sheet__header">
+                            <div class="min-w-0">
+                                <div class="small text-muted mb-0">{{ t('purchases.edit_line') }}</div>
+                                <div class="fw-semibold text-truncate">{{ editingLine.product_name }}</div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-primary" @click="closeLineEditor">
+                                {{ t('purchases.done_editing_line') }}
+                            </button>
+                        </div>
+                        <div class="purchase-line-sheet__body">
+                            <PurchaseLineFields
+                                :line="editingLine"
+                                :storage-locations="storageLocations"
+                                :require-fields="true"
+                                @batch-change="applyBatchPick"
+                                @unit-change="onUnitChange"
+                            />
+                        </div>
+                        <div class="purchase-line-sheet__footer">
+                            <button type="button" class="btn btn-outline-danger w-100" @click="removeEditingLine">
+                                {{ t('purchases.remove_line') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Teleport>
 
             <div class="card border-0 shadow-sm mt-3">
                 <div class="card-header bg-white fw-semibold">Purchase summary</div>
@@ -333,6 +315,7 @@
 </template>
 
 <script setup>
+import PurchaseLineFields from '@/Components/Purchasing/PurchaseLineFields.vue';
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
@@ -348,11 +331,12 @@ import {
     unitSalePrice,
 } from '@/composables/useProductUnits';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 const props = defineProps({
     paymentMethods: { type: Array, default: () => [] },
     storageLocations: { type: Array, default: () => [] },
+    prefillProducts: { type: Array, default: () => [] },
 });
 
 function locationLabel(loc) {
@@ -368,6 +352,49 @@ const { formatMoney, currencyCode, currencySymbol } = useMoney();
 const { formatQty } = useQuantity();
 
 const purchaseBatchTip = computed(() => t('catalog.purchase_batch_pack_tip'));
+const editingLineIndex = ref(null);
+const lineEditorError = ref('');
+
+const editingLine = computed(() => {
+    if (editingLineIndex.value === null) {
+        return null;
+    }
+    return form.lines[editingLineIndex.value] ?? null;
+});
+
+function isMobilePurchaseUi() {
+    return typeof window !== 'undefined' && window.matchMedia('(max-width: 767.98px)').matches;
+}
+
+function openLineEditor(index) {
+    editingLineIndex.value = index;
+    lineEditorError.value = '';
+}
+
+function closeLineEditor() {
+    editingLineIndex.value = null;
+}
+
+function removeEditingLine() {
+    const index = editingLineIndex.value;
+    closeLineEditor();
+    if (index !== null) {
+        removeLine(index);
+    }
+}
+
+watch(editingLineIndex, (index) => {
+    if (typeof document === 'undefined') {
+        return;
+    }
+    document.body.classList.toggle('purchase-line-sheet-open', index !== null);
+});
+
+onBeforeUnmount(() => {
+    if (typeof document !== 'undefined') {
+        document.body.classList.remove('purchase-line-sheet-open');
+    }
+});
 
 const searchQuery = ref('');
 const searchResults = ref([]);
@@ -480,8 +507,9 @@ async function runSearch() {
 }
 
 function buildUnitOptions(product) {
-    if (product.units?.length) {
-        return product.units;
+    const units = Array.isArray(product.units) ? product.units : (product.units?.data ?? []);
+    if (units.length) {
+        return units;
     }
     const u = product.base_unit ?? product.unit ?? 'strip';
     return [{ sell_unit: u, conversion_factor: 1, purchase_price: product.purchase_price, sale_price: product.sale_price, is_default: true }];
@@ -625,10 +653,12 @@ function lineQuantityBase(line) {
 function addProductLine(product) {
     const sellUnit = defaultSellUnit(product);
     const baseUnit = productBaseUnit(product);
-    const existingBatches = product.batches ?? [];
+    const existingBatches = Array.isArray(product.batches)
+        ? product.batches
+        : (product.batches?.data ?? []);
     const unitOptions = buildUnitOptions(product);
     const line = {
-        _key: `${product.id}-${Date.now()}`,
+        _key: `${product.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         product_id: product.id,
         product_name: product.name,
         product_sku: product.sku,
@@ -660,7 +690,34 @@ function addProductLine(product) {
     form.lines.push(line);
     searchQuery.value = '';
     searchResults.value = [];
+
+    if (isMobilePurchaseUi()) {
+        openLineEditor(form.lines.length - 1);
+    }
 }
+
+function applyPrefillProducts() {
+    if (!props.prefillProducts?.length || form.lines.length) {
+        return;
+    }
+
+    const seen = new Set();
+    for (const product of props.prefillProducts) {
+        if (!product?.id || seen.has(product.id)) {
+            continue;
+        }
+        seen.add(product.id);
+        addProductLine(product);
+    }
+
+    if (typeof window !== 'undefined' && window.history?.replaceState) {
+        window.history.replaceState({}, '', window.location.pathname);
+    }
+}
+
+onMounted(() => {
+    applyPrefillProducts();
+});
 
 function applyBatchPick(line) {
     if (line.batch_pick === '__new__') {
@@ -746,10 +803,49 @@ function priceComparisonClass(line) {
 }
 
 function removeLine(index) {
+    if (editingLineIndex.value === index) {
+        closeLineEditor();
+    } else if (editingLineIndex.value !== null && editingLineIndex.value > index) {
+        editingLineIndex.value -= 1;
+    }
     form.lines.splice(index, 1);
 }
 
+function lineIsIncomplete(line) {
+    if (!Number(line.quantity) || Number(line.quantity) <= 0) {
+        return true;
+    }
+    if (line.unit_cost === '' || line.unit_cost === null || Number.isNaN(Number(line.unit_cost)) || Number(line.unit_cost) < 0) {
+        return true;
+    }
+    if (line.batch_pick === '__new__' && !String(line.batch_no || '').trim()) {
+        return true;
+    }
+    if (needsPackSize(line)) {
+        if (usesStripsPerBox(line) && !(Number(line.pack_strips_per_box) > 0)) {
+            return true;
+        }
+        if (usesBoxesPerCarton(line) && !(Number(line.pack_boxes_per_carton) > 0)) {
+            return true;
+        }
+        if (!usesPackSizeFriendlyInput(line) && !(Number(line.conversion_factor) > 0)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 function submit() {
+    lineEditorError.value = '';
+    const incompleteIndex = form.lines.findIndex((line) => lineIsIncomplete(line));
+    if (incompleteIndex >= 0) {
+        if (isMobilePurchaseUi()) {
+            openLineEditor(incompleteIndex);
+        }
+        lineEditorError.value = t('purchases.line_incomplete');
+        return;
+    }
+
     form.transform((data) => {
         const payload = {
             ...data,
@@ -797,6 +893,39 @@ function submit() {
     min-height: 2.35rem;
 }
 
+.purchase-line-summary__body {
+    width: 100%;
+    padding: 0.85rem 1rem 0.35rem;
+    border: 0;
+    background: transparent;
+}
+
+.purchase-line-summary__meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+    font-size: 0.82rem;
+}
+
+.purchase-line-summary__meta > div {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.4rem 0.45rem;
+    background: var(--bs-tertiary-bg);
+    border-radius: 0.4rem;
+}
+
+.purchase-line-summary__actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.purchase-line-summary__actions .btn {
+    flex: 1 1 0;
+}
+
 @media (max-width: 575.98px) {
     .purchase-form {
         padding: 0.75rem !important;
@@ -810,5 +939,69 @@ function submit() {
     .purchase-actions .btn {
         width: 100%;
     }
+}
+</style>
+
+<style>
+body.purchase-line-sheet-open {
+    overflow: hidden;
+}
+
+.purchase-line-sheet-root {
+    position: fixed;
+    inset: 0;
+    z-index: 1080;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.purchase-line-sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+}
+
+.purchase-line-sheet {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    width: 100%;
+    max-width: 40rem;
+    max-height: min(92vh, 44rem);
+    flex-direction: column;
+    background: #fff;
+    border-radius: 1rem 1rem 0 0;
+    box-shadow: 0 -8px 28px rgba(15, 23, 42, 0.18);
+}
+
+.purchase-line-sheet__handle {
+    width: 2.5rem;
+    height: 0.28rem;
+    margin: 0.55rem auto 0.15rem;
+    background: #cbd5e1;
+    border-radius: 999px;
+}
+
+.purchase-line-sheet__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.65rem 1rem 0.75rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.purchase-line-sheet__body {
+    flex: 1 1 auto;
+    overflow: auto;
+    padding: 1rem;
+    -webkit-overflow-scrolling: touch;
+}
+
+.purchase-line-sheet__footer {
+    padding: 0.75rem 1rem calc(0.85rem + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--bs-border-color);
+    background: #fff;
 }
 </style>
