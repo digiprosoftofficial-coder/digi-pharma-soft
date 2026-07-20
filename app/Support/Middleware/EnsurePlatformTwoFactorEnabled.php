@@ -11,6 +11,10 @@ final class EnsurePlatformTwoFactorEnabled
 {
     public function handle(Request $request, Closure $next): Response
     {
+        if (! config('platform.2fa_required')) {
+            return $next($request);
+        }
+
         $user = $request->user();
 
         if (! $user instanceof User || ! $user->shouldUsePlatformDashboard()) {

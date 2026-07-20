@@ -174,7 +174,13 @@
                                 </div>
                             </div>
 
-                            <ProductRowActions :product="p" :can-manage="can('products.manage')" compact @delete="confirmDelete" />
+                            <ProductRowActions
+                                :product="p"
+                                :can-manage="can('products.manage')"
+                                :can-sell="can('pos.access')"
+                                compact
+                                @delete="confirmDelete"
+                            />
                         </div>
                     </div>
                 </template>
@@ -235,7 +241,7 @@
                             </span>
                         </td>
                         <td class="text-end text-nowrap">
-                            <ProductRowActions :product="p" :can-manage="can('products.manage')" @delete="confirmDelete" />
+                            <ProductRowActions :product="p" :can-manage="can('products.manage')" :can-sell="can('pos.access')" @delete="confirmDelete" />
                         </td>
                     </tr>
                     <tr v-if="!products.data?.length">
@@ -284,8 +290,10 @@
                                     <span v-if="p.stock_pieces"> · {{ formatQty(p.stock_pieces) }} pcs</span>
                                 </div>
                                 <div class="d-flex flex-wrap gap-1 position-relative" style="z-index: 2">
+                                    <Link v-if="can('pos.access')" :href="`/pos?barcode=${encodeURIComponent(p.barcode || p.sku || '')}`" class="btn btn-sm btn-outline-success">
+                                        {{ t('tenant_nav.new_sale') }}
+                                    </Link>
                                     <Link :href="`/products/${p.id}`" class="btn btn-sm btn-outline-primary">{{ t('common.view') }}</Link>
-                                    <a :href="`/barcodes/${p.id}`" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">{{ t('catalog.barcode') }}</a>
                                     <Link v-if="can('products.manage')" :href="`/products/${p.id}/edit`" class="btn btn-sm btn-outline-secondary">{{ t('common.edit') }}</Link>
                                 </div>
                             </div>
@@ -326,6 +334,14 @@
                             </div>
                             <div class="small text-muted mt-1 product-dense-meta">
                                 {{ formatQty(p.stock_on_hand) }} {{ unitLabel(p.base_unit || p.unit) }}
+                            </div>
+                            <div v-if="can('pos.access')" class="mt-2">
+                                <Link
+                                    :href="`/pos?barcode=${encodeURIComponent(p.barcode || p.sku || '')}`"
+                                    class="btn btn-sm btn-outline-success w-100"
+                                >
+                                    {{ t('tenant_nav.new_sale') }}
+                                </Link>
                             </div>
                         </div>
                     </div>
@@ -368,7 +384,13 @@
                                 </div>
                             </div>
 
-                            <ProductRowActions :product="p" :can-manage="can('products.manage')" compact @delete="confirmDelete" />
+                            <ProductRowActions
+                                :product="p"
+                                :can-manage="can('products.manage')"
+                                :can-sell="can('pos.access')"
+                                compact
+                                @delete="confirmDelete"
+                            />
                         </div>
                     </div>
                 </template>
@@ -416,7 +438,13 @@
                             </span>
                         </td>
                         <td class="text-end text-nowrap">
-                            <ProductRowActions :product="p" :can-manage="can('products.manage')" compact @delete="confirmDelete" />
+                            <ProductRowActions
+                                :product="p"
+                                :can-manage="can('products.manage')"
+                                :can-sell="can('pos.access')"
+                                compact
+                                @delete="confirmDelete"
+                            />
                         </td>
                     </tr>
                     <tr v-if="!products.data?.length">
@@ -475,6 +503,7 @@ const ProductRowActions = defineComponent({
     props: {
         product: { type: Object, required: true },
         canManage: { type: Boolean, default: false },
+        canSell: { type: Boolean, default: false },
         compact: { type: Boolean, default: false },
     },
     emits: ['delete'],
@@ -486,16 +515,16 @@ const ProductRowActions = defineComponent({
                     { href: `/products/${props.product.id}`, class: `btn btn-sm btn-outline-primary${props.compact ? '' : ' me-1'}` },
                     () => t('common.view'),
                 ),
-                h(
-                    'a',
-                    {
-                        href: `/barcodes/${props.product.id}`,
-                        target: '_blank',
-                        rel: 'noopener',
-                        class: `btn btn-sm btn-outline-secondary${props.compact ? '' : ' me-1'}`,
-                    },
-                    t('catalog.barcode'),
-                ),
+                props.canSell
+                    ? h(
+                          Link,
+                          {
+                              href: `/pos?barcode=${encodeURIComponent(props.product.barcode || props.product.sku || '')}`,
+                              class: `btn btn-sm btn-outline-success${props.compact ? '' : ' me-1'}`,
+                          },
+                          () => t('tenant_nav.new_sale'),
+                      )
+                    : null,
                 props.canManage
                     ? h(
                           Link,

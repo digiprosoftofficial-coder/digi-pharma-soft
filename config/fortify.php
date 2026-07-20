@@ -161,16 +161,18 @@ return [
     |
     */
 
-    'features' => [
+    'features' => array_values(array_filter([
         Features::registration(),
         Features::resetPasswords(),
         Features::emailVerification(),
         Features::updateProfileInformation(),
         Features::updatePasswords(),
-        Features::twoFactorAuthentication([
-            'confirm' => true,
-            'confirmPassword' => false,
-        ]),
-    ],
+        filter_var(env('PLATFORM_2FA_REQUIRED', false), FILTER_VALIDATE_BOOLEAN)
+            ? Features::twoFactorAuthentication([
+                'confirm' => true,
+                'confirmPassword' => false,
+            ])
+            : null,
+    ])),
 
 ];

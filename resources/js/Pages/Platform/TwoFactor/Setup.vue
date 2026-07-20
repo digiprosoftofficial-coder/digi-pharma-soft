@@ -11,6 +11,7 @@
         </div>
 
         <div v-else class="d-flex flex-column gap-3">
+            <div v-if="error" class="alert alert-danger py-2 small mb-0">{{ error }}</div>
             <button
                 v-if="!confirmingLocal"
                 type="button"
@@ -93,20 +94,31 @@ async function api(url, options = {}) {
         credentials: 'same-origin',
     });
 
+    const raw = await response.text();
+
     if (! response.ok) {
-        const payload = await response.json().catch(() => ({}));
+        let payload = {};
+        try {
+            payload = raw ? JSON.parse(raw) : {};
+        } catch {
+            payload = {};
+        }
         const message = payload.message
             || payload.errors?.code?.[0]
             || payload.errors?.recovery_code?.[0]
-            || t('auth.two_factor_subtitle');
+            || (response.status === 419 ? 'Session expired. Refresh the page and try again.' : t('auth.two_factor_subtitle'));
         throw new Error(message);
     }
 
-    if (response.status === 204) {
+    if (response.status === 204 || raw === '') {
         return null;
     }
 
-    return response.json();
+    try {
+        return JSON.parse(raw);
+    } catch {
+        return null;
+    }
 }
 
 async function loadQr() {

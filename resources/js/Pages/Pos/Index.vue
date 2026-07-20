@@ -720,6 +720,36 @@ async function runSearch() {
     results.value = await searchProducts(q.value);
 }
 
+async function applyProductPrefillFromQuery() {
+    if (cart.value.length) {
+        return;
+    }
+
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    const params = new URLSearchParams(window.location.search || '');
+    const term = (params.get('barcode') || params.get('sku') || '').trim();
+    if (!term) {
+        return;
+    }
+
+    // Don't override if user already started typing.
+    if (q.value.trim().length) {
+        return;
+    }
+
+    q.value = term;
+    await runSearch();
+
+    const added = tryAddFromSearch();
+    if (added && window.history?.replaceState) {
+        // Keep current component state/cart; just remove query string.
+        window.history.replaceState({}, '', window.location.pathname);
+    }
+}
+
 onMounted(() => {
     const seed = [
         ...(props.quickProducts?.popular ?? []),
@@ -729,6 +759,8 @@ onMounted(() => {
     if (seed.length) {
         void cacheProducts(seed);
     }
+
+    void applyProductPrefillFromQuery();
 });
 
 function resetCartAfterSale() {

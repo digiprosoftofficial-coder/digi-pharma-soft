@@ -67,7 +67,7 @@ final class PlatformLoginController extends Controller
 
         RateLimiter::clear($this->throttleKey($request));
 
-        if ($user->hasEnabledTwoFactorAuthentication()) {
+        if (config('platform.2fa_required') && $user->hasEnabledTwoFactorAuthentication()) {
             $request->session()->put([
                 'login.id' => $user->getKey(),
                 'login.remember' => $request->boolean('remember'),
