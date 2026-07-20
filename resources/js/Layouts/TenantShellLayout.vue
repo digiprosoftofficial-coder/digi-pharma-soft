@@ -20,7 +20,39 @@
             <strong>{{ networkAnnouncement.title }}</strong>
             <span class="ms-1">{{ networkAnnouncement.body }}</span>
         </div>
-        <div class="d-flex flex-grow-1 min-h-0">
+        <div
+            v-if="mobileNavOpen"
+            class="tenant-mobile-backdrop d-lg-none"
+            aria-hidden="true"
+            @click="closeMobileNav"
+        ></div>
+        <aside
+            id="tenant-mobile-navigation"
+            class="tenant-sidebar tenant-mobile-drawer border-end bg-white d-lg-none flex-column"
+            :class="{ 'tenant-mobile-drawer--open': mobileNavOpen }"
+            :aria-hidden="mobileNavOpen ? 'false' : 'true'"
+            aria-label="Mobile navigation"
+        >
+            <div class="tenant-sidebar-brand p-3 border-bottom d-flex align-items-center justify-content-between gap-2">
+                <Link href="/dashboard" class="text-decoration-none text-dark d-flex align-items-center gap-2" @click="closeMobileNav">
+                    <span class="tenant-sidebar-brand__icon text-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                            <path d="M12 3 4 7v6c0 4.4 3.6 8 8 8s8-3.6 8-8V7z" />
+                            <path d="M12 11v4M12 8h.01" />
+                        </svg>
+                    </span>
+                    <span>
+                        <div class="fw-bold lh-sm">{{ tenantName }}</div>
+                        <div class="small text-muted">{{ t('tenant_nav.pharmacy_mgmt') }}</div>
+                    </span>
+                </Link>
+                <button type="button" class="btn btn-sm btn-outline-secondary" :aria-label="t('common.close', 'Close')" @click="closeMobileNav">
+                    &times;
+                </button>
+            </div>
+            <TenantSidebarNav @navigate="closeMobileNav" />
+        </aside>
+        <div class="d-flex flex-grow-1 min-h-0 min-w-0">
             <aside class="tenant-sidebar tenant-sidebar--desktop border-end bg-white d-none d-lg-flex flex-column flex-shrink-0">
                 <div class="tenant-sidebar-brand p-3 border-bottom">
                     <Link href="/dashboard" class="text-decoration-none text-dark d-flex align-items-center gap-2">
@@ -38,38 +70,7 @@
                 </div>
                 <TenantSidebarNav />
             </aside>
-            <div
-                v-if="mobileNavOpen"
-                class="tenant-mobile-backdrop d-lg-none"
-                aria-hidden="true"
-                @click="closeMobileNav"
-            ></div>
-            <aside
-                id="tenant-mobile-navigation"
-                class="tenant-sidebar tenant-mobile-drawer border-end bg-white d-lg-none d-flex flex-column"
-                :class="{ 'tenant-mobile-drawer--open': mobileNavOpen }"
-                aria-label="Mobile navigation"
-            >
-                <div class="tenant-sidebar-brand p-3 border-bottom d-flex align-items-center justify-content-between gap-2">
-                    <Link href="/dashboard" class="text-decoration-none text-dark d-flex align-items-center gap-2" @click="closeMobileNav">
-                        <span class="tenant-sidebar-brand__icon text-primary">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-                                <path d="M12 3 4 7v6c0 4.4 3.6 8 8 8s8-3.6 8-8V7z" />
-                                <path d="M12 11v4M12 8h.01" />
-                            </svg>
-                        </span>
-                        <span>
-                            <div class="fw-bold lh-sm">{{ tenantName }}</div>
-                            <div class="small text-muted">{{ t('tenant_nav.pharmacy_mgmt') }}</div>
-                        </span>
-                    </Link>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" :aria-label="t('common.close', 'Close')" @click="closeMobileNav">
-                        &times;
-                    </button>
-                </div>
-                <TenantSidebarNav @navigate="closeMobileNav" />
-            </aside>
-            <div class="flex-grow-1 d-flex flex-column min-vh-100 min-w-0">
+            <div class="tenant-content flex-grow-1 d-flex flex-column min-vh-100 min-w-0">
                 <header class="tenant-topbar border-bottom bg-white px-3 py-2 d-flex flex-wrap align-items-center gap-2">
                     <Link href="/dashboard" class="tenant-mobile-brand d-lg-none text-decoration-none text-dark me-auto">
                         <span class="tenant-mobile-brand__icon text-primary">
@@ -170,8 +171,7 @@
                         <label class="small text-muted mb-0 d-none d-lg-inline">{{ t('branches.switch_branch') }}</label>
                         <select
                             v-model="activeBranchId"
-                            class="form-select form-select-sm"
-                            style="min-width: 10rem"
+                            class="form-select form-select-sm tenant-branch-select"
                             @change="switchBranch"
                         >
                             <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
@@ -190,7 +190,7 @@
                         <Link href="/logout" method="post" as="button" class="btn btn-sm btn-outline-secondary tenant-topbar-action">{{ t('common.logout') }}</Link>
                     </div>
                 </header>
-                <main class="tenant-main flex-grow-1 p-2 p-md-4 overflow-auto">
+                <main class="tenant-main flex-grow-1 p-2 p-md-4 min-w-0">
                     <slot />
                 </main>
             </div>
@@ -292,8 +292,29 @@ const announcementAlertClass = computed(() => {
 </script>
 
 <style scoped>
+.tenant-shell {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+}
+
 .tenant-sidebar {
     width: 272px;
+}
+
+.tenant-content {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.tenant-main {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+    overflow-y: auto;
 }
 
 .tenant-mobile-backdrop {
@@ -309,12 +330,18 @@ const announcementAlertClass = computed(() => {
     bottom: 0;
     left: 0;
     z-index: 1045;
+    display: flex;
+    width: min(272px, 86vw);
     max-width: 86vw;
+    visibility: hidden;
+    pointer-events: none;
     transform: translateX(-100%);
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, visibility 0.2s ease;
 }
 
 .tenant-mobile-drawer--open {
+    visibility: visible;
+    pointer-events: auto;
     transform: translateX(0);
 }
 
@@ -430,6 +457,24 @@ const announcementAlertClass = computed(() => {
     justify-content: center;
     min-width: 2.25rem;
     min-height: 2.25rem;
+}
+
+.tenant-topbar {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.tenant-branch-select {
+    min-width: 0;
+    width: 100%;
+}
+
+@media (min-width: 992px) {
+    .tenant-branch-select {
+        min-width: 10rem;
+        width: auto;
+    }
 }
 
 @media (max-width: 991.98px) {

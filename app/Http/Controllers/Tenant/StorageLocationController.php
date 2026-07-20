@@ -29,9 +29,9 @@ final class StorageLocationController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(): RedirectResponse
     {
-        return Inertia::render('Catalog/StorageLocations/Form', ['location' => null]);
+        return redirect()->route('tenant.storage-locations.index');
     }
 
     public function store(StoreStorageLocationRequest $request): RedirectResponse
@@ -43,11 +43,9 @@ final class StorageLocationController extends Controller
             ->with('success', __('catalog.storage_location_created'));
     }
 
-    public function edit(StorageLocation $storageLocation): Response
+    public function edit(StorageLocation $storageLocation): RedirectResponse
     {
-        return Inertia::render('Catalog/StorageLocations/Form', [
-            'location' => $storageLocation,
-        ]);
+        return redirect()->route('tenant.storage-locations.index');
     }
 
     public function update(UpdateStorageLocationRequest $request, StorageLocation $storageLocation): RedirectResponse

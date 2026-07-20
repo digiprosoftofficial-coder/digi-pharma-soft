@@ -1,5 +1,15 @@
 @import 'bootstrap/scss/bootstrap';
 
+html {
+    overflow-x: clip;
+    max-width: 100%;
+}
+
+body {
+    overflow-x: clip;
+    max-width: 100%;
+}
+
 /*
  | Theme-aware primary components.
  | Bootstrap compiles .btn-primary with fixed hex; re-bind to CSS variables
@@ -101,5 +111,16 @@
     .form-control,
     .form-select {
         min-height: 2.35rem;
+    }
+
+    /* Native date controls have a large intrinsic min-width on mobile. */
+    input[type='date'],
+    input[type='datetime-local'],
+    input[type='time'],
+    input[type='month'],
+    input[type='week'] {
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
     }
 }

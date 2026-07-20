@@ -1,8 +1,9 @@
 <template>
     <TenantShellLayout page-title="Purchases">
         <Head title="Purchases" />
+        <div class="purchases-page">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 purchases-page-header">
-            <h1 class="h4 mb-0">{{ t('purchases.purchase_list') }}</h1>
+            <h1 class="h4 mb-0 purchases-page-title">{{ t('purchases.purchase_list') }}</h1>
             <div class="d-flex flex-wrap gap-2 purchases-page-actions">
                 <a :href="exportUrl" class="btn btn-sm btn-outline-secondary">{{ t('purchases.export_csv') }}</a>
                 <Link
@@ -26,7 +27,7 @@
                         :placeholder="t('purchases.search_placeholder')"
                     />
                 </div>
-                <div class="col-6 col-md-2 purchase-filter-field">
+                <div class="col-12 col-sm-6 col-md-2 purchase-filter-field">
                     <label class="form-label small mb-0">{{ t('purchases.supplier') }}</label>
                     <select v-model="filterForm.supplier_id" class="form-select form-select-sm">
                         <option value="">{{ t('purchases.all_suppliers') }}</option>
@@ -41,7 +42,7 @@
                     <label class="form-label small mb-0">{{ t('purchases.date_to') }}</label>
                     <input v-model="filterForm.date_to" type="date" class="form-control form-control-sm" />
                 </div>
-                <div class="col-6 col-md-3 d-grid d-sm-flex gap-1 purchase-filter-actions">
+                <div class="col-12 col-md-3 d-grid gap-1 purchase-filter-actions" style="grid-template-columns: repeat(2, minmax(0, 1fr))">
                     <button type="submit" class="btn btn-sm btn-primary">{{ t('purchases.filter') }}</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary" @click="clearFilters">
                         {{ t('purchases.reset') }}
@@ -57,7 +58,7 @@
             <div v-for="p in purchases.data" :key="p.id" class="card border-0 shadow-sm mb-2 purchase-mobile-card">
                 <div class="card-body p-3">
                     <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                        <div class="min-w-0">
+                        <div class="min-w-0 flex-grow-1">
                             <Link :href="`/purchases/${p.id}`" class="fw-semibold text-decoration-none text-truncate d-block">
                                 {{ p.invoice_no }}
                             </Link>
@@ -69,7 +70,7 @@
                                 {{ compactLineDates(p) }}
                             </div>
                         </div>
-                        <span class="badge text-bg-light border flex-shrink-0">{{ formatDate(p.purchased_at) }}</span>
+                        <span class="badge text-bg-light border flex-shrink-0 purchase-mobile-card__date">{{ formatDate(p.purchased_at) }}</span>
                     </div>
 
                     <div class="purchase-mobile-card__amounts">
@@ -99,12 +100,12 @@
                 </div>
             </div>
             <div v-if="purchases.links?.length > 3" class="card border-0 shadow-sm overflow-hidden mt-2">
-                <nav class="d-flex flex-wrap gap-1 justify-content-center p-2">
+                <nav class="purchase-pagination d-flex flex-nowrap gap-1 justify-content-start p-2">
                     <Link
                         v-for="link in purchases.links"
                         :key="link.label"
                         :href="link.url || '#'"
-                        class="btn btn-sm"
+                        class="btn btn-sm flex-shrink-0"
                         :class="link.active ? 'btn-primary' : 'btn-outline-secondary'"
                         :disabled="!link.url"
                         v-html="link.label"
@@ -179,6 +180,7 @@
                     />
                 </nav>
             </div>
+        </div>
         </div>
     </TenantShellLayout>
 </template>
@@ -294,8 +296,26 @@ const exportUrl = computed(() => {
 </script>
 
 <style scoped>
+.purchases-page {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+}
+
+.purchases-page-title {
+    min-width: 0;
+    max-width: 100%;
+}
+
 .purchases-table table {
-    min-width: 900px;
+    min-width: 0;
+}
+
+@media (min-width: 768px) {
+    .purchases-table table {
+        min-width: 900px;
+    }
 }
 
 .purchase-items-cell {
@@ -305,6 +325,35 @@ const exportUrl = computed(() => {
 .purchase-items-cell span,
 .purchase-items-cell small {
     display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.purchase-filter-field,
+.purchase-filter-actions {
+    min-width: 0;
+}
+
+.purchase-filter-card :deep(.form-control),
+.purchase-filter-card :deep(.form-select) {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.purchase-filter-card :deep(input[type='date']) {
+    min-width: 0;
+}
+
+.purchase-mobile-list,
+.purchase-mobile-card {
+    max-width: 100%;
+    min-width: 0;
+}
+
+.purchase-mobile-card__date {
+    max-width: 6.5rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -324,6 +373,7 @@ const exportUrl = computed(() => {
     display: flex;
     flex-direction: column;
     gap: 0.1rem;
+    min-width: 0;
     padding: 0.55rem 0.65rem;
 }
 
@@ -333,9 +383,18 @@ const exportUrl = computed(() => {
     gap: 0.5rem;
 }
 
-@media (max-width: 575.98px) {
+.purchase-pagination {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 767.98px) {
     .purchases-page-header {
         align-items: stretch !important;
+    }
+
+    .purchases-page-title {
+        width: 100%;
     }
 
     .purchases-page-actions {
@@ -349,8 +408,12 @@ const exportUrl = computed(() => {
     }
 
     .purchase-filter-field .form-label {
+        display: block;
+        overflow: hidden;
         font-size: 0.76rem;
         font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .purchase-filter-card .form-control,
@@ -358,10 +421,6 @@ const exportUrl = computed(() => {
         font-size: 0.86rem;
         min-height: 2.1rem;
         padding: 0.35rem 0.5rem;
-    }
-
-    .purchase-filter-actions {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .purchase-mobile-card .card-body {
@@ -374,6 +433,7 @@ const exportUrl = computed(() => {
 
     .purchase-mobile-card__actions .btn,
     .purchases-page-actions .btn {
+        width: 100%;
         font-size: 0.8rem;
         min-height: 2.15rem;
     }

@@ -36,8 +36,10 @@
                     <label class="form-check-label small" for="remove_icon">{{ t('catalog.product_type_reset_icon') }}</label>
                 </div>
             </div>
-            <button type="submit" class="btn btn-primary" :disabled="form.processing">Save</button>
-            <Link href="/product-types" class="btn btn-link">Cancel</Link>
+            <div class="d-flex flex-wrap gap-2 product-type-form-actions">
+                <button type="submit" class="btn btn-primary" :disabled="form.processing">{{ t('common.save') }}</button>
+                <Link href="/product-types" class="btn btn-outline-secondary">{{ t('common.cancel') }}</Link>
+            </div>
         </form>
     </TenantShellLayout>
 </template>
@@ -86,3 +88,21 @@ function submit() {
     }
 }
 </script>
+
+<style scoped>
+.product-type-form-actions .btn {
+    min-width: 0;
+}
+
+@media (max-width: 575.98px) {
+    .product-type-form-actions {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+    }
+
+    .product-type-form-actions .btn {
+        width: 100%;
+    }
+}
+</style>
