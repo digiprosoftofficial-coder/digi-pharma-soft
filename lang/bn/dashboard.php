@@ -3,7 +3,7 @@
 return [
     'executive_dashboard' => 'এক্সিকিউটিভ ড্যাশবোর্ড',
     'owner_overview' => 'ওনার ওভারভিউ',
-    'ceo_dashboard' => 'সিইও ড্যাশবোর্ড',
+    'ceo_dashboard' => 'মালিক ড্যাশবোর্ড',
     'todays_sales' => 'আজকের বিক্রয়',
     'todays_profit' => 'আজকের লাভ',
     'todays_purchase' => 'আজকের ক্রয়',

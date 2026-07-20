@@ -155,7 +155,7 @@ const items = computed(() => {
 }
 
 .tenant-bottom-nav__item--active {
-    color: var(--bs-primary, #2563eb);
+    color: var(--bs-primary);
     font-weight: 600;
 }
 
@@ -178,7 +178,7 @@ const items = computed(() => {
 }
 
 .tenant-bottom-nav__item--primary {
-    color: var(--bs-primary, #2563eb);
+    color: var(--bs-primary);
     font-weight: 600;
 }
 
@@ -192,8 +192,8 @@ const items = computed(() => {
     margin-bottom: 0.1rem;
     border-radius: 50%;
     color: #ffffff;
-    background: var(--bs-primary, #2563eb);
-    box-shadow: 0 0.4rem 0.9rem rgba(37, 99, 235, 0.45);
+    background: var(--bs-primary);
+    box-shadow: 0 0.4rem 0.9rem rgba(var(--bs-primary-rgb), 0.45);
     border: 3px solid #ffffff;
 }
 

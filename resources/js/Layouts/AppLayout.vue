@@ -30,9 +30,11 @@
 </template>
 
 <script setup>
+import { useTheme } from '@/composables/useTheme';
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
+useTheme();
 const page = usePage();
 
 const tenant = computed(() => page.props.tenant);

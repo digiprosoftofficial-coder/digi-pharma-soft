@@ -93,7 +93,30 @@
                     <input id="fpackagesales" v-model="form.features.package_sales" type="checkbox" class="form-check-input" />
                     <label class="form-check-label" for="fpackagesales">Package sales</label>
                 </div>
-                <p class="form-text small mb-0">Allow tenants on this plan to enable package templates and package sale checkout.</p>
+                <p class="form-text small mb-3">Allow tenants on this plan to enable package templates and package sale checkout.</p>
+
+                <h2 class="h6 mb-2">{{ t('platform.feature_theme_section') }}</h2>
+                <p class="form-text small mb-2">{{ t('platform.feature_theme_templates_help') }}</p>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <div v-for="tmpl in themeTemplates" :key="tmpl.id" class="form-check border rounded px-3 py-2 mb-0">
+                        <input
+                            :id="'theme_' + tmpl.id"
+                            v-model="form.features.theme_templates"
+                            type="checkbox"
+                            class="form-check-input"
+                            :value="tmpl.id"
+                        />
+                        <label class="form-check-label d-flex align-items-center gap-2" :for="'theme_' + tmpl.id">
+                            <span class="theme-swatch" :style="{ background: tmpl.primary }"></span>
+                            {{ t(tmpl.label_key) }}
+                        </label>
+                    </div>
+                </div>
+                <div class="form-check">
+                    <input id="fcustomprimary" v-model="form.features.allow_custom_primary" type="checkbox" class="form-check-input" />
+                    <label class="form-check-label" for="fcustomprimary">{{ t('platform.feature_allow_custom_primary') }}</label>
+                </div>
+                <p class="form-text small mb-0">{{ t('platform.feature_allow_custom_primary_help') }}</p>
             </div>
             <div class="row g-2 mb-3">
                 <div class="col-md-6">
@@ -156,6 +179,7 @@ const props = defineProps({
     currency: { type: String, default: 'BDT' },
     importPresets: { type: Array, default: () => ['basic', 'standard', 'pro', 'custom'] },
     importColumns: { type: Array, default: () => [] },
+    themeTemplates: { type: Array, default: () => [] },
 });
 
 function formatColumnName(col) {
@@ -186,6 +210,8 @@ const form = useForm({
         hr_payroll: props.plan?.features?.hr_payroll ?? false,
         barcode_camera_scan: props.plan?.features?.barcode_camera_scan ?? false,
         package_sales: props.plan?.features?.package_sales ?? false,
+        allow_custom_primary: props.plan?.features?.allow_custom_primary ?? false,
+        theme_templates: props.plan?.features?.theme_templates ?? ['classic_blue'],
         import_preset: props.plan?.features?.import_preset ?? 'pro',
         import_columns: props.plan?.features?.import_columns ?? ['name'],
     },
@@ -199,6 +225,10 @@ const form = useForm({
 function submit() {
     form.price_cents = Math.round(Number(priceTaka.value || 0) * 100);
 
+    if (!form.features.theme_templates?.length) {
+        form.features.theme_templates = ['classic_blue'];
+    }
+
     if (props.plan) {
         form.put(`/platform/plans/${props.plan.id}`);
     } else {
@@ -206,3 +236,13 @@ function submit() {
     }
 }
 </script>
+
+<style scoped>
+.theme-swatch {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 999px;
+    border: 1px solid rgba(15, 23, 42, 0.15);
+}
+</style>

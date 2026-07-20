@@ -5,6 +5,7 @@ import { createApp, h } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { registerSW } from 'virtual:pwa-register';
+import { applyTheme } from '@/composables/useTheme';
 
 registerSW({
     immediate: true,
@@ -15,11 +16,13 @@ createInertiaApp({
     resolve: (name) =>
         resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob('./Pages/**/*.vue')),
     setup({ el, App, props, plugin }) {
+        applyTheme(props.initialPage?.props?.theme);
+
         createApp({ render: () => h(App, props) })
             .use(plugin)
             .mount(el);
     },
     progress: {
-        color: '#0d6efd',
+        color: 'var(--bs-primary, #0d6efd)',
     },
 });

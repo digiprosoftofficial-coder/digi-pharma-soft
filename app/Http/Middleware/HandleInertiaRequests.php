@@ -12,6 +12,7 @@ use App\Support\Tenant\BranchContext;
 use App\Support\Tenant\TenantContext;
 use App\Support\Tenant\TenantFeatures;
 use App\Support\Tenant\TenantImpersonation;
+use App\Support\Theme\ThemeCatalog;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -49,6 +50,7 @@ class HandleInertiaRequests extends Middleware
                 'slug' => $tenant->slug,
             ] : null,
             'features' => TenantFeatures::shareForInertia($tenant),
+            'theme' => ThemeCatalog::resolveForTenant($tenant),
             'branch' => $this->branchShare($tenant),
             'branches' => $this->branchesShare($tenant),
             'money' => $this->moneyShare($tenant, $locale),

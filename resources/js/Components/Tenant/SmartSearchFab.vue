@@ -149,8 +149,8 @@ onBeforeUnmount(() => {
     border: 0;
     border-radius: 50%;
     color: #fff;
-    background: var(--bs-primary, #2563eb);
-    box-shadow: 0 0.45rem 1.1rem rgba(37, 99, 235, 0.4);
+    background: var(--bs-primary);
+    box-shadow: 0 0.45rem 1.1rem rgba(var(--bs-primary-rgb), 0.4);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -171,10 +171,10 @@ onBeforeUnmount(() => {
 
 .smart-search-fab--dragging {
     cursor: grabbing;
-    box-shadow: 0 0.65rem 1.4rem rgba(37, 99, 235, 0.5);
+    box-shadow: 0 0.65rem 1.4rem rgba(var(--bs-primary-rgb), 0.5);
 }
 
 .smart-search-fab:hover {
-    background: #1d4ed8;
+    filter: brightness(0.92);
 }
 </style>

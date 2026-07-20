@@ -385,8 +385,8 @@ function formatNumber(value) {
 
 <style scoped>
 .kpi-card {
-    --kpi-color: #2563eb;
-    --kpi-tint: rgba(37, 99, 235, 0.1);
+    --kpi-color: var(--bs-primary);
+    --kpi-tint: rgba(var(--bs-primary-rgb), 0.1);
     border-radius: 0.9rem;
     background: #ffffff;
     border-inline-start: 5px solid var(--kpi-color) !important;
@@ -399,7 +399,7 @@ function formatNumber(value) {
 }
 
 .kpi-card--success { --kpi-color: #16a34a; --kpi-tint: rgba(22, 163, 74, 0.12); }
-.kpi-card--primary { --kpi-color: #2563eb; --kpi-tint: rgba(37, 99, 235, 0.12); }
+.kpi-card--primary { --kpi-color: var(--bs-primary); --kpi-tint: rgba(var(--bs-primary-rgb), 0.12); }
 .kpi-card--info { --kpi-color: #0891b2; --kpi-tint: rgba(8, 145, 178, 0.12); }
 .kpi-card--teal { --kpi-color: #0d9488; --kpi-tint: rgba(13, 148, 136, 0.12); }
 .kpi-card--danger { --kpi-color: #dc2626; --kpi-tint: rgba(220, 38, 38, 0.12); }

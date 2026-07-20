@@ -1155,7 +1155,7 @@ async function submitSale() {
 
 .pos-search-panel {
     border: 1px solid rgba(var(--bs-primary-rgb), 0.18);
-    box-shadow: 0 0.35rem 1rem rgba(37, 99, 235, 0.08);
+    box-shadow: 0 0.35rem 1rem rgba(var(--bs-primary-rgb), 0.08);
 }
 
 .pos-search-panel__eyebrow {

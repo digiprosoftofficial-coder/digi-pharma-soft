@@ -7,6 +7,7 @@ use App\Support\Money\SupportedCurrencies;
 use App\Support\Platform\PlatformSettings;
 use App\Support\Sales\InvoiceRounding;
 use App\Support\Tenant\TenantFeatures;
+use App\Support\Theme\ThemeCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -22,6 +23,8 @@ final class TenantSettingsController extends Controller
         $tenant = tenant();
         abort_unless($tenant !== null, 404);
 
+        $theme = ThemeCatalog::resolveForTenant($tenant);
+
         return Inertia::render('Settings/Edit', [
             'tenant' => [
                 'name' => $tenant->name,
@@ -31,6 +34,12 @@ final class TenantSettingsController extends Controller
             ],
             'supplierBranchLedgerEnabled' => TenantFeatures::supplierBranchLedgerEnabled($tenant),
             'packageSalesAvailable' => TenantFeatures::packageSalesAvailable($tenant),
+            'themeOptions' => $theme['available_templates'],
+            'allowCustomPrimary' => $theme['allow_custom_primary'],
+            'resolvedTheme' => [
+                'template' => $theme['template'],
+                'primary' => $theme['primary'],
+            ],
             'currencies' => SupportedCurrencies::codes(),
             'platformDefaultCurrency' => PlatformSettings::defaultCurrency(),
             'roundingOptions' => [
@@ -57,6 +66,8 @@ final class TenantSettingsController extends Controller
             'settings.supplier_payments.managers_can_pay' => ['nullable', 'boolean'],
             'settings.features.package_sales' => ['nullable', 'boolean'],
             'settings.features.smart_search' => ['nullable', 'boolean'],
+            'settings.theme.template' => ['nullable', 'string', Rule::in(ThemeCatalog::ids())],
+            'settings.theme.primary' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ]);
 
         $tenant->name = $validated['name'];
@@ -87,6 +98,11 @@ final class TenantSettingsController extends Controller
                 }
                 $settings['features'] = $features;
                 unset($incoming['features']);
+            }
+
+            if (array_key_exists('theme', $incoming)) {
+                $settings['theme'] = ThemeCatalog::normalizeTenantTheme($tenant, (array) $incoming['theme']);
+                unset($incoming['theme']);
             }
 
             foreach ($incoming as $key => $value) {

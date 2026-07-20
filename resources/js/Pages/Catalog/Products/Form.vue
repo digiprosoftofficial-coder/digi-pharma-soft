@@ -1734,8 +1734,8 @@ function submit() {
 
 .product-form-hero {
     align-items: flex-start;
-    background: linear-gradient(135deg, rgba(13, 110, 253, 0.08), rgba(13, 202, 240, 0.08));
-    border: 1px solid rgba(13, 110, 253, 0.12);
+    background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.08), rgba(13, 202, 240, 0.08));
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.12);
     border-radius: 0.85rem;
     display: flex;
     justify-content: space-between;

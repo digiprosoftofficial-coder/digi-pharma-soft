@@ -6,6 +6,7 @@ use App\Domain\Billing\Models\SubscriptionPlan;
 use App\Http\Controllers\Controller;
 use App\Support\Catalog\ProductImportCsv;
 use App\Support\Platform\PlatformSettings;
+use App\Support\Theme\ThemeCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -33,6 +34,7 @@ final class PlatformPlanController extends Controller
             'currency' => PlatformSettings::defaultCurrency(),
             'importPresets' => ProductImportCsv::PRESETS,
             'importColumns' => ProductImportCsv::HEADERS,
+            'themeTemplates' => ThemeCatalog::listForUi(),
         ]);
     }
 
@@ -56,6 +58,7 @@ final class PlatformPlanController extends Controller
             'currency' => PlatformSettings::defaultCurrency(),
             'importPresets' => ProductImportCsv::PRESETS,
             'importColumns' => ProductImportCsv::HEADERS,
+            'themeTemplates' => ThemeCatalog::listForUi(),
         ]);
     }
 
@@ -104,6 +107,9 @@ final class PlatformPlanController extends Controller
             'features.hr_payroll' => ['boolean'],
             'features.barcode_camera_scan' => ['boolean'],
             'features.package_sales' => ['boolean'],
+            'features.allow_custom_primary' => ['boolean'],
+            'features.theme_templates' => ['nullable', 'array'],
+            'features.theme_templates.*' => ['string', Rule::in(ThemeCatalog::ids())],
             'features.import_preset' => ['nullable', 'string', Rule::in(ProductImportCsv::PRESETS)],
             'features.import_columns' => ['nullable', 'array'],
             'features.import_columns.*' => ['string', Rule::in(ProductImportCsv::HEADERS)],
@@ -117,6 +123,14 @@ final class PlatformPlanController extends Controller
         $importColumns = $importPreset === ProductImportCsv::PRESET_CUSTOM
             ? array_values(array_filter((array) $request->input('features.import_columns', [])))
             : null;
+
+        $themeTemplates = array_values(array_intersect(
+            array_map('strval', (array) $request->input('features.theme_templates', [ThemeCatalog::CLASSIC_BLUE])),
+            ThemeCatalog::ids(),
+        ));
+        if ($themeTemplates === []) {
+            $themeTemplates = [ThemeCatalog::CLASSIC_BLUE];
+        }
 
         $validated['features'] = [
             'pos' => $request->boolean('features.pos', true),
@@ -132,6 +146,8 @@ final class PlatformPlanController extends Controller
             'hr_payroll' => $request->boolean('features.hr_payroll', false),
             'barcode_camera_scan' => $request->boolean('features.barcode_camera_scan', false),
             'package_sales' => $request->boolean('features.package_sales', false),
+            'allow_custom_primary' => $request->boolean('features.allow_custom_primary', false),
+            'theme_templates' => $themeTemplates,
             'import_preset' => $importPreset,
             'import_columns' => $importColumns,
         ];

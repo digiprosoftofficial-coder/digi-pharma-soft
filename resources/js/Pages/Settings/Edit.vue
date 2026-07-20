@@ -72,6 +72,63 @@
                 <div class="form-text">{{ t('sales.pos_rounding_hint') }}</div>
             </div>
             <div class="border-top pt-3 mt-3 mb-3">
+                <h2 class="h6 mb-2">{{ t('common.theme_section') }}</h2>
+                <p class="form-text small mb-2">{{ t('common.theme_section_hint') }}</p>
+                <div class="row g-2 mb-3">
+                    <div
+                        v-for="tmpl in themeOptions"
+                        :key="tmpl.id"
+                        class="col-6 col-md-3"
+                    >
+                        <label
+                            class="theme-option w-100"
+                            :class="{ 'theme-option--active': form.settings.theme.template === tmpl.id }"
+                        >
+                            <input
+                                v-model="form.settings.theme.template"
+                                type="radio"
+                                class="visually-hidden"
+                                :value="tmpl.id"
+                                :disabled="!can('settings.manage')"
+                                @change="onTemplateChange(tmpl)"
+                            />
+                            <span class="theme-option__swatch" :style="{ background: tmpl.primary }"></span>
+                            <span class="theme-option__label">{{ t(tmpl.label_key) }}</span>
+                        </label>
+                    </div>
+                </div>
+                <div v-if="allowCustomPrimary" class="mb-0">
+                    <label class="form-label" for="themePrimary">{{ t('common.theme_custom_primary') }}</label>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <input
+                            id="themePrimary"
+                            v-model="form.settings.theme.primary"
+                            type="color"
+                            class="form-control form-control-color"
+                            :disabled="!can('settings.manage')"
+                        />
+                        <input
+                            v-model="form.settings.theme.primary"
+                            type="text"
+                            class="form-control"
+                            style="max-width: 8rem"
+                            pattern="^#[0-9A-Fa-f]{6}$"
+                            :disabled="!can('settings.manage')"
+                        />
+                        <button
+                            v-if="can('settings.manage')"
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            @click="resetPrimaryToTemplate"
+                        >
+                            {{ t('common.theme_reset_primary') }}
+                        </button>
+                    </div>
+                    <p class="form-text small mb-0">{{ t('common.theme_custom_primary_hint') }}</p>
+                </div>
+                <p v-else class="form-text small mb-0">{{ t('common.theme_custom_locked_hint') }}</p>
+            </div>
+            <div class="border-top pt-3 mt-3 mb-3">
                 <h2 class="h6 mb-2">{{ t('common.smart_search_title') }}</h2>
                 <div class="form-check">
                     <input
@@ -110,7 +167,9 @@ import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import LocaleSwitcher from '@/Components/LocaleSwitcher.vue';
 import { useLocale } from '@/composables/useLocale';
 import { usePermissions } from '@/composables/usePermissions';
+import { applyTheme } from '@/composables/useTheme';
 import { Head, useForm } from '@inertiajs/vue3';
+import { watch } from 'vue';
 
 const props = defineProps({
     tenant: { type: Object, required: true },
@@ -119,6 +178,9 @@ const props = defineProps({
     roundingOptions: { type: Array, default: () => [{ value: 'none', label: 'None' }] },
     supplierBranchLedgerEnabled: { type: Boolean, default: false },
     packageSalesAvailable: { type: Boolean, default: false },
+    themeOptions: { type: Array, default: () => [] },
+    allowCustomPrimary: { type: Boolean, default: false },
+    resolvedTheme: { type: Object, default: () => ({ template: 'classic_blue', primary: '#0d6efd' }) },
 });
 
 const { t } = useLocale();
@@ -138,6 +200,10 @@ const form = useForm({
         features: {
             package_sales: props.tenant.settings?.features?.package_sales ?? false,
             smart_search: props.tenant.settings?.features?.smart_search ?? true,
+        },
+        theme: {
+            template: props.resolvedTheme?.template ?? props.tenant.settings?.theme?.template ?? 'classic_blue',
+            primary: props.resolvedTheme?.primary ?? props.tenant.settings?.theme?.primary ?? '#0d6efd',
         },
     },
 });
@@ -167,6 +233,48 @@ function currencyLabel(code) {
     return `${code} — ${name} (${symbol})`;
 }
 
+function currentTemplateDef() {
+    return props.themeOptions.find((item) => item.id === form.settings.theme.template)
+        ?? props.themeOptions[0]
+        ?? null;
+}
+
+function onTemplateChange(tmpl) {
+    if (!props.allowCustomPrimary) {
+        form.settings.theme.primary = tmpl.primary;
+    }
+}
+
+function resetPrimaryToTemplate() {
+    const tmpl = currentTemplateDef();
+    if (tmpl) {
+        form.settings.theme.primary = tmpl.primary;
+    }
+}
+
+function hexToRgb(hex) {
+    const clean = String(hex || '').replace('#', '');
+    if (clean.length !== 6) {
+        return '13, 110, 253';
+    }
+    const int = Number.parseInt(clean, 16);
+    return `${(int >> 16) & 255}, ${(int >> 8) & 255}, ${int & 255}`;
+}
+
+watch(
+    () => [form.settings.theme.template, form.settings.theme.primary],
+    () => {
+        const tmpl = currentTemplateDef();
+        const primary = props.allowCustomPrimary
+            ? (form.settings.theme.primary || tmpl?.primary || '#0d6efd')
+            : (tmpl?.primary || '#0d6efd');
+        applyTheme({
+            primary,
+            primary_rgb: hexToRgb(primary),
+        });
+    },
+);
+
 function submit() {
     if (!can('settings.manage')) {
         return;
@@ -174,3 +282,38 @@ function submit() {
     form.put('/settings');
 }
 </script>
+
+<style scoped>
+.theme-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.75rem 0.5rem;
+    border: 2px solid var(--bs-border-color);
+    border-radius: 0.75rem;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.theme-option--active {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.18);
+}
+
+.theme-option__swatch {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 999px;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.12);
+}
+
+.theme-option__label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: center;
+    color: #334155;
+}
+</style>

@@ -3,7 +3,7 @@
 return [
     'executive_dashboard' => 'Executive Dashboard',
     'owner_overview' => 'Owner overview',
-    'ceo_dashboard' => 'CEO Dashboard',
+    'ceo_dashboard' => 'Owner Dashboard',
     'todays_sales' => "Today's Sales",
     'todays_profit' => "Today's Profit",
     'todays_purchase' => "Today's Purchase",

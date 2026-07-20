@@ -206,7 +206,7 @@ watch(
 
 .product-search-overlay__item--active,
 .product-search-overlay__item:hover {
-    background: #f8fafc;
+    background: var(--bs-primary-bg-subtle);
 }
 
 .product-search-overlay__action {

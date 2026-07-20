@@ -38,6 +38,7 @@
 
 <script setup>
 import { useLocale } from '@/composables/useLocale';
+import { useTheme } from '@/composables/useTheme';
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
@@ -46,6 +47,7 @@ defineProps({
 });
 
 const { t } = useLocale();
+useTheme();
 const page = usePage();
 
 const userName = computed(() => page.props.auth?.user?.name ?? 'Admin');

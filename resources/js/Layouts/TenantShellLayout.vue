@@ -202,10 +202,12 @@ import TenantSidebarNav from '@/Components/Tenant/TenantSidebarNav.vue';
 import { useLocale } from '@/composables/useLocale';
 import { usePermissions } from '@/composables/usePermissions';
 import { useProductSearch } from '@/composables/useProductSearch';
+import { useTheme } from '@/composables/useTheme';
 import { Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
 const { t } = useLocale();
+useTheme();
 
 defineProps({
     pageTitle: { type: String, default: 'Dashboard' },
@@ -412,7 +414,7 @@ const announcementAlertClass = computed(() => {
 
 .topbar-search__item:hover,
 .topbar-search__item--active {
-    background: #f1f5f9 !important;
+    background: var(--bs-primary-bg-subtle) !important;
 }
 
 .tenant-topbar-search-btn {
