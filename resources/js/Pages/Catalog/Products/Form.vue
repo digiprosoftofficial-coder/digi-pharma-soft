@@ -513,12 +513,12 @@
                             </option>
                         </select>
                         <button
-                            v-if="!previewBatchId"
+                            v-if="!previewBatchId && canAddUnit"
                             type="button"
                             class="btn btn-sm btn-outline-secondary"
                             @click="addUnitRow"
                         >
-                            Add unit
+                            {{ t('catalog.add_unit') }}
                         </button>
                     </div>
                 </div>
@@ -572,7 +572,7 @@
                                     class="form-select form-select-sm"
                                     :disabled="previewBatchId || row.sell_unit === form.base_unit"
                                 >
-                                    <option v-for="u in availableSellUnits" :key="u" :value="u">{{ unitLabel(u) }}</option>
+                                    <option v-for="u in sellUnitOptionsForRow(idx)" :key="u" :value="u">{{ unitLabel(u) }}</option>
                                 </select>
                             </div>
                             <div v-if="!previewBatchId">
@@ -651,7 +651,7 @@
                                         style="max-width: 8.5rem"
                                         :disabled="previewBatchId || row.sell_unit === form.base_unit"
                                     >
-                                        <option v-for="u in availableSellUnits" :key="u" :value="u">{{ unitLabel(u) }}</option>
+                                        <option v-for="u in sellUnitOptionsForRow(idx)" :key="u" :value="u">{{ unitLabel(u) }}</option>
                                     </select>
                                 </td>
                                 <td>
@@ -1254,12 +1254,45 @@ const availableSellUnits = computed(() =>
     ),
 );
 
+/** Units still available to add (type-allowed, not already on the form). */
+const remainingSellUnits = computed(() => {
+    const used = new Set(form.units.map((r) => r.sell_unit));
+
+    return sellUnitsForProductType(
+        form.product_type,
+        allSellUnits.value,
+        [],
+        stripProductTypes.value,
+    ).filter((unit) => !used.has(unit));
+});
+
+const canAddUnit = computed(() => remainingSellUnits.value.length > 0);
+
 const usesStripForType = computed(() => usesStripProductType(form.product_type, stripProductTypes.value));
+
+function sellUnitOptionsForRow(idx) {
+    const current = form.units[idx]?.sell_unit;
+    const usedByOthers = new Set(
+        form.units.filter((_, i) => i !== idx).map((r) => r.sell_unit),
+    );
+
+    return sellUnitsForProductType(
+        form.product_type,
+        allSellUnits.value,
+        current ? [current] : [],
+        stripProductTypes.value,
+    ).filter((unit) => unit === current || !usedByOthers.has(unit));
+}
 
 function clearStripConversionFields() {
     form.pieces_per_strip = '';
     form.strips_per_box = '';
     form.boxes_per_carton = '';
+}
+
+function clearStripOnlyFields() {
+    form.pieces_per_strip = '';
+    form.strips_per_box = '';
 }
 
 function ensureBaseUnitRow() {
@@ -1526,11 +1559,23 @@ watch(
 watch(
     () => form.product_type,
     (type) => {
-        if (!usesStripProductType(type, stripProductTypes.value) && form.base_unit === 'strip') {
-            form.base_unit = defaultBaseUnitForProductType(type, stripProductTypes.value);
-            form.units = buildDefaultUnits(form.base_unit);
-            clearStripConversionFields();
-            applyBaseUnitAsDefault();
+        if (!usesStripProductType(type, stripProductTypes.value)) {
+            clearStripOnlyFields();
+
+            if (form.base_unit === 'strip') {
+                form.base_unit = defaultBaseUnitForProductType(type, stripProductTypes.value);
+                form.units = buildDefaultUnits(form.base_unit);
+                form.boxes_per_carton = '';
+                applyBaseUnitAsDefault();
+                return;
+            }
+
+            const withoutStrip = form.units.filter((row) => row.sell_unit !== 'strip');
+            if (withoutStrip.length !== form.units.length) {
+                form.units = withoutStrip.length ? withoutStrip : buildDefaultUnits(form.base_unit);
+                applyBaseUnitAsDefault();
+            }
+
             return;
         }
 
@@ -1566,8 +1611,11 @@ function setDefault(idx) {
 }
 
 function addUnitRow() {
-    const used = form.units.map((r) => r.sell_unit);
-    const next = availableSellUnits.value.find((u) => !used.includes(u)) ?? 'piece';
+    const next = remainingSellUnits.value[0];
+    if (!next) {
+        return;
+    }
+
     form.units.push({
         sell_unit: next,
         conversion_factor: next === form.base_unit ? 1 : 1,

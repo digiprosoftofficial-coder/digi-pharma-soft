@@ -137,7 +137,7 @@ class UpdateProductRequest extends FormRequest
             'strips_per_box' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
             'boxes_per_carton' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
             'units' => ['sometimes', 'array', 'min:1'],
-            'units.*.sell_unit' => ['required_with:units', ProductCatalogOptions::sellUnitRuleForProductType($productType)],
+            'units.*.sell_unit' => ['required_with:units', 'distinct', ProductCatalogOptions::sellUnitRuleForProductType($productType)],
             'units.*.conversion_factor' => ['nullable', 'numeric', 'min:0.0001'],
             'units.*.purchase_price' => ['required_with:units', 'numeric', 'min:0'],
             'units.*.sale_price' => ['required_with:units', 'numeric', 'min:0'],

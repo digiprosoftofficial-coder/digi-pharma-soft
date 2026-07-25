@@ -37,7 +37,7 @@ final class ProductController extends Controller
         );
 
         $filters = array_merge(
-            $request->only(['q', 'product_type', 'category_id', 'is_active', 'storage_location_id']),
+            $request->only(['q', 'product_type', 'category_id', 'is_active', 'storage_location_id', 'stock']),
             ['per_page' => $perPage],
         );
 

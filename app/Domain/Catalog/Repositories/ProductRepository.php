@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 final class ProductRepository
 {
     /**
-     * @param  array{q?:string,product_type?:string,category_id?:string,is_active?:string,storage_location_id?:string,per_page?:int}  $filters
+     * @param  array{q?:string,product_type?:string,category_id?:string,is_active?:string,storage_location_id?:string,stock?:string,per_page?:int}  $filters
      */
     public function paginateForTenant(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
@@ -44,6 +44,13 @@ final class ProductRepository
 
         if (! empty($filters['storage_location_id'])) {
             $query->where('storage_location_id', (int) $filters['storage_location_id']);
+        }
+
+        $stock = $filters['stock'] ?? '';
+        if ($stock === 'in_stock') {
+            $query->whereHas('batches', fn ($q) => $q->where('quantity_on_hand', '>', 0));
+        } elseif ($stock === 'out_of_stock') {
+            $query->whereDoesntHave('batches', fn ($q) => $q->where('quantity_on_hand', '>', 0));
         }
 
         return $query->paginate($perPage)->withQueryString();

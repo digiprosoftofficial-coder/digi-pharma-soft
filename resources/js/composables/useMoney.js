@@ -31,6 +31,8 @@ export function useMoney(override = null) {
         return new Intl.NumberFormat(locale, {
             style: 'currency',
             currency,
+            // BDT defaults to the "BDT" code in many locales; narrowSymbol yields ৳.
+            currencyDisplay: 'narrowSymbol',
             minimumFractionDigits: 0,
             maximumFractionDigits: 2,
         }).format(Number(amount || 0));
@@ -50,6 +52,10 @@ export function useMoney(override = null) {
         }
 
         const { currency, locale } = resolved();
+
+        if (currency === 'BDT') {
+            return '৳';
+        }
 
         try {
             const parts = new Intl.NumberFormat(locale, {

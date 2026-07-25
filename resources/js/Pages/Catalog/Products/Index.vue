@@ -45,6 +45,14 @@
                         <option value="0">{{ t('common.inactive') }}</option>
                     </select>
                 </div>
+                <div class="product-filter-field">
+                    <label class="form-label small mb-0">{{ t('catalog.stock_filter') }}</label>
+                    <select v-model="filterForm.stock" class="form-select form-select-sm" @change="applyFilters">
+                        <option value="">{{ t('catalog.stock_filter_all') }}</option>
+                        <option value="in_stock">{{ t('catalog.stock_filter_in_stock') }}</option>
+                        <option value="out_of_stock">{{ t('catalog.stock_filter_out_of_stock') }}</option>
+                    </select>
+                </div>
                 <div class="product-filter-actions">
                     <button type="submit" class="btn btn-sm btn-primary" :disabled="filterLoading">
                         {{ filterLoading ? t('common.searching') : t('purchases.filter') }}
@@ -242,6 +250,7 @@
                                 :can-manage="can('products.manage')"
                                 :can-sell="can('pos.access')"
                                 compact
+                                @sell="requestSell"
                                 @delete="confirmDelete"
                             />
                         </div>
@@ -323,7 +332,13 @@
                             </span>
                         </td>
                         <td class="text-end text-nowrap">
-                            <ProductRowActions :product="p" :can-manage="can('products.manage')" :can-sell="can('pos.access')" @delete="confirmDelete" />
+                            <ProductRowActions
+                                :product="p"
+                                :can-manage="can('products.manage')"
+                                :can-sell="can('pos.access')"
+                                @sell="requestSell"
+                                @delete="confirmDelete"
+                            />
                         </td>
                     </tr>
                     <tr v-if="!products.data?.length">
@@ -382,9 +397,14 @@
                                     <span v-if="p.stock_pieces"> · {{ formatQty(p.stock_pieces) }} pcs</span>
                                 </div>
                                 <div class="d-flex flex-wrap gap-1 position-relative" style="z-index: 2">
-                                    <Link v-if="can('pos.access')" :href="`/pos?barcode=${encodeURIComponent(p.barcode || p.sku || '')}`" class="btn btn-sm btn-outline-success">
+                                    <button
+                                        v-if="can('pos.access')"
+                                        type="button"
+                                        class="btn btn-sm btn-outline-success"
+                                        @click="requestSell(p)"
+                                    >
                                         {{ t('tenant_nav.new_sale') }}
-                                    </Link>
+                                    </button>
                                     <Link :href="`/products/${p.id}`" class="btn btn-sm btn-outline-primary">{{ t('common.view') }}</Link>
                                     <Link v-if="can('products.manage')" :href="`/products/${p.id}/edit`" class="btn btn-sm btn-outline-secondary">{{ t('common.edit') }}</Link>
                                 </div>
@@ -438,12 +458,13 @@
                                 {{ formatQty(p.stock_on_hand) }} {{ unitLabel(p.base_unit || p.unit) }}
                             </div>
                             <div v-if="can('pos.access')" class="mt-2">
-                                <Link
-                                    :href="`/pos?barcode=${encodeURIComponent(p.barcode || p.sku || '')}`"
+                                <button
+                                    type="button"
                                     class="btn btn-sm btn-outline-success w-100"
+                                    @click="requestSell(p)"
                                 >
                                     {{ t('tenant_nav.new_sale') }}
-                                </Link>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -500,6 +521,7 @@
                                 :can-manage="can('products.manage')"
                                 :can-sell="can('pos.access')"
                                 compact
+                                @sell="requestSell"
                                 @delete="confirmDelete"
                             />
                         </div>
@@ -573,6 +595,7 @@
                                 :can-manage="can('products.manage')"
                                 :can-sell="can('pos.access')"
                                 compact
+                                @sell="requestSell"
                                 @delete="confirmDelete"
                             />
                         </td>
@@ -593,6 +616,51 @@
                 </li>
             </ul>
         </nav>
+
+        <Teleport to="body">
+            <div
+                v-if="stockAlertProduct"
+                class="modal fade show d-block product-stock-modal"
+                tabindex="-1"
+                role="dialog"
+                aria-modal="true"
+                :aria-labelledby="stockAlertTitleId"
+                @click.self="closeStockAlert"
+                @keydown.esc.prevent="closeStockAlert"
+            >
+                <div class="modal-dialog modal-dialog-centered mx-auto" role="document">
+                    <div class="modal-content border-0 shadow-lg">
+                        <div class="modal-body text-center p-4 p-sm-5">
+                            <div class="product-stock-modal__icon mx-auto mb-3" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+                                    <path d="m3.3 7 8.7 5 8.7-5" />
+                                    <path d="M12 22V12" />
+                                    <path d="m8.5 4.3 7 4" />
+                                    <path d="M8 17h8" />
+                                </svg>
+                            </div>
+                            <h2 :id="stockAlertTitleId" class="h4 fw-bold mb-2">{{ t('catalog.stock_unavailable_title') }}</h2>
+                            <p class="text-muted mb-1">
+                                {{ t('catalog.stock_unavailable_message', { product: stockAlertProduct.name }) }}
+                            </p>
+                            <div class="product-stock-modal__product rounded-3 p-3 my-3 text-start">
+                                <strong class="d-block text-truncate">{{ stockAlertProduct.name }}</strong>
+                                <span class="small text-muted">
+                                    {{ t('catalog.current_stock') }}:
+                                    {{ formatQty(stockAlertProduct.stock_on_hand) }}
+                                    {{ unitLabel(stockAlertProduct.base_unit || stockAlertProduct.unit) }}
+                                </span>
+                            </div>
+                            <button type="button" class="btn btn-primary w-100" @click="closeStockAlert">
+                                {{ t('catalog.stock_unavailable_close') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div v-if="stockAlertProduct" class="modal-backdrop fade show" @click="closeStockAlert" />
+        </Teleport>
     </TenantShellLayout>
 </template>
 
@@ -605,7 +673,7 @@ import { useMoney } from '@/composables/useMoney';
 import { useQuantity } from '@/composables/useQuantity';
 import { usePermissions } from '@/composables/usePermissions';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, defineComponent, h, onBeforeUnmount, reactive, ref } from 'vue';
+import { computed, defineComponent, h, onBeforeUnmount, reactive, ref, useId, watch } from 'vue';
 
 const VIEW_MODE_KEY = 'catalog.products.viewMode';
 const COPY_INCLUDE_STRENGTH_KEY = 'catalog.products.copyIncludeStrength';
@@ -632,6 +700,8 @@ const includeStrengthInCopy = ref(loadCopyIncludeStrength());
 const copyingNames = ref(false);
 const copyFeedback = ref('');
 const copyError = ref('');
+const stockAlertProduct = ref(null);
+const stockAlertTitleId = useId();
 let filterTimer;
 let copyFeedbackTimer;
 
@@ -643,7 +713,7 @@ const ProductRowActions = defineComponent({
         canSell: { type: Boolean, default: false },
         compact: { type: Boolean, default: false },
     },
-    emits: ['delete'],
+    emits: ['sell', 'delete'],
     setup(props, { emit }) {
         return () =>
             h('div', { class: 'd-inline-flex flex-wrap gap-1' }, [
@@ -654,12 +724,13 @@ const ProductRowActions = defineComponent({
                 ),
                 props.canSell
                     ? h(
-                          Link,
+                          'button',
                           {
-                              href: `/pos?barcode=${encodeURIComponent(props.product.barcode || props.product.sku || '')}`,
+                              type: 'button',
                               class: `btn btn-sm btn-outline-success${props.compact ? '' : ' me-1'}`,
+                              onClick: () => emit('sell', props.product),
                           },
-                          () => t('tenant_nav.new_sale'),
+                          t('tenant_nav.new_sale'),
                       )
                     : null,
                 props.canManage
@@ -685,6 +756,28 @@ const ProductRowActions = defineComponent({
                     : null,
             ]);
     },
+});
+
+function requestSell(product) {
+    if (Number(product.stock_on_hand || 0) <= 0) {
+        stockAlertProduct.value = product;
+        return;
+    }
+
+    router.visit(`/pos?barcode=${encodeURIComponent(product.barcode || product.sku || '')}`);
+}
+
+function closeStockAlert() {
+    stockAlertProduct.value = null;
+}
+
+watch(stockAlertProduct, (product) => {
+    if (typeof document === 'undefined') {
+        return;
+    }
+
+    document.body.classList.toggle('modal-open', Boolean(product));
+    document.body.style.overflow = product ? 'hidden' : '';
 });
 
 function loadViewMode() {
@@ -765,6 +858,7 @@ const filterForm = reactive({
     category_id: props.filters.category_id ?? '',
     is_active: props.filters.is_active ?? '',
     storage_location_id: props.filters.storage_location_id ?? '',
+    stock: props.filters.stock ?? '',
     per_page: Number(props.filters.per_page) || 25,
 });
 
@@ -914,6 +1008,7 @@ function clearFilters() {
     filterForm.category_id = '';
     filterForm.is_active = '';
     filterForm.storage_location_id = '';
+    filterForm.stock = '';
     filterForm.per_page = 25;
     applyFilters();
 }
@@ -928,6 +1023,10 @@ function confirmDelete(product) {
 onBeforeUnmount(() => {
     clearTimeout(filterTimer);
     clearTimeout(copyFeedbackTimer);
+    if (typeof document !== 'undefined') {
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+    }
 });
 </script>
 
@@ -1191,5 +1290,32 @@ onBeforeUnmount(() => {
         padding: 0.2rem 0.35rem;
         font-size: 0.72rem;
     }
+}
+.product-stock-modal .modal-dialog {
+    width: calc(100% - 2rem);
+    max-width: 27rem;
+}
+
+.product-stock-modal .modal-content {
+    overflow: hidden;
+    border-radius: 1.15rem;
+}
+
+.product-stock-modal__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4.75rem;
+    height: 4.75rem;
+    color: #dc2626;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 50%;
+    box-shadow: 0 0.55rem 1.25rem rgba(220, 38, 38, 0.12);
+}
+
+.product-stock-modal__product {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
 }
 </style>

@@ -521,12 +521,17 @@ final class ProductService
 
         $normalized = [];
         $defaultCount = 0;
+        $seenSellUnits = [];
 
         foreach ($units as $row) {
             $sellUnit = (string) ($row['sell_unit'] ?? '');
             if (! in_array($sellUnit, ProductCatalogOptions::sellUnits(), true)) {
                 continue;
             }
+            if (isset($seenSellUnits[$sellUnit])) {
+                continue;
+            }
+            $seenSellUnits[$sellUnit] = true;
 
             $isDefault = ! empty($row['is_default']);
             if ($isDefault) {

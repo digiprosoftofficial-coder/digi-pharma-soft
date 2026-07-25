@@ -2,8 +2,12 @@
 
 namespace Tests\Feature\Catalog;
 
+use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductBatch;
+use App\Domain\Tenant\Models\Tenant;
 use App\Models\User;
 use App\Support\Catalog\ProductListPagination;
+use App\Support\Tenant\TenantContext;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -79,5 +83,58 @@ class ProductListPaginationTest extends TestCase
             ->get(route('tenant.products.index', ['per_page' => 999]))
             ->assertOk()
             ->assertInertia(fn ($page) => $page->where('filters.per_page', ProductListPagination::DEFAULT));
+    }
+
+    public function test_product_index_filters_by_stock_status(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $owner = User::query()->where('email', 'owner@example.com')->firstOrFail();
+        app(TenantContext::class)->set(Tenant::query()->findOrFail($owner->tenant_id));
+        $this->actingAs($owner);
+
+        $inStock = Product::query()->create([
+            'name' => 'In Stock Medicine',
+            'sku' => 'STOCK-IN-1',
+            'product_type' => 'tablet',
+            'base_unit' => 'piece',
+            'min_stock' => 0,
+            'is_active' => true,
+        ]);
+        ProductBatch::query()->create([
+            'product_id' => $inStock->getKey(),
+            'batch_no' => 'STOCK-1',
+            'quantity_on_hand' => 12,
+            'purchase_unit_cost' => 1,
+        ]);
+
+        $outOfStock = Product::query()->create([
+            'name' => 'Out Of Stock Medicine',
+            'sku' => 'STOCK-OUT-1',
+            'product_type' => 'tablet',
+            'base_unit' => 'piece',
+            'min_stock' => 0,
+            'is_active' => true,
+        ]);
+        ProductBatch::query()->create([
+            'product_id' => $outOfStock->getKey(),
+            'batch_no' => 'STOCK-0',
+            'quantity_on_hand' => 0,
+            'purchase_unit_cost' => 1,
+        ]);
+
+        $this->get(route('tenant.products.index', ['stock' => 'in_stock', 'q' => 'Stock Medicine']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('filters.stock', 'in_stock')
+                ->where('products.data', fn ($rows) => collect($rows)->contains('name', 'In Stock Medicine')
+                    && ! collect($rows)->contains('name', 'Out Of Stock Medicine')));
+
+        $this->get(route('tenant.products.index', ['stock' => 'out_of_stock', 'q' => 'Stock Medicine']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('filters.stock', 'out_of_stock')
+                ->where('products.data', fn ($rows) => collect($rows)->contains('name', 'Out Of Stock Medicine')
+                    && ! collect($rows)->contains('name', 'In Stock Medicine')));
     }
 }

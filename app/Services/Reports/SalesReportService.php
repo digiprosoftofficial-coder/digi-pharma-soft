@@ -27,9 +27,31 @@ final class SalesReportService
             'due' => $due,
             'returnTotal' => $returnTotal,
             'netSales' => max(0, $grossSales - $returnTotal),
+            'grossProfit' => $this->grossProfit($filter),
             'invoiceCount' => (clone $sales)->count(),
             'returnCount' => (clone $returns)->count(),
         ];
+    }
+
+    /**
+     * Sale value minus the batch cost captured on each line at sale time.
+     */
+    public function grossProfit(ReportFilter $filter): float
+    {
+        $query = DB::table('sale_lines')
+            ->join('sales', 'sales.id', '=', 'sale_lines.sale_id')
+            ->where('sale_lines.tenant_id', \tenant_id())
+            ->where('sales.tenant_id', \tenant_id())
+            ->where('sales.status', 'posted')
+            ->whereBetween('sales.sold_at', [$filter->dateFrom, $filter->dateTo]);
+
+        if ($filter->branchId !== null) {
+            $query->where('sales.branch_id', $filter->branchId);
+        }
+
+        return (float) $query->sum(
+            DB::raw('sale_lines.line_total - (sale_lines.quantity * COALESCE(sale_lines.unit_cost_at_sale, 0))')
+        );
     }
 
     public function sales(ReportFilter $filter, int $perPage = 25): LengthAwarePaginator

@@ -32,16 +32,22 @@ final class MoneyFormatter
         $value = (float) ($amount ?? 0);
 
         if (! class_exists(NumberFormatter::class)) {
-            return sprintf('%s %s', $currency, ProductStockCalculator::formatQuantity($value));
+            return sprintf('%s %s', $currency === 'BDT' ? '৳' : $currency, ProductStockCalculator::formatQuantity($value));
         }
 
         $formatter = new NumberFormatter($locale, NumberFormatter::CURRENCY);
         $formatter->setAttribute(NumberFormatter::MIN_FRACTION_DIGITS, 0);
         $formatter->setAttribute(NumberFormatter::MAX_FRACTION_DIGITS, 2);
+
+        // en-BD (and some ICU builds) render BDT as the code; force the taka sign.
+        if ($currency === 'BDT') {
+            $formatter->setSymbol(NumberFormatter::CURRENCY_SYMBOL, '৳');
+        }
+
         $formatted = $formatter->formatCurrency($value, $currency);
 
         if ($formatted === false) {
-            return sprintf('%s %s', $currency, ProductStockCalculator::formatQuantity($value));
+            return sprintf('%s %s', $currency === 'BDT' ? '৳' : $currency, ProductStockCalculator::formatQuantity($value));
         }
 
         return $formatted;
@@ -56,6 +62,10 @@ final class MoneyFormatter
     {
         $currency = strtoupper($currency);
         $locale = $locale ?? self::localeFor($currency);
+
+        if ($currency === 'BDT') {
+            return '৳';
+        }
 
         if (! class_exists(NumberFormatter::class)) {
             return $currency;

@@ -101,7 +101,7 @@ class StoreProductRequest extends FormRequest
             'strips_per_box' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
             'boxes_per_carton' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
             'units' => ['required', 'array', 'min:1'],
-            'units.*.sell_unit' => ['required', ProductCatalogOptions::sellUnitRuleForProductType($productType)],
+            'units.*.sell_unit' => ['required', 'distinct', ProductCatalogOptions::sellUnitRuleForProductType($productType)],
             'units.*.conversion_factor' => ['nullable', 'numeric', 'min:0.0001'],
             'units.*.purchase_price' => ['required', 'numeric', 'min:0'],
             'units.*.sale_price' => ['required', 'numeric', 'min:0'],

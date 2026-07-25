@@ -43,6 +43,7 @@ final class ReportsHubController extends Controller
                 'inventory' => $inventory,
                 'dues' => $dues,
             ],
+            'canViewProfit' => auth()->user()?->can('reports.finance') ?? false,
         ]);
     }
 }

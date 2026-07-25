@@ -1,6 +1,36 @@
 <template>
     <TenantShellLayout :page-title="t('reports.title')">
         <Head :title="t('reports.title')" />
+
+        <section class="mb-4">
+            <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-3">
+                <div>
+                    <h2 class="h5 mb-1">{{ t('reports.headline_title') }}</h2>
+                    <p class="small text-muted mb-0">
+                        {{ t('reports.headline_help', { from: snapshot.range.dateFrom, to: snapshot.range.dateTo, branch: snapshot.range.branchLabel }) }}
+                    </p>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div v-for="card in headlineCards" :key="card.key" :class="headlineColumnClass">
+                    <Link
+                        :href="card.href"
+                        class="headline-card card border-0 shadow-sm h-100 text-decoration-none"
+                        :class="`headline-card--${card.tone}`"
+                    >
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                                <span class="text-muted small fw-semibold">{{ card.label }}</span>
+                                <span class="headline-icon rounded-3">{{ card.short }}</span>
+                            </div>
+                            <div class="headline-value">{{ formatMoney(card.value) }}</div>
+                            <p class="small text-muted mb-0 mt-1">{{ card.help }}</p>
+                        </div>
+                    </Link>
+                </div>
+            </div>
+        </section>
+
         <div class="report-hero card border-0 shadow-sm mb-4">
             <div class="card-body p-4 p-lg-5">
                 <div class="row g-4 align-items-center">
@@ -169,6 +199,7 @@ import { computed } from 'vue';
 
 const props = defineProps({
     snapshot: { type: Object, required: true },
+    canViewProfit: { type: Boolean, default: false },
 });
 
 const { formatMoney } = useMoney();
@@ -266,6 +297,47 @@ const roadmapReports = [
     },
 ];
 
+const headlineCards = computed(() => {
+    const cards = [
+        {
+            key: 'sales',
+            label: t('reports.headline_total_sales'),
+            value: Number(props.snapshot.sales.netSales || 0),
+            help: t('reports.headline_total_sales_help'),
+            short: 'S',
+            tone: 'success',
+            href: '/reports/sales/summary',
+        },
+        {
+            key: 'purchase',
+            label: t('reports.headline_total_purchase'),
+            value: Number(props.snapshot.purchases.purchaseTotal || 0),
+            help: t('reports.headline_total_purchase_help'),
+            short: 'P',
+            tone: 'info',
+            href: '/reports/purchases/summary',
+        },
+    ];
+
+    if (props.canViewProfit) {
+        cards.push({
+            key: 'profit',
+            label: t('reports.headline_total_income'),
+            value: Number(props.snapshot.sales.grossProfit || 0),
+            help: t('reports.headline_total_income_help'),
+            short: 'I',
+            tone: 'primary',
+            href: '/reports/finance',
+        });
+    }
+
+    return cards;
+});
+
+const headlineColumnClass = computed(() =>
+    headlineCards.value.length === 3 ? 'col-md-6 col-xl-4' : 'col-md-6',
+);
+
 const stats = computed(() => {
     return [
         { label: t('reports.ready_reports'), value: visibleQuickLinks.value.length },
@@ -308,6 +380,49 @@ const inventoryAlerts = computed(() => [
 </script>
 
 <style scoped>
+.headline-card {
+    --headline-color: var(--bs-primary);
+    border-radius: 0.9rem;
+    border-inline-start: 5px solid var(--headline-color) !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+a.headline-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.75rem 1.5rem rgba(15, 23, 42, 0.1) !important;
+}
+
+.headline-card--success { --headline-color: #16a34a; }
+.headline-card--info { --headline-color: #0891b2; }
+.headline-card--primary { --headline-color: var(--bs-primary); }
+
+.headline-value {
+    color: var(--headline-color);
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+    word-break: break-word;
+}
+
+.headline-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 2.4rem;
+    height: 2.4rem;
+    color: #ffffff;
+    background: var(--headline-color);
+    font-weight: 700;
+}
+
+@media (max-width: 575.98px) {
+    .headline-value {
+        font-size: 1.4rem;
+    }
+}
+
 .report-hero {
     background:
         radial-gradient(circle at top right, rgba(var(--bs-primary-rgb), 0.14), transparent 34%),

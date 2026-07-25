@@ -429,7 +429,7 @@ function formatNumber(value) {
 .kpi-card__value {
     color: var(--kpi-color);
     font-size: 1.55rem;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 1.15;
     margin: 0.15rem 0;
     word-break: break-word;

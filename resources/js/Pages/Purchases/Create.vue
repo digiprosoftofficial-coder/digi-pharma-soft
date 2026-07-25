@@ -201,8 +201,16 @@
                                 <div class="small text-muted mb-0">{{ t('purchases.edit_line') }}</div>
                                 <div class="fw-semibold text-truncate">{{ editingLine.product_name }}</div>
                             </div>
-                            <button type="button" class="btn btn-sm btn-primary" @click="closeLineEditor">
-                                {{ t('purchases.done_editing_line') }}
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-light purchase-line-sheet__close"
+                                :aria-label="t('common.close', 'Close')"
+                                @click="closeLineEditor"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                                    <path d="M18 6 6 18" />
+                                    <path d="m6 6 12 12" />
+                                </svg>
                             </button>
                         </div>
                         <div class="purchase-line-sheet__body">
@@ -215,8 +223,23 @@
                             />
                         </div>
                         <div class="purchase-line-sheet__footer">
-                            <button type="button" class="btn btn-outline-danger w-100" @click="removeEditingLine">
-                                {{ t('purchases.remove_line') }}
+                            <button
+                                type="button"
+                                class="btn btn-outline-danger purchase-line-sheet__remove"
+                                :aria-label="t('purchases.remove_line')"
+                                :title="t('purchases.remove_line')"
+                                @click="removeEditingLine"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M3 6h18" />
+                                    <path d="M8 6V4h8v2" />
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                                    <path d="M10 11v6" />
+                                    <path d="M14 11v6" />
+                                </svg>
+                            </button>
+                            <button type="button" class="btn btn-primary purchase-line-sheet__done" @click="closeLineEditor">
+                                {{ t('purchases.done_editing_line') }}
                             </button>
                         </div>
                     </div>
@@ -1000,8 +1023,38 @@ body.purchase-line-sheet-open {
 }
 
 .purchase-line-sheet__footer {
+    display: flex;
+    align-items: stretch;
+    gap: 0.65rem;
     padding: 0.75rem 1rem calc(0.85rem + env(safe-area-inset-bottom));
     border-top: 1px solid var(--bs-border-color);
     background: #fff;
+}
+
+.purchase-line-sheet__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 2.35rem;
+    height: 2.35rem;
+    padding: 0;
+    border-radius: 999px;
+}
+
+.purchase-line-sheet__remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 3rem;
+    min-height: 2.85rem;
+    padding: 0;
+}
+
+.purchase-line-sheet__done {
+    flex: 1 1 auto;
+    min-height: 2.85rem;
+    font-weight: 600;
 }
 </style>
