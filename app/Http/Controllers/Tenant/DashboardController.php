@@ -6,8 +6,11 @@ use App\Domain\Catalog\Models\ProductBatch;
 use App\Domain\Sales\Models\Customer;
 use App\Domain\Sales\Models\Sale;
 use App\Http\Controllers\Controller;
+use App\Support\Dashboard\DashboardDateRange;
 use App\Support\Tenant\TenantImpersonation;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -15,39 +18,46 @@ use Spatie\Activitylog\Models\Activity;
 
 final class DashboardController extends Controller
 {
-    public function index(): Response|RedirectResponse
+    public function index(Request $request): Response|RedirectResponse
     {
         $user = auth()->user();
         if ($user && $user->shouldUsePlatformDashboard() && ! app(TenantImpersonation::class)->isActive()) {
             return redirect()->route('platform.dashboard');
         }
 
+        $range = DashboardDateRange::fromRequest($request);
         $tenantId = tenant_id();
         $today = today()->toDateString();
         $nearExpiryDate = today()->addDays(30)->toDateString();
+        $from = $range->from;
+        $to = $range->to;
 
-        $revenueToday = (float) Sale::query()
+        $revenue = (float) Sale::query()
             ->withoutGlobalScope('branch')
             ->where('status', 'posted')
-            ->whereDate('sold_at', $today)
+            ->whereBetween('sold_at', [$from, $to])
             ->sum(DB::raw('COALESCE(rounded_total, total)'));
+
         $revenueYesterday = (float) Sale::query()
             ->withoutGlobalScope('branch')
             ->where('status', 'posted')
             ->whereDate('sold_at', today()->subDay())
             ->sum(DB::raw('COALESCE(rounded_total, total)'));
-        $profitToday = (float) DB::table('sale_lines')
+
+        $profit = (float) DB::table('sale_lines')
             ->join('sales', 'sales.id', '=', 'sale_lines.sale_id')
             ->where('sale_lines.tenant_id', $tenantId)
             ->where('sales.tenant_id', $tenantId)
             ->where('sales.status', 'posted')
-            ->whereDate('sales.sold_at', $today)
+            ->whereBetween('sales.sold_at', [$from, $to])
             ->sum(DB::raw('sale_lines.line_total - (sale_lines.quantity * COALESCE(sale_lines.unit_cost_at_sale, 0))'));
-        $purchaseToday = (float) DB::table('purchases')
+
+        $purchase = (float) DB::table('purchases')
             ->where('tenant_id', $tenantId)
             ->where('status', 'posted')
-            ->whereDate('purchased_at', $today)
+            ->whereBetween('purchased_at', [$from->toDateString(), $to->toDateString()])
             ->sum('total');
+
         $stockValue = (float) DB::table('product_batches')
             ->where('tenant_id', $tenantId)
             ->sum(DB::raw('quantity_on_hand * purchase_unit_cost'));
@@ -87,18 +97,7 @@ final class DashboardController extends Controller
             ->count();
         $customerCount = Customer::query()->count();
 
-        $chartDays = collect(range(6, 0))->map(function (int $daysAgo) {
-            $d = today()->subDays($daysAgo);
-
-            return [
-                'label' => $d->format('D'),
-                'total' => (float) Sale::query()
-                    ->withoutGlobalScope('branch')
-                    ->where('status', 'posted')
-                    ->whereDate('sold_at', $d)
-                    ->sum(DB::raw('COALESCE(rounded_total, total)')),
-            ];
-        });
+        $chartDays = $this->chartDays();
 
         $criticalStock = ProductBatch::query()
             ->withoutGlobalScope('branch')
@@ -116,7 +115,7 @@ final class DashboardController extends Controller
             ->where('sale_lines.tenant_id', $tenantId)
             ->where('sales.tenant_id', $tenantId)
             ->where('sales.status', 'posted')
-            ->whereDate('sales.sold_at', $today)
+            ->whereBetween('sales.sold_at', [$from, $to])
             ->select(
                 'sale_lines.product_id',
                 DB::raw("COALESCE(products.name, CONCAT('Product #', sale_lines.product_id)) as product_name"),
@@ -128,18 +127,18 @@ final class DashboardController extends Controller
             ->limit(8)
             ->get();
 
-        $salesTodayByBranch = DB::table('sales')
+        $salesInRangeByBranch = DB::table('sales')
             ->select('branch_id', DB::raw('SUM(COALESCE(rounded_total, total)) as sales_today'))
             ->where('tenant_id', $tenantId)
             ->where('status', 'posted')
-            ->whereDate('sold_at', $today)
+            ->whereBetween('sold_at', [$from, $to])
             ->groupBy('branch_id');
 
-        $purchasesTodayByBranch = DB::table('purchases')
+        $purchasesInRangeByBranch = DB::table('purchases')
             ->select('branch_id', DB::raw('SUM(total) as purchases_today'))
             ->where('tenant_id', $tenantId)
             ->where('status', 'posted')
-            ->whereDate('purchased_at', $today)
+            ->whereBetween('purchased_at', [$from->toDateString(), $to->toDateString()])
             ->groupBy('branch_id');
 
         $salesDueByBranch = DB::table('sales')
@@ -154,8 +153,8 @@ final class DashboardController extends Controller
             ->groupBy('branch_id');
 
         $branchPerformance = DB::table('branches')
-            ->leftJoinSub($salesTodayByBranch, 'sales_today_by_branch', 'sales_today_by_branch.branch_id', '=', 'branches.id')
-            ->leftJoinSub($purchasesTodayByBranch, 'purchases_today_by_branch', 'purchases_today_by_branch.branch_id', '=', 'branches.id')
+            ->leftJoinSub($salesInRangeByBranch, 'sales_today_by_branch', 'sales_today_by_branch.branch_id', '=', 'branches.id')
+            ->leftJoinSub($purchasesInRangeByBranch, 'purchases_today_by_branch', 'purchases_today_by_branch.branch_id', '=', 'branches.id')
             ->leftJoinSub($salesDueByBranch, 'sales_due_by_branch', 'sales_due_by_branch.branch_id', '=', 'branches.id')
             ->leftJoinSub($stockValueByBranch, 'stock_value_by_branch', 'stock_value_by_branch.branch_id', '=', 'branches.id')
             ->where('branches.tenant_id', $tenantId)
@@ -186,11 +185,19 @@ final class DashboardController extends Controller
 
         return Inertia::render('Tenant/Dashboard', [
             'headline' => __('dashboard.executive_dashboard'),
+            'dateRange' => $range->toArray(),
+            'rangeOptions' => collect(DashboardDateRange::PRESETS)->map(fn (string $key) => [
+                'value' => $key,
+                'label' => __('dashboard.range_'.$key),
+            ])->values()->all(),
             'kpis' => [
-                'revenueToday' => $revenueToday,
+                'revenue' => $revenue,
+                'revenueToday' => $revenue,
                 'revenueYesterday' => $revenueYesterday,
-                'profitToday' => $profitToday,
-                'purchaseToday' => $purchaseToday,
+                'profit' => $profit,
+                'profitToday' => $profit,
+                'purchase' => $purchase,
+                'purchaseToday' => $purchase,
                 'stockValue' => $stockValue,
                 'customerDue' => $customerDue,
                 'supplierDue' => $supplierDue,
@@ -206,5 +213,35 @@ final class DashboardController extends Controller
             'branchPerformance' => $branchPerformance,
             'activities' => $activities,
         ]);
+    }
+
+    /**
+     * This chart is intentionally independent from the dashboard date filter.
+     *
+     * @return list<array{label: string, date: string, total: float}>
+     */
+    private function chartDays(): array
+    {
+        $chartTo = CarbonImmutable::today();
+        $chartFrom = $chartTo->subDays(6);
+
+        $totals = Sale::query()
+            ->withoutGlobalScope('branch')
+            ->where('status', 'posted')
+            ->whereBetween('sold_at', [$chartFrom->startOfDay(), $chartTo->endOfDay()])
+            ->selectRaw('DATE(sold_at) as day, SUM(COALESCE(rounded_total, total)) as total')
+            ->groupByRaw('DATE(sold_at)')
+            ->get()
+            ->mapWithKeys(fn ($row) => [(string) $row->day => (float) $row->total]);
+
+        return collect(range(0, 6))->map(function (int $offset) use ($chartFrom, $totals) {
+            $day = $chartFrom->addDays($offset);
+
+            return [
+                'label' => $day->format('D'),
+                'date' => $day->format('d M'),
+                'total' => (float) ($totals[$day->toDateString()] ?? 0),
+            ];
+        })->all();
     }
 }
