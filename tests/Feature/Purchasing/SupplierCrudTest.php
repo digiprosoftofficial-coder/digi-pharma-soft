@@ -26,6 +26,8 @@ class SupplierCrudTest extends TestCase
             'lines' => [[
                 'product_id' => Product::query()->where('sku', 'PAR-500')->value('id'),
                 'batch_no' => 'DEL-BLOCK',
+                'expiry_date' => '2028-06-01',
+                'manufactured_at' => '2026-01-01',
                 'quantity' => 1,
                 'sell_unit' => 'strip',
                 'unit_cost' => 10,

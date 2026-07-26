@@ -29,12 +29,26 @@
                 <input :value="line.batch_no" type="text" class="form-control form-control-sm" disabled />
             </div>
             <div class="col-6 col-md-2">
-                <label class="form-label small">{{ t('purchases.expiry') }}</label>
-                <input v-model="line.expiry_date" type="date" class="form-control form-control-sm" />
+                <label class="form-label small">
+                    {{ t('purchases.expiry') }} <span class="text-danger">*</span>
+                </label>
+                <input
+                    v-model="line.expiry_date"
+                    type="date"
+                    class="form-control form-control-sm"
+                    :required="requireFields"
+                />
             </div>
             <div class="col-6 col-md-2">
-                <label class="form-label small">{{ t('purchases.manufactured_at') }}</label>
-                <input v-model="line.manufactured_at" type="date" class="form-control form-control-sm" />
+                <label class="form-label small">
+                    {{ t('purchases.manufactured_at') }} <span class="text-danger">*</span>
+                </label>
+                <input
+                    v-model="line.manufactured_at"
+                    type="date"
+                    class="form-control form-control-sm"
+                    :required="requireFields"
+                />
             </div>
             <div v-if="storageLocations.length" class="col-12 col-md-3">
                 <label class="form-label small">{{ t('catalog.storage_location_shelf') }}</label>
@@ -61,25 +75,34 @@
                     {{ unitLabel(u.sell_unit) }}
                 </button>
             </div>
+            <p class="purchase-unit-panel__hint purchase-unit-panel__hint--active mb-0">
+                {{ t('purchases.enter_in_buy_unit', { unit: unitLabel(line.sell_unit) }) }}
+            </p>
             <p class="purchase-unit-panel__hint mb-0">
                 {{ t('purchases.stock_tracked_as', { unit: unitLabel(line.base_unit) }) }}
             </p>
         </div>
 
-        <div class="row g-2 align-items-end mt-2">
-            <div class="col-6 col-md-2">
-                <label class="form-label small">{{ t('purchases.qty') }}</label>
-                <input
-                    v-model.number="line.quantity"
-                    type="number"
-                    min="0.0001"
-                    step="0.0001"
-                    class="form-control form-control-sm"
-                    :required="requireFields"
-                />
+        <div
+            class="row g-2 align-items-end mt-2 purchase-price-row"
+            :class="{ 'purchase-price-row--flash': unitFieldsFlash }"
+        >
+            <div class="col-6 col-md-3">
+                <label class="form-label small">{{ t('purchases.qty_in_unit', { unit: unitLabel(line.sell_unit) }) }}</label>
+                <div class="input-group input-group-sm">
+                    <input
+                        v-model.number="line.quantity"
+                        type="number"
+                        min="0.0001"
+                        step="0.0001"
+                        class="form-control"
+                        :required="requireFields"
+                    />
+                    <span class="input-group-text text-capitalize">{{ unitLabel(line.sell_unit) }}</span>
+                </div>
             </div>
-            <div class="col-6 col-md-2">
-                <label class="form-label small">{{ t('purchases.unit_cost') }} ({{ currencyCode() }})</label>
+            <div class="col-6 col-md-3">
+                <label class="form-label small">{{ t('purchases.cost_per_unit', { unit: unitLabel(line.sell_unit) }) }}</label>
                 <div class="input-group input-group-sm">
                     <span class="input-group-text">{{ currencySymbol() }}</span>
                     <input
@@ -90,16 +113,24 @@
                         class="form-control"
                         :required="requireFields"
                     />
+                    <span class="input-group-text">/{{ unitLabel(line.sell_unit) }}</span>
                 </div>
                 <div v-if="priceComparisonLabel" class="form-text" :class="priceComparisonClass">
                     {{ priceComparisonLabel }}
                 </div>
+                <div v-if="costPerBaseHint" class="form-text text-muted mb-0">
+                    {{ costPerBaseHint }}
+                </div>
             </div>
-            <div class="col-12 col-md-2">
-                <label class="form-label small">{{ t('purchases.sale_price_mrp') }} ({{ currencyCode() }})</label>
+            <div class="col-12 col-md-3">
+                <label class="form-label small">{{ t('purchases.sale_price_per_unit', { unit: unitLabel(line.sell_unit) }) }}</label>
                 <div class="input-group input-group-sm">
                     <span class="input-group-text">{{ currencySymbol() }}</span>
                     <input v-model.number="line.sale_price" type="number" min="0" step="0.01" class="form-control" />
+                    <span class="input-group-text">/{{ unitLabel(line.sell_unit) }}</span>
+                </div>
+                <div v-if="salePerBaseHint" class="form-text text-muted mb-0">
+                    {{ salePerBaseHint }}
                 </div>
             </div>
         </div>
@@ -195,7 +226,7 @@ import {
     catalogStripsPerBox,
     unitLabel,
 } from '@/composables/useProductUnits';
-import { computed } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
 
 const props = defineProps({
     line: { type: Object, required: true },
@@ -206,8 +237,11 @@ const props = defineProps({
 const emit = defineEmits(['batch-change', 'unit-change']);
 
 const { t } = useLocale();
-const { formatMoney, currencyCode, currencySymbol } = useMoney();
+const { formatMoney, currencySymbol } = useMoney();
 const { formatQty } = useQuantity();
+
+const unitFieldsFlash = ref(false);
+let unitFlashTimer = null;
 
 function locationLabel(loc) {
     if (!loc) {
@@ -224,13 +258,29 @@ function formatConversionFactor(value) {
     return Math.round(n * 10000) / 10000;
 }
 
+function flashUnitFields() {
+    unitFieldsFlash.value = false;
+    void nextTick(() => {
+        unitFieldsFlash.value = true;
+        clearTimeout(unitFlashTimer);
+        unitFlashTimer = setTimeout(() => {
+            unitFieldsFlash.value = false;
+        }, 900);
+    });
+}
+
 function selectUnit(sellUnit) {
     if (props.line.sell_unit === sellUnit) {
         return;
     }
     props.line.sell_unit = sellUnit;
+    flashUnitFields();
     emit('unit-change', props.line);
 }
+
+onBeforeUnmount(() => {
+    clearTimeout(unitFlashTimer);
+});
 
 function resolveBoxFactor() {
     if (props.line.base_unit === 'box') {
@@ -430,13 +480,52 @@ const lineTotalBreakdown = computed(() => {
     return `${formatQty(props.line.quantity)} ${unitLabel(props.line.sell_unit)} × ${formatMoney(props.line.unit_cost)}`;
 });
 
-const quantityBase = computed(() => {
-    const qty = Number(props.line.quantity);
+const activeConversionFactor = computed(() => {
     if (usesPackSizeFriendlyInput.value) {
         syncPackInput();
     }
-    const factor = needsPackSize.value ? Number(props.line.conversion_factor) : 1;
-    if (Number.isNaN(qty) || Number.isNaN(factor)) {
+    if (!needsPackSize.value) {
+        return 1;
+    }
+    const factor = Number(props.line.conversion_factor);
+    return Number.isNaN(factor) || factor <= 0 ? 0 : factor;
+});
+
+function perBaseAmount(amount) {
+    const value = Number(amount);
+    const factor = activeConversionFactor.value;
+    if (Number.isNaN(value) || value <= 0 || factor <= 0 || !needsPackSize.value) {
+        return null;
+    }
+    return value / factor;
+}
+
+const costPerBaseHint = computed(() => {
+    const perBase = perBaseAmount(props.line.unit_cost);
+    if (perBase === null) {
+        return '';
+    }
+    return t('purchases.per_base_unit_hint', {
+        amount: formatMoney(perBase),
+        unit: unitLabel(props.line.base_unit),
+    });
+});
+
+const salePerBaseHint = computed(() => {
+    const perBase = perBaseAmount(props.line.sale_price);
+    if (perBase === null) {
+        return '';
+    }
+    return t('purchases.per_base_unit_hint', {
+        amount: formatMoney(perBase),
+        unit: unitLabel(props.line.base_unit),
+    });
+});
+
+const quantityBase = computed(() => {
+    const qty = Number(props.line.quantity);
+    const factor = activeConversionFactor.value || 1;
+    if (Number.isNaN(qty) || factor <= 0) {
         return 0;
     }
     return qty * factor;
@@ -515,6 +604,28 @@ const priceComparisonClass = computed(() => {
     margin-top: 0.55rem;
     color: #94a3b8;
     font-size: 0.72rem;
+}
+
+.purchase-unit-panel__hint--active {
+    margin-top: 0.65rem;
+    color: #0f766e;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.purchase-price-row--flash .form-control,
+.purchase-price-row--flash .input-group-text {
+    animation: purchase-unit-flash 0.9s ease;
+}
+
+@keyframes purchase-unit-flash {
+    0% {
+        box-shadow: 0 0 0 0 rgba(var(--bs-primary-rgb), 0.35);
+        border-color: rgba(var(--bs-primary-rgb), 0.55);
+    }
+    100% {
+        box-shadow: 0 0 0 0 transparent;
+    }
 }
 
 .purchase-line-total {

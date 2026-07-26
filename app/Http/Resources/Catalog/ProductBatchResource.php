@@ -22,6 +22,7 @@ class ProductBatchResource extends JsonResource
             'id' => $this->id,
             'batch_no' => $this->batch_no,
             'expiry_date' => $this->expiry_date?->toDateString(),
+            'manufactured_at' => $this->manufactured_at?->toDateString(),
             'is_expired' => BatchExpiry::isExpired($this->resource),
             'quantity_on_hand' => ProductStockCalculator::formatQuantity((float) $this->quantity_on_hand),
             'purchase_unit_cost' => (string) $this->purchase_unit_cost,

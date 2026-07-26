@@ -623,6 +623,16 @@ const quickProductTabs = computed(() => [
 const activeQuickProducts = computed(() => props.quickProducts?.[activeQuickProductTab.value] ?? []);
 const showQuickProducts = computed(() => q.value.trim().length === 0 && !results.value.length);
 
+function scrollPageToTop() {
+    if (typeof window === 'undefined') {
+        return;
+    }
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    const behavior = prefersReducedMotion ? 'auto' : 'smooth';
+    window.scrollTo({ top: 0, behavior });
+    document.querySelector('.tenant-main')?.scrollTo?.({ top: 0, behavior });
+}
+
 function startSaleSuccessAlert() {
     clearTimeout(saleSuccessTimer);
     saleSuccessAlertKey.value += 1;
@@ -645,13 +655,24 @@ onBeforeUnmount(() => {
 
 watch(
     () => props.lastSaleId,
-    (lastSaleId) => {
-        if (lastSaleId) {
-            startSaleSuccessAlert();
+    (lastSaleId, previousSaleId) => {
+        if (!lastSaleId) {
+            return;
+        }
+        startSaleSuccessAlert();
+        // previousSaleId is undefined only on the initial run, where the page is already at the top.
+        if (previousSaleId !== undefined) {
+            void nextTick(scrollPageToTop);
         }
     },
     { immediate: true },
 );
+
+watch(checkoutError, (message) => {
+    if (message) {
+        void nextTick(scrollPageToTop);
+    }
+});
 
 watch([cartSubtotal, cartDiscountPercent, payableAmount], () => {
     if (payFullAmount.value) {
@@ -789,6 +810,7 @@ function showLocalSaleSuccess(message) {
         showSaleSuccessAlert.value = false;
         localSuccessMessage.value = '';
     }, 5000);
+    void nextTick(scrollPageToTop);
 }
 
 async function onSearchEnter() {
@@ -1134,9 +1156,11 @@ async function submitSale() {
             onError: async () => {
                 // Network / unexpected client failures while "online" still queue the sale.
             },
+            onSuccess: () => {
+                resetCartAfterSale();
+            },
             onFinish: () => {
                 submitting.value = false;
-                resetCartAfterSale();
             },
         },
     );

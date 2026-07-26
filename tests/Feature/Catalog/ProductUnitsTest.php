@@ -53,6 +53,8 @@ class ProductUnitsTest extends TestCase
             'lines' => [[
                 'product_id' => $product->getKey(),
                 'batch_no' => 'BATCH-PUR-1',
+                'expiry_date' => '2028-06-01',
+                'manufactured_at' => '2026-01-01',
                 'quantity' => 30,
                 'sell_unit' => 'strip',
                 'unit_cost' => 20,

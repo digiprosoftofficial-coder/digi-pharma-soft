@@ -123,6 +123,13 @@
             <p v-if="!form.lines.length" class="text-muted small">{{ t('purchases.lines_hint') }}</p>
             <div v-if="form.errors.lines" class="text-danger small mb-2">{{ form.errors.lines }}</div>
             <div v-if="lineEditorError" class="alert alert-warning py-2 small mb-2">{{ lineEditorError }}</div>
+            <div
+                v-if="incompleteLinesCount > 0"
+                class="alert alert-warning py-2 small mb-2 d-md-none"
+                role="status"
+            >
+                {{ t('purchases.incomplete_lines_count', { count: incompleteLinesCount }) }}
+            </div>
 
             <!-- Mobile: compact summaries -->
             <div class="d-md-none">
@@ -130,6 +137,7 @@
                     v-for="(line, i) in form.lines"
                     :key="line._key"
                     class="purchase-line-summary card border-0 shadow-sm mb-2"
+                    :class="{ 'purchase-line-summary--incomplete': lineIsIncomplete(line) }"
                 >
                     <button type="button" class="purchase-line-summary__body text-start" @click="openLineEditor(i)">
                         <div class="d-flex justify-content-between align-items-start gap-2">
@@ -137,14 +145,22 @@
                                 <div class="fw-semibold text-truncate">{{ line.product_name }}</div>
                                 <div class="small text-muted text-truncate">{{ line.product_sku }}</div>
                             </div>
-                            <span class="badge text-bg-light text-dark border flex-shrink-0">{{ i + 1 }}</span>
+                            <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
+                                <span class="badge text-bg-light text-dark border">{{ i + 1 }}</span>
+                                <span
+                                    v-if="lineIsIncomplete(line)"
+                                    class="badge text-bg-warning text-dark"
+                                >
+                                    {{ t('purchases.line_incomplete_badge') }}
+                                </span>
+                            </div>
                         </div>
                         <div class="purchase-line-summary__meta mt-2">
-                            <div>
+                            <div :class="{ 'purchase-line-summary__meta-item--missing': !hasValidQuantity(line) }">
                                 <span class="text-muted">{{ t('purchases.qty') }}</span>
                                 <strong>{{ formatQty(line.quantity) }} {{ unitLabel(line.sell_unit) }}</strong>
                             </div>
-                            <div>
+                            <div :class="{ 'purchase-line-summary__meta-item--missing': !hasValidUnitCost(line) }">
                                 <span class="text-muted">{{ t('purchases.unit_cost') }}</span>
                                 <strong>{{ formatMoney(line.unit_cost) }}</strong>
                             </div>
@@ -152,12 +168,26 @@
                                 <span class="text-muted">{{ t('purchases.line_total') }}</span>
                                 <strong>{{ formatMoney(Number(line.quantity || 0) * Number(line.unit_cost || 0)) }}</strong>
                             </div>
-                            <div>
-                                <span class="text-muted">Batch</span>
+                            <div :class="{ 'purchase-line-summary__meta-item--missing': !hasValidBatch(line) }">
+                                <span class="text-muted">{{ t('purchases.batch') }}</span>
                                 <strong>{{ line.batch_no || t('purchases.new_batch_needed') }}</strong>
                             </div>
+                            <div :class="{ 'purchase-line-summary__meta-item--missing': !hasValidExpiry(line) }">
+                                <span class="text-muted">{{ t('purchases.expiry') }}</span>
+                                <strong>{{ line.expiry_date || t('purchases.required_date_missing') }}</strong>
+                            </div>
+                            <div :class="{ 'purchase-line-summary__meta-item--missing': !hasValidManufacturedAt(line) }">
+                                <span class="text-muted">{{ t('purchases.manufactured_at') }}</span>
+                                <strong>{{ line.manufactured_at || t('purchases.required_date_missing') }}</strong>
+                            </div>
                         </div>
-                        <div class="small text-primary mt-2">{{ t('purchases.tap_to_edit_line') }}</div>
+                        <div
+                            v-if="lineIsIncomplete(line)"
+                            class="small text-warning-emphasis fw-semibold mt-2"
+                        >
+                            {{ t('purchases.line_missing_fields', { fields: lineMissingFieldsLabel(line) }) }}
+                        </div>
+                        <div v-else class="small text-primary mt-2">{{ t('purchases.tap_to_edit_line') }}</div>
                     </button>
                     <div class="purchase-line-summary__actions px-3 pb-2">
                         <button type="button" class="btn btn-sm btn-outline-primary" @click="openLineEditor(i)">
@@ -198,7 +228,7 @@
                     v-if="editingLineIndex !== null && editingLine"
                     class="purchase-line-sheet-root"
                 >
-                    <div class="purchase-line-sheet-backdrop" @click="closeLineEditor" />
+                    <div class="purchase-line-sheet-backdrop" @click="tryCloseLineEditor" />
                     <div
                         class="purchase-line-sheet"
                         role="dialog"
@@ -215,7 +245,7 @@
                                 type="button"
                                 class="btn btn-sm btn-light purchase-line-sheet__close"
                                 :aria-label="t('common.close', 'Close')"
-                                @click="closeLineEditor"
+                                @click="tryCloseLineEditor"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
                                     <path d="M18 6 6 18" />
@@ -224,6 +254,13 @@
                             </button>
                         </div>
                         <div class="purchase-line-sheet__body">
+                            <div
+                                v-if="lineEditorError"
+                                class="alert alert-warning py-2 small mb-3"
+                                role="alert"
+                            >
+                                {{ lineEditorError }}
+                            </div>
                             <PurchaseLineFields
                                 :line="editingLine"
                                 :storage-locations="storageLocations"
@@ -248,7 +285,7 @@
                                     <path d="M14 11v6" />
                                 </svg>
                             </button>
-                            <button type="button" class="btn btn-primary purchase-line-sheet__done" @click="closeLineEditor">
+                            <button type="button" class="btn btn-primary purchase-line-sheet__done" @click="tryCloseLineEditor">
                                 {{ t('purchases.done_editing_line') }}
                             </button>
                         </div>
@@ -340,7 +377,18 @@
             </div>
 
             <div class="purchase-actions mt-3 d-grid d-sm-flex gap-2">
-                <button type="submit" class="btn btn-primary" :disabled="form.processing || !form.lines.length">Save purchase</button>
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                    :disabled="form.processing || !form.lines.length"
+                >
+                    <template v-if="incompleteLinesCount > 0">
+                        {{ t('purchases.save_purchase_incomplete', { count: incompleteLinesCount }) }}
+                    </template>
+                    <template v-else>
+                        {{ t('purchases.save_purchase') }}
+                    </template>
+                </button>
                 <Link href="/purchases" class="btn btn-link">Cancel</Link>
             </div>
         </form>
@@ -366,7 +414,7 @@ import {
     unitSalePrice,
 } from '@/composables/useProductUnits';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 const props = defineProps({
     paymentMethods: { type: Array, default: () => [] },
@@ -399,6 +447,8 @@ const editingLine = computed(() => {
     return form.lines[editingLineIndex.value] ?? null;
 });
 
+const incompleteLinesCount = computed(() => form.lines.filter((line) => lineIsIncomplete(line)).length);
+
 function isMobilePurchaseUi() {
     return typeof window !== 'undefined' && window.matchMedia('(max-width: 767.98px)').matches;
 }
@@ -410,6 +460,23 @@ function openLineEditor(index) {
 
 function closeLineEditor() {
     editingLineIndex.value = null;
+    lineEditorError.value = '';
+}
+
+function tryCloseLineEditor() {
+    const line = editingLine.value;
+    if (line && lineIsIncomplete(line)) {
+        lineEditorError.value = t('purchases.done_line_incomplete', {
+            fields: lineMissingFieldsLabel(line),
+        });
+        void nextTick(scrollSheetBodyToTop);
+        return;
+    }
+    closeLineEditor();
+}
+
+function scrollSheetBodyToTop() {
+    document.querySelector('.purchase-line-sheet__body')?.scrollTo?.({ top: 0, behavior: 'smooth' });
 }
 
 function removeEditingLine() {
@@ -426,6 +493,21 @@ watch(editingLineIndex, (index) => {
     }
     document.body.classList.toggle('purchase-line-sheet-open', index !== null);
 });
+
+watch(
+    () => {
+        const line = editingLine.value;
+        if (!line) {
+            return true;
+        }
+        return lineIsIncomplete(line);
+    },
+    (incomplete) => {
+        if (!incomplete) {
+            lineEditorError.value = '';
+        }
+    },
+);
 
 onBeforeUnmount(() => {
     if (typeof document !== 'undefined') {
@@ -845,12 +927,14 @@ function applyBatchPick(line) {
     if (line.batch_pick === '__new__') {
         line.batch_no = '';
         line.expiry_date = '';
+        line.manufactured_at = '';
         return;
     }
     const batch = line.existing_batches.find((b) => b.batch_no === line.batch_pick);
     if (batch) {
         line.batch_no = batch.batch_no;
         line.expiry_date = batch.expiry_date ?? '';
+        line.manufactured_at = batch.manufactured_at ?? '';
         line.storage_location_id = batch.storage_location_id ?? line.storage_location_id;
         if (batch.pack_sell_unit && batch.pack_conversion_factor) {
             line.sell_unit = batch.pack_sell_unit;
@@ -942,44 +1026,121 @@ function removeLine(index) {
     form.lines.splice(index, 1);
 }
 
+function hasValidQuantity(line) {
+    return Number(line.quantity) > 0;
+}
+
+function hasValidUnitCost(line) {
+    return !(
+        line.unit_cost === ''
+        || line.unit_cost === null
+        || Number.isNaN(Number(line.unit_cost))
+        || Number(line.unit_cost) < 0
+    );
+}
+
+function hasValidBatch(line) {
+    if (line.batch_pick !== '__new__') {
+        return Boolean(String(line.batch_no || '').trim());
+    }
+    return Boolean(String(line.batch_no || '').trim());
+}
+
+function hasValidExpiry(line) {
+    return Boolean(String(line.expiry_date || '').trim());
+}
+
+function hasValidManufacturedAt(line) {
+    return Boolean(String(line.manufactured_at || '').trim());
+}
+
+function hasValidPackSize(line) {
+    if (!needsPackSize(line)) {
+        return true;
+    }
+    if (usesStripsPerBox(line) && !(Number(line.pack_strips_per_box) > 0)) {
+        return false;
+    }
+    if (usesPiecesPerBox(line) && !(Number(line.pack_pieces_per_box) > 0)) {
+        return false;
+    }
+    if (usesPiecesPerStrip(line) && !(Number(line.pack_pieces_per_strip) > 0)) {
+        return false;
+    }
+    if (usesBoxesPerCarton(line) && !(Number(line.pack_boxes_per_carton) > 0)) {
+        return false;
+    }
+    if (!usesPackSizeFriendlyInput(line) && !(Number(line.conversion_factor) > 0)) {
+        return false;
+    }
+    return true;
+}
+
+function lineMissingFieldKeys(line) {
+    const missing = [];
+    if (!hasValidBatch(line)) {
+        missing.push('batch');
+    }
+    if (!hasValidExpiry(line)) {
+        missing.push('expiry');
+    }
+    if (!hasValidManufacturedAt(line)) {
+        missing.push('manufactured_at');
+    }
+    if (!hasValidQuantity(line)) {
+        missing.push('qty');
+    }
+    if (!hasValidUnitCost(line)) {
+        missing.push('unit_cost');
+    }
+    if (!hasValidPackSize(line)) {
+        missing.push('pack_size');
+    }
+    return missing;
+}
+
+function lineMissingFieldsLabel(line) {
+    return lineMissingFieldKeys(line)
+        .map((key) => {
+            if (key === 'batch') {
+                return t('purchases.batch');
+            }
+            if (key === 'qty') {
+                return t('purchases.qty');
+            }
+            if (key === 'expiry') {
+                return t('purchases.expiry');
+            }
+            if (key === 'manufactured_at') {
+                return t('purchases.manufactured_at');
+            }
+            if (key === 'unit_cost') {
+                return t('purchases.unit_cost');
+            }
+            return t('purchases.pack_size');
+        })
+        .join(', ');
+}
+
 function lineIsIncomplete(line) {
-    if (!Number(line.quantity) || Number(line.quantity) <= 0) {
-        return true;
-    }
-    if (line.unit_cost === '' || line.unit_cost === null || Number.isNaN(Number(line.unit_cost)) || Number(line.unit_cost) < 0) {
-        return true;
-    }
-    if (line.batch_pick === '__new__' && !String(line.batch_no || '').trim()) {
-        return true;
-    }
-    if (needsPackSize(line)) {
-        if (usesStripsPerBox(line) && !(Number(line.pack_strips_per_box) > 0)) {
-            return true;
-        }
-        if (usesPiecesPerBox(line) && !(Number(line.pack_pieces_per_box) > 0)) {
-            return true;
-        }
-        if (usesPiecesPerStrip(line) && !(Number(line.pack_pieces_per_strip) > 0)) {
-            return true;
-        }
-        if (usesBoxesPerCarton(line) && !(Number(line.pack_boxes_per_carton) > 0)) {
-            return true;
-        }
-        if (!usesPackSizeFriendlyInput(line) && !(Number(line.conversion_factor) > 0)) {
-            return true;
-        }
-    }
-    return false;
+    return lineMissingFieldKeys(line).length > 0;
 }
 
 function submit() {
     lineEditorError.value = '';
     const incompleteIndex = form.lines.findIndex((line) => lineIsIncomplete(line));
     if (incompleteIndex >= 0) {
+        const line = form.lines[incompleteIndex];
+        const message = t('purchases.line_incomplete_detail', {
+            fields: lineMissingFieldsLabel(line),
+        });
         if (isMobilePurchaseUi()) {
-            openLineEditor(incompleteIndex);
+            editingLineIndex.value = incompleteIndex;
+            lineEditorError.value = message;
+            void nextTick(scrollSheetBodyToTop);
+        } else {
+            lineEditorError.value = message;
         }
-        lineEditorError.value = t('purchases.line_incomplete');
         return;
     }
 
@@ -1089,6 +1250,12 @@ function submit() {
     background: transparent;
 }
 
+.purchase-line-summary--incomplete {
+    border: 1px solid rgba(var(--bs-warning-rgb), 0.55) !important;
+    box-shadow: 0 0.35rem 0.9rem rgba(var(--bs-warning-rgb), 0.18) !important;
+    background: linear-gradient(180deg, rgba(var(--bs-warning-rgb), 0.08) 0%, #fff 55%);
+}
+
 .purchase-line-summary__meta {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1104,6 +1271,15 @@ function submit() {
     padding: 0.4rem 0.45rem;
     background: var(--bs-tertiary-bg);
     border-radius: 0.4rem;
+}
+
+.purchase-line-summary__meta-item--missing {
+    background: rgba(var(--bs-warning-rgb), 0.16) !important;
+    outline: 1px solid rgba(var(--bs-warning-rgb), 0.35);
+}
+
+.purchase-line-summary__meta-item--missing strong {
+    color: #92400e;
 }
 
 .purchase-line-summary__actions {

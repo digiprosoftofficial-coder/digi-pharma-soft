@@ -63,6 +63,7 @@ class PurchaseCreateTest extends TestCase
                 'product_id' => $product->getKey(),
                 'batch_no' => 'LOT-NEW-99',
                 'expiry_date' => '2028-01-01',
+                'manufactured_at' => '2026-01-01',
                 'quantity' => 10,
                 'sell_unit' => 'strip',
                 'unit_cost' => 18,
@@ -73,6 +74,35 @@ class PurchaseCreateTest extends TestCase
             'product_id' => $product->getKey(),
             'batch_no' => 'LOT-NEW-99',
             'quantity_base' => '10.0000',
+        ]);
+    }
+
+    public function test_purchase_requires_expiry_and_manufacturing_dates(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+        $product = Product::query()->where('sku', 'PAR-500')->firstOrFail();
+        $supplier = Supplier::query()->firstOrFail();
+
+        $this->actingAs($user)->post('/purchases', [
+            'supplier_id' => $supplier->getKey(),
+            'invoice_no' => 'INV-DATES-REQUIRED',
+            'purchased_at' => now()->toDateString(),
+            'paid' => 0,
+            'lines' => [[
+                'product_id' => $product->getKey(),
+                'batch_no' => 'LOT-NO-DATES',
+                'quantity' => 1,
+                'sell_unit' => 'strip',
+                'unit_cost' => 18,
+            ]],
+        ])->assertSessionHasErrors([
+            'lines.0.expiry_date',
+            'lines.0.manufactured_at',
+        ]);
+
+        $this->assertDatabaseMissing('purchases', [
+            'invoice_no' => 'INV-DATES-REQUIRED',
         ]);
     }
 }

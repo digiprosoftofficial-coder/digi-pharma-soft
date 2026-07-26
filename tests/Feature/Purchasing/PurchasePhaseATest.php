@@ -31,6 +31,7 @@ class PurchasePhaseATest extends TestCase
                 'product_id' => $product->getKey(),
                 'batch_no' => 'LOT-PHASE-A',
                 'expiry_date' => '2028-06-01',
+                'manufactured_at' => '2026-01-01',
                 'quantity' => 4,
                 'sell_unit' => 'strip',
                 'unit_cost' => 20,

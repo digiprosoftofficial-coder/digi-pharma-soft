@@ -32,6 +32,8 @@ class PurchasePhaseDTest extends TestCase
             'lines' => [[
                 'product_id' => $product->getKey(),
                 'batch_no' => 'LOT-D-V',
+                'expiry_date' => '2028-06-01',
+                'manufactured_at' => '2026-01-01',
                 'quantity' => 10,
                 'sell_unit' => 'strip',
                 'unit_cost' => 12,
@@ -71,6 +73,8 @@ class PurchasePhaseDTest extends TestCase
             'lines' => [[
                 'product_id' => $product->getKey(),
                 'batch_no' => 'LOT-D-RET',
+                'expiry_date' => '2028-06-01',
+                'manufactured_at' => '2026-01-01',
                 'quantity' => 20,
                 'sell_unit' => 'strip',
                 'unit_cost' => 10,
@@ -114,6 +118,8 @@ class PurchasePhaseDTest extends TestCase
             'lines' => [[
                 'product_id' => $product->getKey(),
                 'batch_no' => 'LOT-D-VOID',
+                'expiry_date' => '2028-06-01',
+                'manufactured_at' => '2026-01-01',
                 'quantity' => 8,
                 'sell_unit' => 'strip',
                 'unit_cost' => 15,

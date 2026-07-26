@@ -30,6 +30,7 @@ class PurchasePackSizeTest extends TestCase
                 'product_id' => $product->getKey(),
                 'batch_no' => 'BOX-12-PACK',
                 'expiry_date' => '2028-06-01',
+                'manufactured_at' => '2026-01-01',
                 'quantity' => 2,
                 'sell_unit' => 'box',
                 'conversion_factor' => 12,
@@ -68,6 +69,8 @@ class PurchasePackSizeTest extends TestCase
             'lines' => [[
                 'product_id' => $product->getKey(),
                 'batch_no' => 'BOX-6-PACK',
+                'expiry_date' => '2028-06-01',
+                'manufactured_at' => '2026-01-01',
                 'quantity' => 1,
                 'sell_unit' => 'box',
                 'conversion_factor' => 6,
@@ -123,6 +126,8 @@ class PurchasePackSizeTest extends TestCase
             'lines' => [[
                 'product_id' => $product->getKey(),
                 'batch_no' => 'CTN-5-BOX',
+                'expiry_date' => '2028-06-01',
+                'manufactured_at' => '2026-01-01',
                 'quantity' => 2,
                 'sell_unit' => 'carton',
                 'conversion_factor' => 50,
@@ -165,6 +170,8 @@ class PurchasePackSizeTest extends TestCase
             'lines' => [[
                 'product_id' => $product->getKey(),
                 'batch_no' => 'CTN-5-POS',
+                'expiry_date' => '2028-06-01',
+                'manufactured_at' => '2026-01-01',
                 'quantity' => 1,
                 'sell_unit' => 'carton',
                 'conversion_factor' => 50,

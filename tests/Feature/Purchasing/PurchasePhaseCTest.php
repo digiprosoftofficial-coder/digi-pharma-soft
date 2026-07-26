@@ -69,6 +69,8 @@ class PurchasePhaseCTest extends TestCase
             'lines' => [[
                 'product_id' => $product->getKey(),
                 'batch_no' => 'LOT-C-PRICE',
+                'expiry_date' => '2028-06-01',
+                'manufactured_at' => '2026-01-01',
                 'quantity' => 2,
                 'sell_unit' => 'strip',
                 'unit_cost' => 21.5,
@@ -98,6 +100,8 @@ class PurchasePhaseCTest extends TestCase
             'lines' => [[
                 'product_id' => $product->getKey(),
                 'batch_no' => 'LOT-C-LAST',
+                'expiry_date' => '2028-06-01',
+                'manufactured_at' => '2026-01-01',
                 'quantity' => 1,
                 'sell_unit' => 'strip',
                 'unit_cost' => 17.25,
@@ -137,6 +141,8 @@ class PurchasePhaseCTest extends TestCase
             'lines' => [[
                 'product_id' => $product->getKey(),
                 'batch_no' => 'LOT-C-UNIT',
+                'expiry_date' => '2028-06-01',
+                'manufactured_at' => '2026-01-01',
                 'quantity' => 1,
                 'sell_unit' => 'strip',
                 'unit_cost' => 16,

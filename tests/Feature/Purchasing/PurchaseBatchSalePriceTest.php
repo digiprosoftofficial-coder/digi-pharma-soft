@@ -29,6 +29,8 @@ class PurchaseBatchSalePriceTest extends TestCase
             'lines' => [[
                 'product_id' => $product->getKey(),
                 'batch_no' => 'LOT-MRP-1',
+                'expiry_date' => '2028-06-01',
+                'manufactured_at' => '2026-01-01',
                 'quantity' => 5,
                 'sell_unit' => 'strip',
                 'unit_cost' => 12,
