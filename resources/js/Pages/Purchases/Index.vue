@@ -57,20 +57,22 @@
             </div>
             <div v-for="p in purchases.data" :key="p.id" class="card border-0 shadow-sm mb-2 purchase-mobile-card">
                 <div class="card-body p-3">
-                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                        <div class="min-w-0 flex-grow-1">
-                            <Link :href="`/purchases/${p.id}`" class="fw-semibold text-decoration-none text-truncate d-block">
+                    <div class="purchase-mobile-card__top mb-2">
+                        <div class="purchase-mobile-card__title-row">
+                            <Link :href="`/purchases/${p.id}`" class="purchase-mobile-card__invoice">
                                 {{ p.invoice_no }}
                             </Link>
-                            <div class="small text-muted text-truncate">{{ p.supplier?.name || t('purchases.supplier') }}</div>
-                            <div class="small text-muted text-truncate">
-                                {{ compactProductNames(p) }}
-                            </div>
-                            <div class="small text-muted text-truncate">
-                                {{ compactLineDates(p) }}
-                            </div>
+                            <span class="badge text-bg-light border purchase-mobile-card__date">
+                                {{ formatDate(p.purchased_at) }}
+                            </span>
                         </div>
-                        <span class="badge text-bg-light border flex-shrink-0 purchase-mobile-card__date">{{ formatDate(p.purchased_at) }}</span>
+                        <div class="small text-muted text-truncate">{{ p.supplier?.name || t('purchases.supplier') }}</div>
+                        <div class="small text-muted text-truncate">
+                            {{ compactProductNames(p) }}
+                        </div>
+                        <div class="small text-muted text-truncate">
+                            {{ compactLineDates(p) }}
+                        </div>
                     </div>
 
                     <div class="purchase-mobile-card__amounts">
@@ -350,13 +352,45 @@ const exportUrl = computed(() => {
 .purchase-mobile-card {
     max-width: 100%;
     min-width: 0;
+    overflow: hidden;
 }
 
-.purchase-mobile-card__date {
-    max-width: 6.5rem;
+.purchase-mobile-card__top {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.purchase-mobile-card__title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-width: 0;
+    max-width: 100%;
+    margin-bottom: 0.2rem;
+}
+
+.purchase-mobile-card__invoice {
+    min-width: 0;
+    flex: 1 1 auto;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.purchase-mobile-card__date {
+    flex: 0 1 auto;
+    max-width: 48%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.2;
+    padding: 0.35rem 0.5rem;
 }
 
 .purchase-mobile-card__amounts {
