@@ -14,7 +14,7 @@ use App\Support\Purchasing\PurchaseVoucherService;
 use App\Support\Tenant\SupplierPaymentSettings;
 use App\Support\Tenant\TenantFeatures;
 use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 final class PurchaseService
@@ -57,15 +57,22 @@ final class PurchaseService
             foreach ($lines as $line) {
                 $product = Product::query()->with('units')->findOrFail($line['product_id']);
                 $sellUnit = (string) ($line['sell_unit'] ?? $product->base_unit ?? 'strip');
+                $override = isset($line['conversion_factor']) ? (float) $line['conversion_factor'] : null;
+                $baseUnit = $product->base_unit ?? 'strip';
 
-                try {
-                    $unitConfig = ProductUnitResolver::forProduct($product, $sellUnit);
-                } catch (InvalidArgumentException) {
-                    $unitConfig = $product->defaultUnit();
-                    $sellUnit = $unitConfig?->sell_unit ?? $sellUnit;
+                // Allow purchasing in units not yet saved on the product when this
+                // receipt provides an explicit conversion factor.
+                if ($sellUnit !== $baseUnit && ! $product->units->contains('sell_unit', $sellUnit)) {
+                    if ($override === null || $override <= 0) {
+                        throw ValidationException::withMessages([
+                            'lines' => [__('purchases.unit_conversion_required', [
+                                'product' => $product->name,
+                                'unit' => $sellUnit,
+                            ])],
+                        ]);
+                    }
                 }
 
-                $override = isset($line['conversion_factor']) ? (float) $line['conversion_factor'] : null;
                 $factor = ProductUnitResolver::resolveConversionFactor($product, $sellUnit, $override);
                 $quantityBase = (float) ProductUnitResolver::quantityBase($line['quantity'], $factor);
                 $lineTotal = $line['quantity'] * $line['unit_cost'];
@@ -117,7 +124,6 @@ final class PurchaseService
                     $batch->storage_location_id = $product->storage_location_id;
                 }
 
-                $baseUnit = $product->base_unit ?? 'strip';
                 if ($sellUnit !== $baseUnit) {
                     $batch->pack_sell_unit = $sellUnit;
                     $batch->pack_conversion_factor = $factor;

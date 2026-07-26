@@ -11,7 +11,7 @@ class Product extends TenantModel
 {
     protected $fillable = [
         'tenant_id', 'master_product_id', 'category_id', 'manufacturer_id', 'storage_location_id', 'name', 'generic_name', 'strength', 'sku', 'barcode',
-        'product_type', 'base_unit', 'pieces_per_strip', 'strips_per_box', 'boxes_per_carton', 'unit',
+        'product_type', 'base_unit', 'pieces_per_strip', 'strips_per_box', 'pieces_per_box', 'boxes_per_carton', 'unit',
         'purchase_price', 'sale_price', 'default_markup_percent', 'wholesale_price', 'vat_percent', 'short_description', 'image_path',
         'min_stock', 'is_active',
     ];
@@ -21,6 +21,7 @@ class Product extends TenantModel
         return [
             'pieces_per_strip' => 'decimal:4',
             'strips_per_box' => 'decimal:4',
+            'pieces_per_box' => 'decimal:4',
             'boxes_per_carton' => 'decimal:4',
             'purchase_price' => 'decimal:4',
             'sale_price' => 'decimal:4',

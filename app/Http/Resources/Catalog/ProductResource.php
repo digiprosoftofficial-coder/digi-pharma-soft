@@ -34,6 +34,9 @@ class ProductResource extends JsonResource
             'strips_per_box' => $this->strips_per_box !== null
                 ? ProductStockCalculator::formatQuantity((float) $this->strips_per_box)
                 : null,
+            'pieces_per_box' => $this->pieces_per_box !== null
+                ? ProductStockCalculator::formatQuantity((float) $this->pieces_per_box)
+                : null,
             'boxes_per_carton' => $this->boxes_per_carton !== null
                 ? ProductStockCalculator::formatQuantity((float) $this->boxes_per_carton)
                 : null,

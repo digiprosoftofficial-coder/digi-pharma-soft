@@ -39,6 +39,7 @@ final class ProductService
             $baseUnit = $data['base_unit'] ?? 'strip';
             $piecesPerStrip = isset($data['pieces_per_strip']) ? (float) $data['pieces_per_strip'] : null;
             $stripsPerBox = isset($data['strips_per_box']) ? (float) $data['strips_per_box'] : null;
+            $piecesPerBox = isset($data['pieces_per_box']) ? (float) $data['pieces_per_box'] : null;
             $boxesPerCarton = isset($data['boxes_per_carton']) ? (float) $data['boxes_per_carton'] : null;
             $units = $this->normalizeUnitsPayload(
                 $data['units'] ?? [],
@@ -46,6 +47,7 @@ final class ProductService
                 $piecesPerStrip,
                 $stripsPerBox,
                 $boxesPerCarton,
+                $piecesPerBox,
             );
 
             $default = collect($units)->firstWhere('is_default', true) ?? $units[0];
@@ -63,6 +65,7 @@ final class ProductService
                 'base_unit' => $baseUnit,
                 'pieces_per_strip' => $this->normalizePiecesPerStrip($data['pieces_per_strip'] ?? null),
                 'strips_per_box' => $this->normalizeStripsPerBox($data['strips_per_box'] ?? null),
+                'pieces_per_box' => $this->normalizePiecesPerBox($data['pieces_per_box'] ?? null),
                 'boxes_per_carton' => $this->normalizeBoxesPerCarton($data['boxes_per_carton'] ?? null),
                 'unit' => $default['sell_unit'],
                 'purchase_price' => $default['purchase_price'],
@@ -133,15 +136,26 @@ final class ProductService
             $stripsPerBox = array_key_exists('strips_per_box', $data)
                 ? (isset($data['strips_per_box']) ? (float) $data['strips_per_box'] : null)
                 : null;
+            $piecesPerBox = array_key_exists('pieces_per_box', $data)
+                ? (isset($data['pieces_per_box']) ? (float) $data['pieces_per_box'] : null)
+                : null;
             $boxesPerCarton = array_key_exists('boxes_per_carton', $data)
                 ? (isset($data['boxes_per_carton']) ? (float) $data['boxes_per_carton'] : null)
                 : null;
 
             if (isset($data['units'])) {
-                $units = $this->normalizeUnitsPayload($data['units'], $baseUnit, $piecesPerStrip, $stripsPerBox, $boxesPerCarton);
+                $units = $this->normalizeUnitsPayload(
+                    $data['units'],
+                    $baseUnit,
+                    $piecesPerStrip,
+                    $stripsPerBox,
+                    $boxesPerCarton,
+                    $piecesPerBox,
+                );
             } elseif (
                 ($piecesPerStrip !== null && $piecesPerStrip > 0)
                 || ($stripsPerBox !== null && $stripsPerBox > 0)
+                || ($piecesPerBox !== null && $piecesPerBox > 0)
                 || ($boxesPerCarton !== null && $boxesPerCarton > 0)
             ) {
                 $existingUnits = $product->units->map(fn ($u) => [
@@ -157,6 +171,7 @@ final class ProductService
                     $piecesPerStrip ?? ($product->pieces_per_strip !== null ? (float) $product->pieces_per_strip : null),
                     $stripsPerBox ?? ($product->strips_per_box !== null ? (float) $product->strips_per_box : null),
                     $boxesPerCarton ?? ($product->boxes_per_carton !== null ? (float) $product->boxes_per_carton : null),
+                    $piecesPerBox ?? ($product->pieces_per_box !== null ? (float) $product->pieces_per_box : null),
                 );
             } else {
                 $units = null;
@@ -199,6 +214,9 @@ final class ProductService
                 'strips_per_box' => array_key_exists('strips_per_box', $data)
                     ? $this->normalizeStripsPerBox($data['strips_per_box'])
                     : $product->strips_per_box,
+                'pieces_per_box' => array_key_exists('pieces_per_box', $data)
+                    ? $this->normalizePiecesPerBox($data['pieces_per_box'])
+                    : $product->pieces_per_box,
                 'boxes_per_carton' => array_key_exists('boxes_per_carton', $data)
                     ? $this->normalizeBoxesPerCarton($data['boxes_per_carton'])
                     : $product->boxes_per_carton,
@@ -479,6 +497,17 @@ final class ProductService
         return $n > 0 ? number_format($n, 4, '.', '') : null;
     }
 
+    private function normalizePiecesPerBox(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $n = (float) $value;
+
+        return $n > 0 ? number_format($n, 4, '.', '') : null;
+    }
+
     private function normalizeBoxesPerCarton(mixed $value): ?string
     {
         if ($value === null || $value === '') {
@@ -500,6 +529,7 @@ final class ProductService
         ?float $piecesPerStrip = null,
         ?float $stripsPerBox = null,
         ?float $boxesPerCarton = null,
+        ?float $piecesPerBox = null,
     ): array {
         if ($units === []) {
             throw ValidationException::withMessages([
@@ -515,8 +545,12 @@ final class ProductService
             $units = $this->applyStripsPerBox($units, $baseUnit, $stripsPerBox);
         }
 
+        if ($piecesPerBox !== null && $piecesPerBox > 0) {
+            $units = $this->applyPiecesPerBox($units, $baseUnit, $piecesPerBox);
+        }
+
         if ($boxesPerCarton !== null && $boxesPerCarton > 0) {
-            $units = $this->applyBoxesPerCarton($units, $boxesPerCarton);
+            $units = $this->applyBoxesPerCarton($units, $baseUnit, $boxesPerCarton);
         }
 
         $normalized = [];
@@ -607,15 +641,32 @@ final class ProductService
      * @param  array<int, array<string, mixed>>  $units
      * @return array<int, array<string, mixed>>
      */
-    private function applyBoxesPerCarton(array $units, float $boxesPerCarton): array
+    private function applyPiecesPerBox(array $units, string $baseUnit, float $piecesPerBox): array
+    {
+        if ($baseUnit !== 'piece') {
+            return $units;
+        }
+
+        return $this->upsertUnitRow($units, 'box', max(0.0001, $piecesPerBox));
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $units
+     * @return array<int, array<string, mixed>>
+     */
+    private function applyBoxesPerCarton(array $units, string $baseUnit, float $boxesPerCarton): array
     {
         $boxesPerCarton = max(0.0001, $boxesPerCarton);
         $boxFactor = null;
 
-        foreach ($units as $row) {
-            if (($row['sell_unit'] ?? '') === 'box') {
-                $boxFactor = max(0.0001, (float) ($row['conversion_factor'] ?? 1));
-                break;
+        if ($baseUnit === 'box') {
+            $boxFactor = 1.0;
+        } else {
+            foreach ($units as $row) {
+                if (($row['sell_unit'] ?? '') === 'box') {
+                    $boxFactor = max(0.0001, (float) ($row['conversion_factor'] ?? 1));
+                    break;
+                }
             }
         }
 

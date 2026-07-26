@@ -20,6 +20,9 @@ class StoreProductRequest extends FormRequest
         if ($this->has('strips_per_box') && $this->input('strips_per_box') === '') {
             $this->merge(['strips_per_box' => null]);
         }
+        if ($this->has('pieces_per_box') && $this->input('pieces_per_box') === '') {
+            $this->merge(['pieces_per_box' => null]);
+        }
         if ($this->has('boxes_per_carton') && $this->input('boxes_per_carton') === '') {
             $this->merge(['boxes_per_carton' => null]);
         }
@@ -44,10 +47,29 @@ class StoreProductRequest extends FormRequest
         }
 
         $productType = (string) $this->input('product_type', 'other');
+        $baseUnit = (string) $this->input('base_unit', 'strip');
         if (! ProductTypeUnitRules::usesStripUnit($productType)) {
             $this->merge([
                 'pieces_per_strip' => null,
                 'strips_per_box' => null,
+            ]);
+        }
+        if ($baseUnit === 'strip') {
+            $this->merge(['pieces_per_box' => null]);
+        } elseif ($baseUnit === 'piece') {
+            $this->merge(['strips_per_box' => null]);
+        } elseif ($baseUnit === 'box') {
+            $this->merge([
+                'pieces_per_strip' => null,
+                'strips_per_box' => null,
+                'pieces_per_box' => null,
+            ]);
+        } elseif ($baseUnit === 'carton') {
+            $this->merge([
+                'pieces_per_strip' => null,
+                'strips_per_box' => null,
+                'pieces_per_box' => null,
+                'boxes_per_carton' => null,
             ]);
         }
     }
@@ -99,6 +121,7 @@ class StoreProductRequest extends FormRequest
             'base_unit' => ['required', ProductCatalogOptions::sellUnitRuleForProductType($productType)],
             'pieces_per_strip' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
             'strips_per_box' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
+            'pieces_per_box' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
             'boxes_per_carton' => ['sometimes', 'nullable', 'numeric', 'min:0.0001'],
             'units' => ['required', 'array', 'min:1'],
             'units.*.sell_unit' => ['required', 'distinct', ProductCatalogOptions::sellUnitRuleForProductType($productType)],

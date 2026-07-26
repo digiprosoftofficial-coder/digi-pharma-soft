@@ -98,6 +98,21 @@
                                 <div v-if="form.errors.strips_per_box" class="text-danger small">{{ form.errors.strips_per_box }}</div>
                                 <p v-else class="form-text small mb-0">{{ t('catalog.strips_per_box_hint') }}</p>
                             </div>
+                            <div v-if="showPiecesPerBox" class="col-md-4">
+                                <label class="form-label">{{ t('catalog.pieces_per_box') }}</label>
+                                <input
+                                    v-model="form.pieces_per_box"
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    class="form-control"
+                                    :class="{ 'is-invalid': form.errors.pieces_per_box }"
+                                    :placeholder="t('catalog.pieces_per_box_placeholder')"
+                                    @input="syncPiecesPerBoxToUnits"
+                                />
+                                <div v-if="form.errors.pieces_per_box" class="text-danger small">{{ form.errors.pieces_per_box }}</div>
+                                <p v-else class="form-text small mb-0">{{ t('catalog.pieces_per_box_hint') }}</p>
+                            </div>
                             <div v-if="showBoxesPerCarton" class="col-md-4">
                                 <label class="form-label">{{ t('catalog.boxes_per_carton') }}</label>
                                 <input
@@ -883,6 +898,24 @@ function initialStripsPerBox(units) {
     if (product?.strips_per_box != null && product.strips_per_box !== '') {
         return Number(product.strips_per_box);
     }
+    if ((product?.base_unit ?? 'strip') !== 'strip') {
+        return '';
+    }
+    const box = units.find((u) => u.sell_unit === 'box');
+    if (box && Number(box.conversion_factor) > 0) {
+        return Number(box.conversion_factor);
+    }
+    return '';
+}
+
+function initialPiecesPerBox(units) {
+    const product = productData();
+    if (product?.pieces_per_box != null && product.pieces_per_box !== '') {
+        return Number(product.pieces_per_box);
+    }
+    if ((product?.base_unit ?? 'strip') !== 'piece') {
+        return '';
+    }
     const box = units.find((u) => u.sell_unit === 'box');
     if (box && Number(box.conversion_factor) > 0) {
         return Number(box.conversion_factor);
@@ -897,6 +930,10 @@ function initialBoxesPerCarton(units) {
     }
     const carton = units.find((u) => u.sell_unit === 'carton');
     const box = units.find((u) => u.sell_unit === 'box');
+    const base = product?.base_unit ?? 'strip';
+    if (carton && base === 'box') {
+        return Number(carton.conversion_factor) > 0 ? Number(carton.conversion_factor) : '';
+    }
     if (carton && box && Number(box.conversion_factor) > 0) {
         return Math.round((Number(carton.conversion_factor) / Number(box.conversion_factor)) * 10000) / 10000;
     }
@@ -1151,30 +1188,34 @@ const showPiecesPerStrip = computed(() => {
     if (!usesStripForType.value) {
         return false;
     }
-    const units = form.units.map((r) => r.sell_unit);
-    return units.includes('piece') || units.includes('strip') || form.base_unit === 'piece' || form.base_unit === 'strip';
+
+    return form.base_unit === 'strip' || form.base_unit === 'piece';
 });
 
-const showStripsPerBox = computed(() => {
-    if (!usesStripForType.value) {
-        return false;
-    }
-    const units = form.units.map((r) => r.sell_unit);
-    return form.base_unit === 'strip' && units.includes('strip') && units.includes('box');
-});
+const showStripsPerBox = computed(() => usesStripForType.value && form.base_unit === 'strip');
 
-const showBoxesPerCarton = computed(() => {
-    const units = form.units.map((r) => r.sell_unit);
-    return units.includes('carton') && units.includes('box');
-});
+const showPiecesPerBox = computed(() => form.base_unit === 'piece');
+
+const showBoxesPerCarton = computed(() =>
+    form.base_unit === 'piece' || form.base_unit === 'strip' || form.base_unit === 'box',
+);
 
 const cartonConversionPreview = computed(() => {
     const bpc = Number(form.boxes_per_carton);
-    const boxRow = form.units.find((r) => r.sell_unit === 'box');
-    const boxFactor = boxRow ? unitRowFactor(boxRow) : 0;
-    if (!bpc || bpc <= 0 || boxFactor <= 0) {
+    if (!bpc || bpc <= 0) {
         return null;
     }
+
+    if (form.base_unit === 'box') {
+        return formatConversionFactor(bpc);
+    }
+
+    const boxRow = form.units.find((r) => r.sell_unit === 'box');
+    const boxFactor = boxRow ? unitRowFactor(boxRow) : 0;
+    if (boxFactor <= 0) {
+        return null;
+    }
+
     return formatConversionFactor(bpc * boxFactor);
 });
 
@@ -1233,6 +1274,7 @@ const form = useForm({
             ? Number(existing.pieces_per_strip)
             : '',
     strips_per_box: initialStripsPerBox(initialUnits()),
+    pieces_per_box: initialPiecesPerBox(initialUnits()),
     boxes_per_carton: initialBoxesPerCarton(initialUnits()),
     units: initialUnits(),
     min_stock: existing?.min_stock ?? 0,
@@ -1287,12 +1329,39 @@ function sellUnitOptionsForRow(idx) {
 function clearStripConversionFields() {
     form.pieces_per_strip = '';
     form.strips_per_box = '';
+    form.pieces_per_box = '';
     form.boxes_per_carton = '';
 }
 
 function clearStripOnlyFields() {
     form.pieces_per_strip = '';
     form.strips_per_box = '';
+}
+
+function pruneConversionFieldsForBase() {
+    if (form.base_unit === 'strip') {
+        form.pieces_per_box = '';
+        return;
+    }
+
+    if (form.base_unit === 'piece') {
+        form.strips_per_box = '';
+        if (!usesStripForType.value) {
+            form.pieces_per_strip = '';
+        }
+        return;
+    }
+
+    if (form.base_unit === 'box') {
+        form.pieces_per_strip = '';
+        form.strips_per_box = '';
+        form.pieces_per_box = '';
+        return;
+    }
+
+    if (form.base_unit === 'carton') {
+        clearStripConversionFields();
+    }
 }
 
 function ensureBaseUnitRow() {
@@ -1318,9 +1387,21 @@ function applyBaseUnitAsDefault() {
 }
 
 function onBaseUnitChange() {
+    pruneConversionFieldsForBase();
+    const baseRow = form.units.find((r) => r.sell_unit === form.base_unit);
+    form.units = baseRow
+        ? [{
+            sell_unit: form.base_unit,
+            conversion_factor: 1,
+            purchase_price: baseRow.purchase_price || '0',
+            sale_price: baseRow.sale_price || '0',
+            is_default: true,
+        }]
+        : buildDefaultUnits(form.base_unit);
     applyBaseUnitAsDefault();
     syncPiecesPerStripToUnits();
     syncStripsPerBoxToUnits();
+    syncPiecesPerBoxToUnits();
     syncBoxesPerCartonToUnits();
     syncDerivedUnitPricesFromBase();
 }
@@ -1439,6 +1520,13 @@ function onUnitConversionInput(row) {
         }
         syncBoxesPerCartonToUnits();
     }
+    if (row.sell_unit === 'box' && form.base_unit === 'piece') {
+        const factor = unitRowFactor(row);
+        if (factor > 0) {
+            form.pieces_per_box = factor;
+        }
+        syncBoxesPerCartonToUnits();
+    }
     syncDerivedUnitPricesFromBase();
 }
 
@@ -1512,14 +1600,44 @@ function syncStripsPerBoxToUnits() {
     syncBoxesPerCartonToUnits();
 }
 
+function syncPiecesPerBoxToUnits() {
+    const ppb = Number(form.pieces_per_box);
+    if (!ppb || ppb <= 0 || form.base_unit !== 'piece') {
+        return;
+    }
+
+    const boxFactor = formatConversionFactor(ppb);
+    let boxRow = form.units.find((r) => r.sell_unit === 'box');
+    if (!boxRow) {
+        form.units.push({
+            sell_unit: 'box',
+            conversion_factor: boxFactor,
+            purchase_price: '0',
+            sale_price: '0',
+            is_default: false,
+        });
+    } else {
+        boxRow.conversion_factor = boxFactor;
+    }
+
+    syncDerivedUnitPricesFromBase();
+    syncBoxesPerCartonToUnits();
+}
+
 function syncBoxesPerCartonToUnits() {
     const bpc = Number(form.boxes_per_carton);
     if (!bpc || bpc <= 0) {
         return;
     }
 
-    const boxRow = form.units.find((r) => r.sell_unit === 'box');
-    const boxFactor = boxRow ? unitRowFactor(boxRow) : 0;
+    let boxFactor = 0;
+    if (form.base_unit === 'box') {
+        boxFactor = 1;
+    } else {
+        const boxRow = form.units.find((r) => r.sell_unit === 'box');
+        boxFactor = boxRow ? unitRowFactor(boxRow) : 0;
+    }
+
     if (boxFactor <= 0) {
         return;
     }
@@ -1549,6 +1667,9 @@ watch(
         }
         if (showStripsPerBox.value && form.strips_per_box) {
             syncStripsPerBoxToUnits();
+        }
+        if (showPiecesPerBox.value && form.pieces_per_box) {
+            syncPiecesPerBoxToUnits();
         }
         if (showBoxesPerCarton.value && form.boxes_per_carton) {
             syncBoxesPerCartonToUnits();
@@ -1593,6 +1714,7 @@ onMounted(() => {
     applyBaseUnitAsDefault();
     syncPiecesPerStripToUnits();
     syncStripsPerBoxToUnits();
+    syncPiecesPerBoxToUnits();
     syncBoxesPerCartonToUnits();
     syncDerivedUnitPricesFromBase();
 });

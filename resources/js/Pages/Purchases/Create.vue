@@ -69,18 +69,28 @@
                 <textarea v-model="form.notes" class="form-control" rows="2" :placeholder="t('purchases.notes_placeholder')" />
             </div>
 
-            <div class="card border bg-light mb-3">
+            <div class="card purchase-add-product mb-3">
                 <div class="card-body py-3">
-                    <label class="form-label fw-semibold mb-1">Add product</label>
-                    <p class="small text-muted mb-2">Search by name, SKU, or barcode — no need to type product ID.</p>
-                    <input
-                        v-model="searchQuery"
-                        type="search"
-                        class="form-control"
-                        placeholder="Start typing…"
-                        autocomplete="off"
-                        @input="debouncedSearch"
-                    />
+                    <div class="purchase-add-product__eyebrow">{{ t('purchases.add_product_eyebrow') }}</div>
+                    <label class="form-label fw-semibold mb-1" for="purchase-product-search">{{ t('purchases.add_product') }}</label>
+                    <p class="small text-muted mb-2">{{ t('purchases.add_product_hint') }}</p>
+                    <div class="purchase-add-product__search input-group input-group-lg">
+                        <span class="input-group-text purchase-add-product__icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="7" />
+                                <path d="m20 20-3.5-3.5" />
+                            </svg>
+                        </span>
+                        <input
+                            id="purchase-product-search"
+                            v-model="searchQuery"
+                            type="search"
+                            class="form-control purchase-add-product__input"
+                            :placeholder="t('purchases.add_product_placeholder')"
+                            autocomplete="off"
+                            @input="debouncedSearch"
+                        />
+                    </div>
                     <ul v-if="searchResults.length" class="list-group list-group-flush mt-2 border rounded overflow-hidden">
                         <li
                             v-for="item in searchResults"
@@ -101,7 +111,7 @@
                             </div>
                         </li>
                     </ul>
-                    <p v-else-if="searchQuery.length >= 2 && !searching" class="small text-muted mb-0 mt-2">No products found.</p>
+                    <p v-else-if="searchQuery.length >= 2 && !searching" class="small text-muted mb-0 mt-2">{{ t('purchases.no_products_found') }}</p>
                 </div>
             </div>
 
@@ -345,15 +355,17 @@ import { useMoney } from '@/composables/useMoney';
 import { useQuantity } from '@/composables/useQuantity';
 import {
     boxConversionFactor,
+    buildPurchaseUnitOptions,
     catalogBoxesPerCarton,
+    catalogPiecesPerBox,
+    catalogPiecesPerStrip,
     catalogStripsPerBox,
     defaultSellUnit,
-    hasBoxAndCartonUnits,
     unitLabel,
     unitPurchasePrice,
     unitSalePrice,
 } from '@/composables/useProductUnits';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 const props = defineProps({
@@ -373,6 +385,8 @@ function locationLabel(loc) {
 const { t } = useLocale();
 const { formatMoney, currencyCode, currencySymbol } = useMoney();
 const { formatQty } = useQuantity();
+const page = usePage();
+const stripProductTypes = computed(() => page.props.catalogOptions?.stripProductTypes ?? ['tablet', 'capsule']);
 
 const purchaseBatchTip = computed(() => t('catalog.purchase_batch_pack_tip'));
 const editingLineIndex = ref(null);
@@ -530,12 +544,7 @@ async function runSearch() {
 }
 
 function buildUnitOptions(product) {
-    const units = Array.isArray(product.units) ? product.units : (product.units?.data ?? []);
-    if (units.length) {
-        return units;
-    }
-    const u = product.base_unit ?? product.unit ?? 'strip';
-    return [{ sell_unit: u, conversion_factor: 1, purchase_price: product.purchase_price, sale_price: product.sale_price, is_default: true }];
+    return buildPurchaseUnitOptions(product, { stripTypes: stripProductTypes.value });
 }
 
 function productBaseUnit(product) {
@@ -550,16 +559,43 @@ function formatConversionFactor(value) {
     return Math.round(n * 10000) / 10000;
 }
 
+function resolveBoxFactor(line) {
+    if (line.base_unit === 'box') {
+        return 1;
+    }
+    const fromUnits = boxConversionFactor(line.unit_options);
+    if (fromUnits > 0) {
+        return fromUnits;
+    }
+    if (line.base_unit === 'strip') {
+        const strips = Number(line.pack_strips_per_box ?? line.catalog_strips_per_box);
+        return strips > 0 ? strips : 0;
+    }
+    if (line.base_unit === 'piece') {
+        const pieces = Number(line.pack_pieces_per_box ?? line.catalog_pieces_per_box);
+        return pieces > 0 ? pieces : 0;
+    }
+    return 0;
+}
+
 function usesBoxesPerCarton(line) {
-    return line.sell_unit === 'carton' && hasBoxAndCartonUnits(line.unit_options);
+    return line.sell_unit === 'carton' && resolveBoxFactor(line) > 0;
 }
 
 function usesStripsPerBox(line) {
     return line.sell_unit === 'box' && line.base_unit === 'strip';
 }
 
+function usesPiecesPerBox(line) {
+    return line.sell_unit === 'box' && line.base_unit === 'piece';
+}
+
+function usesPiecesPerStrip(line) {
+    return line.sell_unit === 'piece' && line.base_unit === 'strip';
+}
+
 function usesPackSizeFriendlyInput(line) {
-    return usesStripsPerBox(line) || usesBoxesPerCarton(line);
+    return usesStripsPerBox(line) || usesPiecesPerBox(line) || usesBoxesPerCarton(line) || usesPiecesPerStrip(line);
 }
 
 function packSizeLabel(line) {
@@ -568,6 +604,12 @@ function packSizeLabel(line) {
     }
     if (usesStripsPerBox(line)) {
         return t('catalog.purchase_strips_per_box');
+    }
+    if (usesPiecesPerBox(line)) {
+        return t('catalog.purchase_pieces_per_box');
+    }
+    if (usesPiecesPerStrip(line)) {
+        return t('catalog.purchase_pieces_per_strip');
     }
     return `${unitLabel(line.base_unit)} per 1 ${unitLabel(line.sell_unit)} (this receipt)`;
 }
@@ -578,10 +620,26 @@ function defaultStripsPerBox(line) {
     return value && value > 0 ? value : defaultConversion(line);
 }
 
+function defaultPiecesPerBox(line) {
+    const product = { units: line.unit_options, pieces_per_box: line.catalog_pieces_per_box, base_unit: line.base_unit };
+    const value = catalogPiecesPerBox(product);
+    return value && value > 0 ? value : defaultConversion(line);
+}
+
+function defaultPiecesPerStrip(line) {
+    const value = catalogPiecesPerStrip({ pieces_per_strip: line.catalog_pieces_per_strip });
+    if (value && value > 0) {
+        return value;
+    }
+    const factor = defaultConversion(line);
+    return factor > 0 && factor < 1 ? formatConversionFactor(1 / factor) : 10;
+}
+
 function defaultBoxesPerCarton(line) {
     const product = { units: line.unit_options, boxes_per_carton: line.catalog_boxes_per_carton };
     const value = catalogBoxesPerCarton(product);
-    return value && value > 0 ? value : defaultConversion(line) / Math.max(0.0001, boxConversionFactor(line.unit_options));
+    const boxFactor = resolveBoxFactor(line);
+    return value && value > 0 ? value : defaultConversion(line) / Math.max(0.0001, boxFactor);
 }
 
 function syncLineConversionFromPackInput(line) {
@@ -592,11 +650,25 @@ function syncLineConversionFromPackInput(line) {
         }
         return;
     }
+    if (usesPiecesPerBox(line)) {
+        const pieces = Number(line.pack_pieces_per_box);
+        if (!Number.isNaN(pieces) && pieces > 0) {
+            line.conversion_factor = formatConversionFactor(pieces);
+        }
+        return;
+    }
+    if (usesPiecesPerStrip(line)) {
+        const pieces = Number(line.pack_pieces_per_strip);
+        if (!Number.isNaN(pieces) && pieces > 0) {
+            line.conversion_factor = formatConversionFactor(1 / pieces);
+        }
+        return;
+    }
     if (!usesBoxesPerCarton(line)) {
         return;
     }
     const boxes = Number(line.pack_boxes_per_carton);
-    const boxFactor = boxConversionFactor(line.unit_options);
+    const boxFactor = resolveBoxFactor(line);
     if (Number.isNaN(boxes) || boxes <= 0 || boxFactor <= 0) {
         return;
     }
@@ -606,6 +678,12 @@ function syncLineConversionFromPackInput(line) {
 function initLinePackFields(line) {
     if (usesStripsPerBox(line)) {
         line.pack_strips_per_box = defaultStripsPerBox(line);
+        syncLineConversionFromPackInput(line);
+    } else if (usesPiecesPerBox(line)) {
+        line.pack_pieces_per_box = defaultPiecesPerBox(line);
+        syncLineConversionFromPackInput(line);
+    } else if (usesPiecesPerStrip(line)) {
+        line.pack_pieces_per_strip = defaultPiecesPerStrip(line);
         syncLineConversionFromPackInput(line);
     } else if (usesBoxesPerCarton(line)) {
         line.pack_boxes_per_carton = defaultBoxesPerCarton(line);
@@ -634,6 +712,16 @@ function packSizeDiffersFromDefault(line) {
         const current = Number(line.pack_strips_per_box);
         return !Number.isNaN(current) && Math.abs(current - def) > 0.0001;
     }
+    if (usesPiecesPerBox(line)) {
+        const def = defaultPiecesPerBox(line);
+        const current = Number(line.pack_pieces_per_box);
+        return !Number.isNaN(current) && Math.abs(current - def) > 0.0001;
+    }
+    if (usesPiecesPerStrip(line)) {
+        const def = defaultPiecesPerStrip(line);
+        const current = Number(line.pack_pieces_per_strip);
+        return !Number.isNaN(current) && Math.abs(current - def) > 0.0001;
+    }
     if (usesBoxesPerCarton(line)) {
         const def = defaultBoxesPerCarton(line);
         const current = Number(line.pack_boxes_per_carton);
@@ -645,6 +733,12 @@ function packSizeDiffersFromDefault(line) {
 function packSizeDefaultHint(line) {
     if (usesStripsPerBox(line)) {
         return t('catalog.purchase_catalog_default_strips', { qty: formatQty(defaultStripsPerBox(line)) });
+    }
+    if (usesPiecesPerBox(line)) {
+        return t('catalog.purchase_catalog_default_pieces', { qty: formatQty(defaultPiecesPerBox(line)) });
+    }
+    if (usesPiecesPerStrip(line)) {
+        return t('catalog.purchase_catalog_default_pieces', { qty: formatQty(defaultPiecesPerStrip(line)) });
     }
     if (usesBoxesPerCarton(line)) {
         return t('catalog.purchase_catalog_default_boxes', { qty: formatQty(defaultBoxesPerCarton(line)) });
@@ -700,9 +794,14 @@ function addProductLine(product) {
         last_purchase_date: product.last_purchase?.purchased_at ?? null,
         unit_options: unitOptions,
         existing_batches: existingBatches,
+        product_type: product.product_type ?? 'other',
+        catalog_pieces_per_strip: product.pieces_per_strip ?? null,
         catalog_strips_per_box: product.strips_per_box ?? null,
+        catalog_pieces_per_box: product.pieces_per_box ?? null,
         catalog_boxes_per_carton: product.boxes_per_carton ?? null,
         pack_strips_per_box: null,
+        pack_pieces_per_box: null,
+        pack_pieces_per_strip: null,
         pack_boxes_per_carton: null,
         storage_location_id: product.storage_location_id ?? product.storage_location?.id ?? null,
     };
@@ -758,8 +857,13 @@ function applyBatchPick(line) {
             line.conversion_factor = Number(batch.pack_conversion_factor);
             if (usesStripsPerBox(line)) {
                 line.pack_strips_per_box = Number(batch.pack_conversion_factor);
+            } else if (usesPiecesPerBox(line)) {
+                line.pack_pieces_per_box = Number(batch.pack_conversion_factor);
+            } else if (usesPiecesPerStrip(line)) {
+                const factor = Number(batch.pack_conversion_factor);
+                line.pack_pieces_per_strip = factor > 0 ? formatConversionFactor(1 / factor) : null;
             } else if (usesBoxesPerCarton(line)) {
-                const boxFactor = boxConversionFactor(line.unit_options);
+                const boxFactor = resolveBoxFactor(line);
                 line.pack_boxes_per_carton =
                     boxFactor > 0 ? formatConversionFactor(Number(batch.pack_conversion_factor) / boxFactor) : null;
             }
@@ -770,12 +874,16 @@ function applyBatchPick(line) {
 async function onUnitChange(line) {
     const product = {
         units: line.unit_options,
-        purchase_price: line.unit_options[0]?.purchase_price,
-        sale_price: line.unit_options[0]?.sale_price,
+        purchase_price: line.unit_options.find((u) => u.sell_unit === line.base_unit)?.purchase_price
+            ?? line.unit_options[0]?.purchase_price,
+        sale_price: line.unit_options.find((u) => u.sell_unit === line.base_unit)?.sale_price
+            ?? line.unit_options[0]?.sale_price,
     };
     line.unit_cost = unitPurchasePrice(product, line.sell_unit);
     line.sale_price = unitSalePrice(product, line.sell_unit);
     line.pack_strips_per_box = null;
+    line.pack_pieces_per_box = null;
+    line.pack_pieces_per_strip = null;
     line.pack_boxes_per_carton = null;
     initLinePackFields(line);
     if (!usesPackSizeFriendlyInput(line)) {
@@ -848,6 +956,12 @@ function lineIsIncomplete(line) {
         if (usesStripsPerBox(line) && !(Number(line.pack_strips_per_box) > 0)) {
             return true;
         }
+        if (usesPiecesPerBox(line) && !(Number(line.pack_pieces_per_box) > 0)) {
+            return true;
+        }
+        if (usesPiecesPerStrip(line) && !(Number(line.pack_pieces_per_strip) > 0)) {
+            return true;
+        }
         if (usesBoxesPerCarton(line) && !(Number(line.pack_boxes_per_carton) > 0)) {
             return true;
         }
@@ -914,6 +1028,58 @@ function submit() {
 .purchase-form :deep(.form-select),
 .purchase-form :deep(.btn) {
     min-height: 2.35rem;
+}
+
+.purchase-add-product {
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.22);
+    background: linear-gradient(180deg, rgba(var(--bs-primary-rgb), 0.07) 0%, #fff 55%);
+    box-shadow: 0 0.4rem 1.1rem rgba(var(--bs-primary-rgb), 0.1);
+}
+
+.purchase-add-product__eyebrow {
+    color: var(--bs-primary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    margin-bottom: 0.15rem;
+}
+
+.purchase-add-product__search {
+    --purchase-search-border: rgba(var(--bs-primary-rgb), 0.5);
+    border: 2px solid var(--purchase-search-border);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background: rgba(var(--bs-primary-rgb), 0.06);
+    box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.1);
+}
+
+.purchase-add-product__icon {
+    color: var(--bs-primary);
+    background: transparent;
+    border: 0;
+    padding-left: 0.95rem;
+}
+
+.purchase-add-product__input {
+    border: 0 !important;
+    background: transparent !important;
+    font-size: 1.05rem;
+    font-weight: 600;
+    min-height: 3.15rem !important;
+    box-shadow: none !important;
+}
+
+.purchase-add-product__input::placeholder {
+    color: #64748b;
+    font-weight: 500;
+    opacity: 1;
+}
+
+.purchase-add-product__search:focus-within {
+    --purchase-search-border: var(--bs-primary);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(var(--bs-primary-rgb), 0.18);
 }
 
 .purchase-line-summary__body {
