@@ -20,6 +20,7 @@ final class StockTransferController extends Controller
     public function index(): Response
     {
         $this->authorize('viewAny', StockTransfer::class);
+        abort_unless(TenantFeatures::multiBranchEnabled(tenant()), 404);
 
         $transfers = StockTransfer::query()
             ->with(['fromBranch:id,name,code', 'toBranch:id,name,code'])
@@ -29,21 +30,18 @@ final class StockTransferController extends Controller
 
         return Inertia::render('StockTransfers/Index', [
             'transfers' => $transfers,
-            'multiBranch' => TenantFeatures::multiBranchEnabled(tenant()),
+            'multiBranch' => true,
         ]);
     }
 
     public function create(): Response
     {
         $this->authorize('create', StockTransfer::class);
-
-        $multiBranch = TenantFeatures::multiBranchEnabled(tenant());
+        abort_unless(TenantFeatures::multiBranchEnabled(tenant()), 404);
 
         return Inertia::render('StockTransfers/Create', [
-            'branches' => $multiBranch
-                ? Branch::query()->where('is_active', true)->orderByDesc('is_default')->orderBy('name')->get(['id', 'name', 'code', 'is_default'])
-                : [],
-            'multiBranch' => $multiBranch,
+            'branches' => Branch::query()->where('is_active', true)->orderByDesc('is_default')->orderBy('name')->get(['id', 'name', 'code', 'is_default']),
+            'multiBranch' => true,
             'currentBranchId' => \branch_id(),
         ]);
     }
@@ -51,23 +49,19 @@ final class StockTransferController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $this->authorize('create', StockTransfer::class);
+        abort_unless(TenantFeatures::multiBranchEnabled(tenant()), 404);
 
         $tid = tenant_id();
-        $multiBranch = TenantFeatures::multiBranchEnabled(tenant());
 
         $validated = $request->validate([
             'notes' => ['nullable', 'string', 'max:2000'],
-            'to_branch_id' => $multiBranch
-                ? ['required', 'integer', Rule::exists('branches', 'id')->where('tenant_id', $tid)]
-                : ['nullable'],
+            'to_branch_id' => ['required', 'integer', Rule::exists('branches', 'id')->where('tenant_id', $tid)],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.from_batch_id' => ['required', 'integer', Rule::exists('product_batches', 'id')->where('tenant_id', $tid)],
             'lines.*.quantity' => ['required', 'numeric', 'min:0.0001'],
         ]);
 
-        $toBranchId = $multiBranch
-            ? (int) $validated['to_branch_id']
-            : \branch_id();
+        $toBranchId = (int) $validated['to_branch_id'];
 
         $lines = array_map(
             fn (array $line) => [

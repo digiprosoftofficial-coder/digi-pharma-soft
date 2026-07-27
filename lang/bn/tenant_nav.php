@@ -36,7 +36,7 @@ return [
     'sms' => 'SMS পাঠান',
     'users' => 'ইউজার',
     'support' => 'সাপোর্ট',
-    'global_settings' => 'গ্লোবাল সেটিংস',
+    'global_settings' => 'সেটিংস',
     'new_sale' => 'নতুন বিক্রয়',
     'pharmacy_mgmt' => 'ফার্মেসি ব্যবস্থাপনা',
     'inventory_group' => 'ইনভেন্টরি ও স্টক',

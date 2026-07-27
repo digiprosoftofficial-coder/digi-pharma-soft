@@ -106,13 +106,17 @@
                 <span>{{ t('tenant_nav.global_settings') }}</span>
             </Link>
             <Link
-                v-else
-                href="/global-settings"
-                class="tenant-nav-child tenant-nav-child--inactive"
+                v-else-if="can('settings.view')"
+                href="/settings"
+                class="tenant-nav-child"
+                :class="{
+                    'tenant-nav-child--active': pathStarts('/settings'),
+                    'tenant-nav-child--inactive': !pathStarts('/settings'),
+                }"
                 @click="notifyNavigate"
             >
-                <TenantNavIcon name="globe" />
-                <span>{{ t('tenant_nav.global_settings') }}</span>
+                <TenantNavIcon name="settings" />
+                <span>{{ t('tenant_nav.settings') }}</span>
             </Link>
         </div>
     </nav>
@@ -216,11 +220,17 @@ const sectionsConfig = computed(() => [
         id: 'inventory',
         icon: 'inventory',
         label: t('tenant_nav.inventory_group'),
-        show: can('inventory.view') || can('stock_transfers.view'),
+        show: can('inventory.view') || (can('stock_transfers.view') && multiBranchEnabled.value),
         paths: ['/inventory', '/stock-transfers'],
         children: [
             { href: '/inventory', icon: 'inventory', label: t('tenant_nav.inventory'), show: can('inventory.view'), match: 'prefix' },
-            { href: '/stock-transfers', icon: 'transfer', label: t('tenant_nav.stock_transfer'), show: can('stock_transfers.view'), match: 'prefix' },
+            {
+                href: '/stock-transfers',
+                icon: 'transfer',
+                label: t('tenant_nav.stock_transfer'),
+                show: can('stock_transfers.view') && multiBranchEnabled.value,
+                match: 'prefix',
+            },
         ],
     },
     {
@@ -262,10 +272,9 @@ const sectionsConfig = computed(() => [
         id: 'admin',
         icon: 'settings',
         label: t('tenant_nav.administration'),
-        show: can('settings.view') || can('team.users.view') || (can('branches.view') && multiBranchEnabled.value),
-        paths: ['/settings', '/team/users', '/branches'],
+        show: can('team.users.view') || (can('branches.view') && multiBranchEnabled.value),
+        paths: ['/team/users', '/branches'],
         children: [
-            { href: '/settings', icon: 'settings', label: t('tenant_nav.settings'), show: can('settings.view'), match: 'prefix' },
             { href: '/branches', icon: 'inventory', label: t('tenant_nav.branches'), show: can('branches.view') && multiBranchEnabled.value, match: 'prefix' },
             { href: '/team/users', icon: 'users', label: t('tenant_nav.users'), show: can('team.users.view'), match: 'prefix' },
         ],

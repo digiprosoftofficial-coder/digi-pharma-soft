@@ -139,6 +139,10 @@
                                 :key="product.id"
                                 type="button"
                                 class="pos-product-card text-start"
+                                :class="{
+                                    'pos-product-card--flash': flashProductId === product.id,
+                                    'pos-product-card--in-cart': cartQtyForProduct(product.id) > 0,
+                                }"
                                 :disabled="!hasSellableStock(product)"
                                 @click="addLine(product)"
                             >
@@ -149,15 +153,30 @@
                                         :alt="product.name"
                                         loading="lazy"
                                     />
+                                    <span
+                                        v-if="cartQtyForProduct(product.id) > 0"
+                                        class="pos-product-card__qty"
+                                    >
+                                        ×{{ cartQtyForProduct(product.id) }}
+                                    </span>
+                                    <span
+                                        v-if="flashProductId === product.id"
+                                        class="pos-product-card__check"
+                                        aria-hidden="true"
+                                    >
+                                        ✓
+                                    </span>
                                 </span>
-                                <span class="pos-product-card__name">{{ product.name }}</span>
-                                <span class="pos-product-card__meta">
-                                    <span v-if="product.strength">{{ product.strength }}</span>
-                                    <span v-if="product.sku">{{ product.sku }}</span>
-                                </span>
-                                <span class="d-flex justify-content-between align-items-end gap-2 mt-auto">
-                                    <span class="small text-muted">{{ t('sales.pos_stock') }} {{ product.stock_on_hand ?? '0' }}</span>
-                                    <strong class="small">{{ formatMoney(product.sale_price) }}</strong>
+                                <span class="pos-product-card__body">
+                                    <span class="pos-product-card__name">{{ product.name }}</span>
+                                    <span class="pos-product-card__meta">
+                                        <span v-if="product.strength">{{ product.strength }}</span>
+                                        <span v-if="product.sku">{{ product.sku }}</span>
+                                    </span>
+                                    <span class="d-flex justify-content-between align-items-end gap-2 mt-auto">
+                                        <span class="small text-muted">{{ t('sales.pos_stock') }} {{ product.stock_on_hand ?? '0' }}</span>
+                                        <strong class="small">{{ formatMoney(product.sale_price) }}</strong>
+                                    </span>
                                 </span>
                             </button>
                         </div>
@@ -165,16 +184,26 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-7">
-                <div class="card card-body pos-cart-card">
-                    <h2 class="h6">{{ t('sales.cart') }}</h2>
+            <div class="col-lg-7" :class="{ 'pos-cart-col--sticky-pad': cart.length }">
+                <div ref="cartSection" class="card card-body pos-cart-card">
+                    <div class="pos-cart-header d-flex justify-content-between align-items-center gap-2 mb-2">
+                        <h2 class="h6 mb-0">
+                            {{ t('sales.cart') }}
+                            <span v-if="cart.length" class="text-muted fw-normal">
+                                ({{ cartItemCount }})
+                            </span>
+                        </h2>
+                        <strong v-if="cart.length" class="pos-cart-header__total">
+                            {{ formatMoney(payableAmount) }}
+                        </strong>
+                    </div>
                     <p v-if="!cart.length" class="text-muted small">{{ t('sales.cart_empty_hint') }}</p>
                     <template v-else>
                     <div class="pos-cart-cards d-lg-none">
                         <div v-for="(line, idx) in cart" :key="idx" class="pos-cart-line-card border rounded bg-white p-2 mb-2">
                             <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
                                 <div class="min-w-0">
-                                    <div class="fw-semibold text-truncate">{{ line.name }}</div>
+                                    <div class="pos-cart-line-title text-truncate">{{ line.name }}</div>
                                     <div class="small text-muted">{{ lineStockHint(line) }}</div>
                                     <div v-if="linePriceSourceHint(line)" class="small" :class="line.uses_markup_pricing ? 'text-primary' : 'text-muted'">
                                         {{ linePriceSourceHint(line) }}
@@ -279,7 +308,7 @@
                             <tbody>
                                 <tr v-for="(line, idx) in cart" :key="idx">
                                     <td>
-                                        <div>{{ line.name }}</div>
+                                        <div class="pos-cart-line-title">{{ line.name }}</div>
                                         <div v-if="line.batches?.length > 1" class="mt-1">
                                             <select
                                                 v-model.number="line.product_batch_id"
@@ -497,6 +526,23 @@
                 </div>
             </div>
         </div>
+
+        <div v-if="cart.length" class="pos-sticky-cart d-lg-none">
+            <button type="button" class="pos-sticky-cart__btn" @click="scrollToCart">
+                <span class="pos-sticky-cart__summary">
+                    <strong>{{ t('sales.pos_cart_items', { count: cartItemCount }) }}</strong>
+                    <span aria-hidden="true">·</span>
+                    <strong>{{ formatMoney(payableAmount) }}</strong>
+                </span>
+                <span class="pos-sticky-cart__action">{{ t('sales.pos_view_cart') }}</span>
+            </button>
+        </div>
+
+        <Teleport to="body">
+            <div v-if="addToast" class="pos-add-toast" role="status" aria-live="polite">
+                {{ addToast }}
+            </div>
+        </Teleport>
     </TenantShellLayout>
 </template>
 
@@ -553,7 +599,14 @@ const {
 const q = ref('');
 const results = ref([]);
 const cart = ref([]);
-const activeQuickProductTab = ref('popular');
+const activeQuickProductTab = ref(
+    typeof window !== 'undefined' && window.matchMedia('(min-width: 992px)').matches ? 'latest' : 'popular',
+);
+const cartSection = ref(null);
+const flashProductId = ref(null);
+const addToast = ref('');
+let flashTimer = null;
+let toastTimer = null;
 
 // Customer selection
 const customerQuery = ref('');
@@ -582,6 +635,26 @@ let timer;
 const cartSubtotal = computed(() =>
     cart.value.reduce((s, l) => s + Number(l.quantity || 0) * Number(l.unit_price || 0), 0),
 );
+
+const cartItemCount = computed(() =>
+    cart.value.reduce((sum, line) => sum + Math.max(0, Math.round(Number(line.quantity) || 0)), 0),
+);
+
+const cartQtyByProductId = computed(() => {
+    const map = {};
+    for (const line of cart.value) {
+        const id = line.product_id;
+        if (!id) {
+            continue;
+        }
+        map[id] = (map[id] || 0) + Math.max(0, Math.round(Number(line.quantity) || 0));
+    }
+    return map;
+});
+
+function cartQtyForProduct(productId) {
+    return cartQtyByProductId.value[productId] || 0;
+}
 
 const cartDiscountAmount = computed(() => {
     const pct = Math.min(100, Math.max(0, Number(cartDiscountPercent.value) || 0));
@@ -650,6 +723,8 @@ function closeSaleSuccessAlert() {
 
 onBeforeUnmount(() => {
     clearTimeout(saleSuccessTimer);
+    clearTimeout(flashTimer);
+    clearTimeout(toastTimer);
     void stopBarcodeScanner();
 });
 
@@ -1078,6 +1153,32 @@ function conversionToBase(line) {
     return factor > 0 ? factor : 1;
 }
 
+function notifyProductAdded(item) {
+    flashProductId.value = item.id;
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => {
+        flashProductId.value = null;
+    }, 700);
+
+    addToast.value = t('sales.pos_added_to_cart', { name: item.name });
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+        addToast.value = '';
+    }, 1800);
+}
+
+function scrollToCart() {
+    const el = cartSection.value;
+    if (!el) {
+        return;
+    }
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    el.scrollIntoView({
+        behavior: prefersReducedMotion ? 'auto' : 'smooth',
+        block: 'start',
+    });
+}
+
 function addLine(item) {
     const batches = batchesWithStock(item);
     const batch = batches[0];
@@ -1085,6 +1186,16 @@ function addLine(item) {
         alert(t('catalog.pos_no_sellable_batch'));
         return;
     }
+
+    const existing = cart.value.find(
+        (line) => line.product_id === item.id && Number(line.product_batch_id) === Number(batch.id),
+    );
+    if (existing) {
+        existing.quantity = Math.max(1, Math.round(Number(existing.quantity) || 1) + 1);
+        notifyProductAdded(item);
+        return;
+    }
+
     const sellUnit = defaultSellUnit(item);
     const line = {
         product_id: item.id,
@@ -1106,6 +1217,7 @@ function addLine(item) {
     };
     refreshLinePricing(line);
     cart.value.push(line);
+    notifyProductAdded(item);
 }
 
 async function submitSale() {
@@ -1271,6 +1383,11 @@ async function submitSale() {
     overflow: hidden;
 }
 
+.pos-cart-line-title {
+    color: var(--bs-primary);
+    font-weight: 700;
+}
+
 .pos-cart-line-card__remove {
     flex: 0 0 auto;
     min-width: 2.15rem;
@@ -1294,17 +1411,18 @@ async function submitSale() {
 .pos-product-card {
     display: flex;
     flex-direction: column;
-    min-height: 10.25rem;
-    padding: 0.65rem;
+    min-height: 11rem;
+    padding: 0;
+    overflow: hidden;
     color: var(--bs-body-color);
     background: #ffffff;
     border: 1px solid var(--bs-border-color);
-    border-radius: 0.35rem;
+    border-radius: 0.55rem;
     transition: border-color 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
 }
 
 .pos-product-card:hover:not(:disabled) {
-    border-color: #adb5bd;
+    border-color: rgba(var(--bs-primary-rgb), 0.45);
     box-shadow: 0 0.5rem 1rem rgba(15, 23, 42, 0.08);
     transform: translateY(-1px);
 }
@@ -1312,6 +1430,15 @@ async function submitSale() {
 .pos-product-card:disabled {
     cursor: not-allowed;
     opacity: 0.55;
+}
+
+.pos-product-card--in-cart {
+    border-color: rgba(var(--bs-primary-rgb), 0.4);
+}
+
+.pos-product-card--flash {
+    border-color: var(--bs-success);
+    box-shadow: 0 0 0 3px rgba(var(--bs-success-rgb), 0.25);
 }
 
 .pos-barcode-scanner__viewport {
@@ -1331,21 +1458,70 @@ async function submitSale() {
 }
 
 .pos-product-card__image-wrap {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 4.75rem;
-    margin-bottom: 0.55rem;
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 6.25rem;
     overflow: hidden;
     background: var(--bs-tertiary-bg);
-    border: 1px solid rgba(15, 23, 42, 0.06);
-    border-radius: 0.3rem;
 }
 
 .pos-product-card__image {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.pos-product-card__qty {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.4rem;
+    min-width: 1.6rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 999px;
+    background: var(--bs-primary);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+}
+
+.pos-product-card__check {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(25, 135, 84, 0.55);
+    color: #fff;
+    font-size: 1.75rem;
+    font-weight: 700;
+    animation: pos-check-fade 0.7s ease;
+}
+
+@keyframes pos-check-fade {
+    0% {
+        opacity: 0;
+        transform: scale(0.85);
+    }
+    25% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+.pos-product-card__body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.55rem 0.65rem 0.65rem;
+    min-height: 0;
 }
 
 .pos-product-card__name {
@@ -1361,9 +1537,89 @@ async function submitSale() {
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem;
-    margin-top: 0.25rem;
+    margin-top: 0.1rem;
     color: var(--bs-secondary-color);
     font-size: 0.76rem;
+}
+
+.pos-cart-header__total {
+    color: var(--bs-primary);
+    font-size: 1rem;
+    white-space: nowrap;
+}
+
+.pos-sticky-cart {
+    position: fixed;
+    right: 0.75rem;
+    bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+    left: 0.75rem;
+    z-index: 1045;
+}
+
+.pos-sticky-cart__btn {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border: 0;
+    border-radius: 0.9rem;
+    background: var(--bs-primary);
+    color: #fff;
+    box-shadow: 0 0.55rem 1.4rem rgba(15, 23, 42, 0.22);
+}
+
+.pos-sticky-cart__summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+    font-size: 0.92rem;
+}
+
+.pos-sticky-cart__action {
+    flex-shrink: 0;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.pos-add-toast {
+    position: fixed;
+    top: calc(1rem + env(safe-area-inset-top, 0px));
+    left: 50%;
+    z-index: 1100;
+    max-width: min(22rem, calc(100vw - 1.5rem));
+    padding: 0.7rem 1rem;
+    border-radius: 0.75rem;
+    background: #0f172a;
+    color: #fff;
+    font-size: 0.88rem;
+    font-weight: 600;
+    box-shadow: 0 0.6rem 1.5rem rgba(15, 23, 42, 0.28);
+    transform: translateX(-50%);
+    animation: pos-toast-in 0.2s ease;
+}
+
+@keyframes pos-toast-in {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -0.4rem);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+@media (max-width: 991.98px) {
+    .pos-cart-col--sticky-pad {
+        padding-bottom: 4.5rem;
+    }
 }
 
 @media (max-width: 575.98px) {
@@ -1400,12 +1656,15 @@ async function submitSale() {
     }
 
     .pos-product-card {
-        min-height: 9.25rem;
-        padding: 0.55rem;
+        min-height: 10.5rem;
     }
 
     .pos-product-card__image-wrap {
-        height: 4rem;
+        height: 5.25rem;
+    }
+
+    .pos-product-card__body {
+        padding: 0.45rem 0.5rem 0.55rem;
     }
 
     .pos-payment-row .btn,

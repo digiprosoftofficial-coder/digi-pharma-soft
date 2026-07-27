@@ -36,7 +36,7 @@ return [
     'sms' => 'Send SMS',
     'users' => 'Users',
     'support' => 'Support',
-    'global_settings' => 'Global settings',
+    'global_settings' => 'Settings',
     'new_sale' => 'New sale',
     'pharmacy_mgmt' => 'Pharmacy management',
     'inventory_group' => 'Inventory & stock',
