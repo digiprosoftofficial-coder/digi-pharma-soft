@@ -190,17 +190,38 @@
                 </div>
             </div>
             <div class="col-lg-4">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body text-center">
-                        <img
+                <div class="card border-0 shadow-sm h-100 product-show-media-card overflow-hidden">
+                    <div class="product-show-media-image">
+                        <button
                             v-if="product.image_url"
-                            :src="product.image_url"
-                            :alt="product.name"
-                            class="img-fluid rounded border mb-2"
-                            style="max-height: 160px"
-                        />
-                        <p v-else class="text-muted small mb-2">No image</p>
-                        <img :src="`/barcodes/${product.id}`" alt="Barcode" class="border rounded bg-white p-2" style="max-height: 80px" />
+                            type="button"
+                            class="product-show-image-btn"
+                            :aria-label="t('catalog.view_product_image')"
+                            @click="openImageLightbox"
+                        >
+                            <img
+                                :src="product.image_url"
+                                :alt="product.name"
+                                class="product-show-image"
+                            />
+                        </button>
+                        <div v-else class="product-show-media-placeholder">
+                            <span class="text-muted small">{{ t('catalog.no_product_image') }}</span>
+                        </div>
+                    </div>
+
+                    <div class="product-show-media-barcode">
+                        <div class="small text-muted text-center mb-2">{{ t('catalog.barcode') }}</div>
+                        <div class="product-show-barcode-wrap">
+                            <img
+                                :src="`/barcodes/${product.id}`"
+                                :alt="t('catalog.barcode')"
+                                class="product-show-barcode"
+                            />
+                        </div>
+                        <p v-if="product.barcode" class="product-show-barcode-code small text-muted text-center mb-0 mt-2">
+                            {{ product.barcode }}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -358,6 +379,31 @@
                 </table>
             </div>
         </div>
+
+        <Teleport to="body">
+            <div
+                v-if="showImageLightbox"
+                class="product-image-lightbox"
+                role="dialog"
+                aria-modal="true"
+                :aria-label="t('catalog.view_product_image')"
+                @click.self="closeImageLightbox"
+            >
+                <button
+                    type="button"
+                    class="btn btn-light product-image-lightbox__close"
+                    :aria-label="t('catalog.close_image', 'Close')"
+                    @click="closeImageLightbox"
+                >
+                    ×
+                </button>
+                <img
+                    :src="product.image_url"
+                    :alt="product.name"
+                    class="product-image-lightbox__img"
+                />
+            </div>
+        </Teleport>
     </TenantShellLayout>
 </template>
 
@@ -379,7 +425,7 @@ import { defaultSellUnit, unitLabel, unitPurchasePrice, unitSalePrice } from '@/
 import { usePermissions } from '@/composables/usePermissions';
 import { formatHumanDate } from '@/utils/dates';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
 
 const props = defineProps({
     product: { type: Object, required: true },
@@ -400,8 +446,46 @@ const { formatMoney, currencyCode } = useMoney();
 const { formatQty } = useQuantity();
 const { can } = usePermissions();
 
+const showImageLightbox = ref(false);
 const batchMarkups = reactive({});
 const activeMarkupBatchId = ref(null);
+
+function openImageLightbox() {
+    if (!props.product.image_url) {
+        return;
+    }
+    showImageLightbox.value = true;
+}
+
+function closeImageLightbox() {
+    showImageLightbox.value = false;
+}
+
+function onLightboxKeydown(event) {
+    if (event.key === 'Escape' && showImageLightbox.value) {
+        closeImageLightbox();
+    }
+}
+
+watch(showImageLightbox, (open) => {
+    if (typeof document === 'undefined') {
+        return;
+    }
+    document.body.classList.toggle('modal-open', open);
+    document.body.style.overflow = open ? 'hidden' : '';
+});
+
+onBeforeUnmount(() => {
+    if (typeof document !== 'undefined') {
+        document.removeEventListener('keydown', onLightboxKeydown);
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+    }
+});
+
+if (typeof document !== 'undefined') {
+    document.addEventListener('keydown', onLightboxKeydown);
+}
 
 const batches = computed(() => {
     const raw = props.product.batches;
@@ -674,3 +758,107 @@ function confirmDelete() {
     router.delete(`/products/${props.product.id}`);
 }
 </script>
+
+<style scoped>
+.product-show-media-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.product-show-media-image {
+    background: #f8fafc;
+    border-bottom: 1px solid var(--bs-border-color);
+    overflow: hidden;
+}
+
+.product-show-image-btn {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: zoom-in;
+    overflow: hidden;
+}
+
+.product-show-image {
+    display: block;
+    width: 100%;
+    min-height: 11rem;
+    max-height: 16rem;
+    object-fit: contain;
+    transition: opacity 0.15s ease;
+}
+
+.product-show-image-btn:hover .product-show-image {
+    opacity: 0.92;
+}
+
+.product-show-media-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 11rem;
+    padding: 1.5rem;
+}
+
+.product-show-media-barcode {
+    margin-top: auto;
+    padding: 1rem 1.25rem 1.25rem;
+    background: #fff;
+}
+
+.product-show-barcode-wrap {
+    width: 100%;
+    padding: 0.65rem 0.75rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+}
+
+.product-show-barcode {
+    display: block;
+    width: 100%;
+    max-height: 3.25rem;
+    object-fit: contain;
+}
+
+.product-show-barcode-code {
+    font-family: var(--bs-font-monospace);
+    letter-spacing: 0.04em;
+    word-break: break-all;
+}
+
+.product-image-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    background: rgba(15, 23, 42, 0.82);
+}
+
+.product-image-lightbox__img {
+    max-width: min(92vw, 56rem);
+    max-height: min(88vh, 56rem);
+    object-fit: contain;
+    border-radius: 0.5rem;
+    background: #fff;
+    box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.35);
+}
+
+.product-image-lightbox__close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border-radius: 999px;
+    font-size: 1.5rem;
+    line-height: 1;
+}
+</style>

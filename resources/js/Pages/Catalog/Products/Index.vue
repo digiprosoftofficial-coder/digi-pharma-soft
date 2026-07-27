@@ -358,13 +358,19 @@
                 <div v-for="p in products.data" :key="p.id" class="col">
                     <div class="card border-0 shadow-sm h-100 product-grid-card" :class="{ 'product-card--selected': isSelected(p.id) }">
                         <div class="ratio ratio-4x3 border-bottom product-card-image-wrap">
-                            <img
-                                :src="cardImage(p)"
-                                :alt="p.name"
-                                class="product-card-image"
-                                :class="{ 'product-card-image--placeholder': !p.image_url }"
-                            />
-                            <div class="product-card-select position-absolute top-0 start-0 p-2" style="z-index: 3">
+                            <Link
+                                :href="`/products/${p.id}`"
+                                class="product-card-image-link"
+                                :aria-label="p.name"
+                            >
+                                <img
+                                    :src="cardImage(p)"
+                                    :alt="p.name"
+                                    class="product-card-image"
+                                    :class="{ 'product-card-image--placeholder': !p.image_url }"
+                                />
+                            </Link>
+                            <div class="product-card-select position-absolute top-0 start-0 p-2" style="z-index: 3" @click.stop>
                                 <input
                                     class="form-check-input"
                                     type="checkbox"
@@ -377,7 +383,7 @@
                         </div>
                         <div class="card-body d-flex flex-column product-grid-card__body">
                             <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
-                                <Link :href="`/products/${p.id}`" class="text-decoration-none fw-semibold stretched-link">
+                                <Link :href="`/products/${p.id}`" class="text-decoration-none fw-semibold">
                                     {{ p.name }}
                                 </Link>
                                 <span class="badge flex-shrink-0" :class="p.is_active ? 'text-bg-success' : 'text-bg-secondary'">
@@ -424,13 +430,19 @@
                 <div v-for="p in products.data" :key="p.id" class="col">
                     <div class="card border-0 shadow-sm h-100 product-grid-card product-grid-card--dense" :class="{ 'product-card--selected': isSelected(p.id) }">
                         <div class="ratio ratio-1x1 border-bottom product-card-image-wrap">
-                            <img
-                                :src="cardImage(p)"
-                                :alt="p.name"
-                                class="product-card-image"
-                                :class="{ 'product-card-image--placeholder': !p.image_url }"
-                            />
-                            <div class="product-card-select position-absolute top-0 start-0 p-1" style="z-index: 3">
+                            <Link
+                                :href="`/products/${p.id}`"
+                                class="product-card-image-link"
+                                :aria-label="p.name"
+                            >
+                                <img
+                                    :src="cardImage(p)"
+                                    :alt="p.name"
+                                    class="product-card-image"
+                                    :class="{ 'product-card-image--placeholder': !p.image_url }"
+                                />
+                            </Link>
+                            <div class="product-card-select position-absolute top-0 start-0 p-1" style="z-index: 3" @click.stop>
                                 <input
                                     class="form-check-input"
                                     type="checkbox"
@@ -442,7 +454,7 @@
                             </div>
                         </div>
                         <div class="card-body product-grid-card__body product-grid-card__body--dense">
-                            <Link :href="`/products/${p.id}`" class="text-decoration-none fw-semibold stretched-link product-dense-title">
+                            <Link :href="`/products/${p.id}`" class="text-decoration-none fw-semibold product-dense-title">
                                 {{ p.name }}
                             </Link>
                             <div class="d-flex justify-content-between align-items-baseline gap-1 mt-1">
@@ -457,7 +469,7 @@
                             <div class="small text-muted mt-1 product-dense-meta">
                                 {{ formatQty(p.stock_on_hand) }} {{ unitLabel(p.base_unit || p.unit) }}
                             </div>
-                            <div v-if="can('pos.access')" class="mt-2">
+                            <div v-if="can('pos.access')" class="mt-2 position-relative" style="z-index: 2">
                                 <button
                                     type="button"
                                     class="btn btn-sm btn-outline-success w-100"
@@ -1036,10 +1048,31 @@ onBeforeUnmount(() => {
     position: relative;
 }
 
+.product-card-image-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.product-card-image-wrap > .product-card-select {
+    width: auto;
+    height: auto;
+    top: 0;
+    right: auto;
+    bottom: auto;
+    left: 0;
+}
+
+.product-card-image-wrap:hover .product-card-image {
+    transform: scale(1.03);
+}
+
 .product-card-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform 0.2s ease;
 }
 
 .product-card-image--placeholder {
