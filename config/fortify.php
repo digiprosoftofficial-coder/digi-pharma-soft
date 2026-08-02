@@ -135,6 +135,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Email verification
+    |--------------------------------------------------------------------------
+    |
+    | When false, users can access the app without verifying their email.
+    | Keep this enabled in production; disable locally when mail is not set up.
+    |
+    */
+
+    'email_verification' => filter_var(env('AUTH_EMAIL_VERIFICATION', true), FILTER_VALIDATE_BOOLEAN),
+
+    /*
+    |--------------------------------------------------------------------------
     | Passkeys
     |--------------------------------------------------------------------------
     |
@@ -164,7 +176,9 @@ return [
     'features' => array_values(array_filter([
         Features::registration(),
         Features::resetPasswords(),
-        Features::emailVerification(),
+        filter_var(env('AUTH_EMAIL_VERIFICATION', true), FILTER_VALIDATE_BOOLEAN)
+            ? Features::emailVerification()
+            : null,
         Features::updateProfileInformation(),
         Features::updatePasswords(),
         filter_var(env('PLATFORM_2FA_REQUIRED', false), FILTER_VALIDATE_BOOLEAN)

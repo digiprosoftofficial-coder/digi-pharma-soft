@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,7 +18,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, HasRoles, LogsActivity, Notifiable, TwoFactorAuthenticatable;
+    use HasFactory, HasRoles, LogsActivity, MustVerifyEmailTrait, Notifiable, TwoFactorAuthenticatable;
 
     protected $fillable = [
         'name',
@@ -95,5 +96,14 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         return $this->tenant_id !== null ? (int) $this->tenant_id : PlatformTeam::ID;
+    }
+
+    public function hasVerifiedEmail(): bool
+    {
+        if (! config('fortify.email_verification', true)) {
+            return true;
+        }
+
+        return ! is_null($this->email_verified_at);
     }
 }
