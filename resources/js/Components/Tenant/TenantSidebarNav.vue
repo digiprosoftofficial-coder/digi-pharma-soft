@@ -14,6 +14,21 @@
                 </Link>
             </li>
 
+            <li v-if="pharmacyNotesEnabled && can('notes.view')">
+                <Link
+                    href="/notes"
+                    class="tenant-nav-item"
+                    :class="{
+                        'tenant-nav-item--active': pathStarts('/notes'),
+                        'tenant-nav-item--inactive': !pathStarts('/notes'),
+                    }"
+                    @click="notifyNavigate"
+                >
+                    <TenantNavIcon name="notes" />
+                    <span class="tenant-nav-label">{{ t('tenant_nav.notes') }}</span>
+                </Link>
+            </li>
+
             <template v-for="section in visibleSections" :key="section.id">
                 <li class="tenant-nav-group">
                     <button
@@ -141,6 +156,7 @@ const employeeManagementEnabled = computed(() => page.props.features?.employee_m
 const attendanceEnabled = computed(() => page.props.features?.attendance ?? false);
 const hrPayrollEnabled = computed(() => page.props.features?.hr_payroll ?? false);
 const packageSalesEnabled = computed(() => page.props.features?.package_sales ?? false);
+const pharmacyNotesEnabled = computed(() => page.props.features?.pharmacy_notes ?? false);
 
 const url = computed(() => page.url || '');
 function pathNow() {

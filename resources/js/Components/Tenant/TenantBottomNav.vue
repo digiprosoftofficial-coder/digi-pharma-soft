@@ -86,6 +86,17 @@ const items = computed(() => {
         });
     }
 
+    if ((page.props.features?.pharmacy_notes ?? false) && can('notes.view')) {
+        list.push({
+            key: 'notes',
+            type: 'link',
+            href: '/notes',
+            icon: 'notes',
+            label: t('tenant_nav.notes'),
+            active: startsWith('/notes'),
+        });
+    }
+
     if (can('pos.access')) {
         list.push({
             key: 'pos',

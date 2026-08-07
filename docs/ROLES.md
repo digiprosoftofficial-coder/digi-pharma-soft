@@ -25,6 +25,8 @@ _Last updated: 2026-08-02_
 | `pharmacist` | One pharmacy | Catalog & stock staff |
 | `cashier` | One pharmacy | Counter / POS staff |
 
+**Plan-gated features** (Super Admin → Plans): e.g. `pharmacy_notes` must be enabled on the tenant plan before Notes UI/API is available, even if the role has `notes.*` permissions.
+
 ---
 
 ## 1. Super Admin (`super admin`)
@@ -65,6 +67,7 @@ Full control of one pharmacy tenant.
 - Promotions, SMS (if used)
 - Team users (create/edit and assign roles)
 - Settings & branches
+- Quick notes (when plan feature `pharmacy_notes` is on)
 - Tenant billing management (`billing.manage`)
 - Always record supplier payments
 
@@ -108,6 +111,7 @@ Catalog, stock, and limited visibility — **not** a POS cashier role.
 - View sales; manage returns
 - View stock transfers, suppliers, purchases
 - View branches
+- Quick notes (when plan feature `pharmacy_notes` is on)
 - Reports: sales, inventory, expiry, customer, supplier + print
 
 **Cannot**
@@ -130,6 +134,7 @@ Catalog, stock, and limited visibility — **not** a POS cashier role.
 - `sales.view`, `returns.manage`
 - `stock_transfers.view`, `suppliers.view`, `purchases.view`
 - `branches.view`
+- `notes.view`, `notes.manage`
 
 ---
 
@@ -205,6 +210,7 @@ settings.view, settings.manage
 branches.view, branches.manage
 sms.send
 promotions.view, promotions.manage
+notes.view, notes.manage
 platform.tenants, platform.subscriptions, platform.analytics
 ```
 

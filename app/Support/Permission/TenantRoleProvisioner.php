@@ -32,6 +32,7 @@ final class TenantRoleProvisioner
             'reports.customer', 'reports.supplier', 'reports.print', 'sales.view', 'returns.manage',
             'stock_transfers.view', 'suppliers.view', 'purchases.view',
             'branches.view',
+            'notes.view', 'notes.manage',
         ])->get();
 
         $manager = Permission::query()->whereNotIn('name', [

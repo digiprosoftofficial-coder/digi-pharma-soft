@@ -42,6 +42,7 @@ class RolePermissionSeeder extends Seeder
             'branches.view', 'branches.manage',
             'sms.send',
             'promotions.view', 'promotions.manage',
+            'notes.view', 'notes.manage',
             'platform.tenants', 'platform.subscriptions', 'platform.analytics',
         ];
 

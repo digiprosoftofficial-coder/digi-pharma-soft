@@ -78,6 +78,8 @@ return [
     'feature_hr_payroll_help' => 'পে-রোল রান, ছুটির ধরন, ছুটির আবেদন ও HR সারাংশ।',
     'feature_barcode_camera_scan' => 'ক্যামেরা বারকোড স্ক্যান',
     'feature_barcode_camera_scan_help' => 'POS-এ মোবাইল বা ল্যাপটপ ক্যামেরা দিয়ে পণ্যের বারকোড স্ক্যান করতে দিন।',
+    'feature_pharmacy_notes' => 'কুইক নোট',
+    'feature_pharmacy_notes_help' => 'ফার্মেসি স্টাফকে দ্রুত নোট রাখতে দিন (কেনার তালিকা, ফোন নম্বর, রিমাইন্ডার)।',
     'feature_theme_section' => 'থিম টেমপ্লেট',
     'feature_theme_templates_help' => 'এই প্ল্যানের ফার্মেসিগুলো Settings-এ কোন রঙের টেমপ্লেট বেছে নিতে পারবে।',
     'feature_allow_custom_primary' => 'কাস্টম ব্র্যান্ড রঙ অনুমোদন',

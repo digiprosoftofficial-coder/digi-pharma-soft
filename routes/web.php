@@ -30,6 +30,7 @@ use App\Http\Controllers\Tenant\EmployeeController;
 use App\Http\Controllers\Tenant\LeaveRequestController;
 use App\Http\Controllers\Tenant\LeaveTypeController;
 use App\Http\Controllers\Tenant\PayrollController;
+use App\Http\Controllers\Tenant\PharmacyNoteController;
 use App\Http\Controllers\Tenant\InventoryController;
 use App\Http\Controllers\Tenant\LedgerAccountController;
 use App\Http\Controllers\Tenant\LedgerEntryController;
@@ -219,6 +220,13 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
             })->name('global-settings');
 
             Route::resource('promotions', PromotionsController::class)->except(['show']);
+
+            Route::get('/notes', [PharmacyNoteController::class, 'index'])->name('notes.index');
+            Route::post('/notes', [PharmacyNoteController::class, 'store'])->name('notes.store');
+            Route::put('/notes/{pharmacy_note}', [PharmacyNoteController::class, 'update'])->name('notes.update');
+            Route::patch('/notes/{pharmacy_note}/pin', [PharmacyNoteController::class, 'togglePin'])->name('notes.pin');
+            Route::patch('/notes/{pharmacy_note}/done', [PharmacyNoteController::class, 'toggleDone'])->name('notes.done');
+            Route::delete('/notes/{pharmacy_note}', [PharmacyNoteController::class, 'destroy'])->name('notes.destroy');
 
             Route::resource('employees', EmployeeController::class);
 

@@ -28,6 +28,7 @@ return [
     'attendance' => 'উপস্থিতি',
     'hr_payroll' => 'পে-রোল ও HR',
     'promotions' => 'প্রমোশন',
+    'notes' => 'নোট',
     'stock_transfer' => 'স্টক ট্রান্সফার',
     'suppliers' => 'সাপ্লায়ার',
     'customers' => 'গ্রাহক',

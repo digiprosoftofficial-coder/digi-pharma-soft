@@ -53,6 +53,7 @@
         <path v-else-if="name === 'employee'" d="M16 19v-1a4 4 0 0 0-8 0v1M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
         <path v-else-if="name === 'promo'" d="M4 9v6l8 4 8-4V9l-8-4z" />
         <path v-else-if="name === 'sms'" d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+        <path v-else-if="name === 'notes'" d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z M14 3v6h6 M8 13h8M8 17h5" />
         <path v-else-if="name === 'report'" d="M4 20V4M8 20v-8M12 20V8M16 20v-4M20 20V12" />
         <path v-else-if="name === 'support'" d="M12 3 4 7v6c0 4.4 3.6 8 8 8h0a4 4 0 0 0 4-4v-1" />
         <path v-else-if="name === 'globe'" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20" />

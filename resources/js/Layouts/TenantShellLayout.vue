@@ -185,6 +185,13 @@
                         >
                             {{ t('tenant_nav.product_list') }}
                         </Link>
+                        <Link
+                            v-if="pharmacyNotesEnabled && can('notes.manage')"
+                            href="/notes"
+                            class="btn btn-sm btn-outline-secondary tenant-topbar-action d-none d-lg-inline-flex"
+                        >
+                            {{ t('tenant_nav.notes') }}
+                        </Link>
                         <Link v-if="can('pos.access')" href="/pos" class="btn btn-sm btn-primary tenant-topbar-action d-none d-lg-inline-flex">{{ t('tenant_nav.new_sale') }}</Link>
                         <span class="small text-muted d-none d-md-inline">{{ userName }}</span>
                         <Link href="/logout" method="post" as="button" class="btn btn-sm btn-outline-secondary tenant-topbar-action">{{ t('common.logout') }}</Link>
@@ -229,6 +236,7 @@ const impersonation = computed(() => page.props.impersonation);
 const networkAnnouncement = computed(() => page.props.networkAnnouncement);
 const multiBranch = computed(() => page.props.features?.multi_branch ?? false);
 const smartSearchEnabled = computed(() => page.props.features?.smart_search ?? true);
+const pharmacyNotesEnabled = computed(() => page.props.features?.pharmacy_notes ?? false);
 const branches = computed(() => page.props.branches ?? []);
 const activeBranchId = ref(page.props.branch?.id ?? null);
 const mobileNavOpen = ref(false);

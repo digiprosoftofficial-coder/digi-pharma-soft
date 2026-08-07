@@ -78,6 +78,8 @@ return [
     'feature_hr_payroll_help' => 'Payroll runs, leave types, leave requests, and HR summary.',
     'feature_barcode_camera_scan' => 'Camera barcode scanning',
     'feature_barcode_camera_scan_help' => 'Allow POS users to scan product barcodes with a phone or laptop camera.',
+    'feature_pharmacy_notes' => 'Quick notes',
+    'feature_pharmacy_notes_help' => 'Allow pharmacy staff to save quick notes (buy lists, phone numbers, reminders).',
     'feature_theme_section' => 'Theme templates',
     'feature_theme_templates_help' => 'Which color templates pharmacies on this plan may choose in Settings.',
     'feature_allow_custom_primary' => 'Allow custom brand color',

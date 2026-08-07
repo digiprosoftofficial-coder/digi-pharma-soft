@@ -27,6 +27,8 @@ final class TenantFeatures
 
     public const BARCODE_CAMERA_SCAN = 'barcode_camera_scan';
 
+    public const PHARMACY_NOTES = 'pharmacy_notes';
+
     public const PACKAGE_SALES = 'package_sales';
 
     public const SMART_SEARCH = 'smart_search';
@@ -99,6 +101,11 @@ final class TenantFeatures
     public static function barcodeCameraScanEnabled(?Tenant $tenant): bool
     {
         return self::enabled($tenant, self::BARCODE_CAMERA_SCAN, false);
+    }
+
+    public static function pharmacyNotesEnabled(?Tenant $tenant): bool
+    {
+        return self::enabled($tenant, self::PHARMACY_NOTES, false);
     }
 
     public static function packageSalesPlatformEnabled(): bool
@@ -287,6 +294,7 @@ final class TenantFeatures
             'attendance' => self::attendanceEnabled($tenant),
             'hr_payroll' => self::hrPayrollEnabled($tenant),
             'barcode_camera_scan' => self::barcodeCameraScanEnabled($tenant),
+            'pharmacy_notes' => self::pharmacyNotesEnabled($tenant),
             'package_sales_available' => self::packageSalesAvailable($tenant),
             'package_sales' => self::packageSalesEnabled($tenant),
             'smart_search' => self::smartSearchEnabled($tenant),

@@ -22,6 +22,7 @@ class TenantCatalogPlanFeatureTest extends TestCase
         $this->assertTrue(TenantFeatures::bulkImportEnabled($tenant));
         $this->assertTrue(TenantFeatures::advancedCatalogEnabled($tenant));
         $this->assertFalse(TenantFeatures::barcodeCameraScanEnabled($tenant));
+        $this->assertFalse(TenantFeatures::pharmacyNotesEnabled($tenant));
     }
 
     public function test_barcode_camera_scan_enabled_from_plan(): void
@@ -36,6 +37,20 @@ class TenantCatalogPlanFeatureTest extends TestCase
 
         $this->assertTrue(TenantFeatures::barcodeCameraScanEnabled($tenant));
         $this->assertTrue(TenantFeatures::shareForInertia($tenant)['barcode_camera_scan']);
+    }
+
+    public function test_pharmacy_notes_enabled_from_plan(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $tenant = Tenant::query()->firstOrFail();
+
+        $plan = $tenant->activeSubscription?->plan;
+        $plan->features = ['pos' => true, 'reports' => true, 'pharmacy_notes' => true];
+        $plan->save();
+        $tenant->refresh();
+
+        $this->assertTrue(TenantFeatures::pharmacyNotesEnabled($tenant));
+        $this->assertTrue(TenantFeatures::shareForInertia($tenant)['pharmacy_notes']);
     }
 
     public function test_import_pages_blocked_when_bulk_import_disabled_by_plan(): void
@@ -134,6 +149,7 @@ class TenantCatalogPlanFeatureTest extends TestCase
                     'bulk_import' => false,
                     'advanced_catalog' => false,
                     'barcode_camera_scan' => true,
+                    'pharmacy_notes' => true,
                 ],
             ])
             ->assertRedirect(route('platform.plans.index'));
@@ -142,5 +158,6 @@ class TenantCatalogPlanFeatureTest extends TestCase
         $this->assertFalse($plan->features['bulk_import']);
         $this->assertFalse($plan->features['advanced_catalog']);
         $this->assertTrue($plan->features['barcode_camera_scan']);
+        $this->assertTrue($plan->features['pharmacy_notes']);
     }
 }

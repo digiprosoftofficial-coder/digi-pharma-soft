@@ -28,6 +28,7 @@ return [
     'attendance' => 'Attendance',
     'hr_payroll' => 'Payroll & HR',
     'promotions' => 'Promotions',
+    'notes' => 'Notes',
     'stock_transfer' => 'Stock transfer',
     'suppliers' => 'Suppliers',
     'customers' => 'Customers',
