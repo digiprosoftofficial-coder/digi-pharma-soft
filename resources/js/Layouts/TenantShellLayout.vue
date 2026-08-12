@@ -163,6 +163,16 @@
                             <path d="m20 20-3.5-3.5" />
                         </svg>
                     </button>
+                    <Link
+                        v-if="pharmacyNotesEnabled && can('notes.view')"
+                        href="/notes"
+                        class="btn btn-sm tenant-topbar-notes-btn d-lg-none"
+                        :class="notesActive ? 'btn-primary' : 'btn-outline-secondary'"
+                        :aria-label="t('tenant_nav.notes')"
+                        :title="t('tenant_nav.notes')"
+                    >
+                        <TenantNavIcon name="notes" />
+                    </Link>
                     <form
                         v-if="multiBranch && branches.length > 1"
                         class="tenant-branch-switcher d-flex align-items-center gap-1"
@@ -212,6 +222,7 @@
 import ProductSearchOverlay from '@/Components/Tenant/ProductSearchOverlay.vue';
 import SmartSearchFab from '@/Components/Tenant/SmartSearchFab.vue';
 import TenantBottomNav from '@/Components/Tenant/TenantBottomNav.vue';
+import TenantNavIcon from '@/Components/Tenant/TenantNavIcon.vue';
 import TenantSidebarNav from '@/Components/Tenant/TenantSidebarNav.vue';
 import { useLocale } from '@/composables/useLocale';
 import { usePermissions } from '@/composables/usePermissions';
@@ -237,6 +248,10 @@ const networkAnnouncement = computed(() => page.props.networkAnnouncement);
 const multiBranch = computed(() => page.props.features?.multi_branch ?? false);
 const smartSearchEnabled = computed(() => page.props.features?.smart_search ?? true);
 const pharmacyNotesEnabled = computed(() => page.props.features?.pharmacy_notes ?? false);
+const notesActive = computed(() => {
+    const path = (page.url || '').split('?')[0];
+    return path === '/notes' || path.startsWith('/notes/');
+});
 const branches = computed(() => page.props.branches ?? []);
 const activeBranchId = ref(page.props.branch?.id ?? null);
 const mobileNavOpen = ref(false);
@@ -459,12 +474,18 @@ const announcementAlertClass = computed(() => {
     background: var(--bs-primary-bg-subtle) !important;
 }
 
-.tenant-topbar-search-btn {
+.tenant-topbar-search-btn,
+.tenant-topbar-notes-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-width: 2.25rem;
     min-height: 2.25rem;
+    padding: 0.3rem;
+}
+.tenant-topbar-notes-btn :deep(.tenant-nav-icon) {
+    width: 16px;
+    height: 16px;
 }
 
 .tenant-topbar {
