@@ -1,6 +1,5 @@
 /.phpunit.cache
 /node_modules
-/public/build
 /public/hot
 /public/storage
 /storage/*.key
@@ -21,3 +20,9 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Local SQLite databases
+/saas-pharmacy
+/digi_saas_pharma
+*.sqlite
+/test.txt
