@@ -1,0 +1,85 @@
+services:
+  app:
+    build:
+      context: .
+      target: app
+    env_file: .env
+    environment: &db_env
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-digi_saas_pharma}
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD:-rootroot}
+      APP_URL: http://localhost:8000
+      SANCTUM_STATEFUL_DOMAINS: localhost:8000,localhost,127.0.0.1:8000,127.0.0.1
+      RUN_MIGRATIONS: "true"
+    volumes:
+      - storage:/var/www/html/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  queue:
+    build:
+      context: .
+      target: app
+    env_file: .env
+    environment:
+      <<: *db_env
+      RUN_MIGRATIONS: "false"
+    command: php artisan queue:work --tries=3 --sleep=3
+    volumes:
+      - storage:/var/www/html/storage
+    depends_on:
+      app:
+        condition: service_started
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      target: web
+    ports:
+      - "8000:80"
+    volumes:
+      - storage:/var/www/html/storage:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-digi_saas_pharma}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-rootroot}
+    ports:
+      - "3306:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: ${DB_PASSWORD:-rootroot}
+      UPLOAD_LIMIT: 100M
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  dbdata:
+  storage:
