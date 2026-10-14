@@ -1,0 +1,1 @@
+import{q as r}from"./app-D2j9izNu.js";function c(){const o=r();function s(n){var e;const t=(e=o.props.tenant)==null?void 0:e.slug;if(!t)return n;const u=n.includes("?")?"&":"?";return`${n}${u}tenant=${encodeURIComponent(t)}`}return{withTenant:s}}export{c as u};

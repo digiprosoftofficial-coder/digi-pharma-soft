@@ -1,0 +1,1 @@
+function e(r){const t=Number(r??0);if(Number.isNaN(t))return"0";const n=Math.round(t*100)/100;return Math.abs(n-Math.round(n))<1e-9?String(Math.round(n)):n.toFixed(2)}function o(r){return e(r)}function a(r,t=4){const n=Number(r??0);if(Number.isNaN(n))return 0;const u=10**t;return Math.round(n*u)/u}function i(){return{formatQty:e}}export{o as f,a as p,i as u};
