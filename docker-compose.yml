@@ -29,7 +29,7 @@ services:
     environment:
       <<: *db_env
       RUN_MIGRATIONS: "false"
-    command: php artisan queue:work --tries=3 --sleep=3
+    command: php artisan queue:work --tries=3 --sleep=3 --timeout=1800
     volumes:
       - storage:/var/www/html/storage
     depends_on:

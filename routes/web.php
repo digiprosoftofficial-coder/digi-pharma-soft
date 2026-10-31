@@ -3,44 +3,46 @@
 use App\Http\Controllers\Api\Catalog\ProductLastPurchaseController;
 use App\Http\Controllers\Api\Catalog\ProductSearchController;
 use App\Http\Controllers\Api\Purchasing\SupplierSearchController;
-use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\Api\Sales\CustomerSearchController;
 use App\Http\Controllers\Central\PlatformAdminController;
-use App\Http\Controllers\Central\PlatformAuditController;
 use App\Http\Controllers\Central\PlatformAnnouncementController;
+use App\Http\Controllers\Central\PlatformAuditController;
 use App\Http\Controllers\Central\PlatformBillingController;
 use App\Http\Controllers\Central\PlatformCatalogTemplateController;
-use App\Http\Controllers\Central\PlatformMasterCatalogController;
-use App\Http\Controllers\Central\PlatformMasterSuggestionController;
-use App\Http\Controllers\Central\PlatformProductTypeController;
-use App\Http\Controllers\Central\PlatformResellerController;
 use App\Http\Controllers\Central\PlatformDashboardController;
 use App\Http\Controllers\Central\PlatformHealthController;
+use App\Http\Controllers\Central\PlatformLoginController;
+use App\Http\Controllers\Central\PlatformMasterCatalogController;
+use App\Http\Controllers\Central\PlatformMasterSuggestionController;
 use App\Http\Controllers\Central\PlatformPlanController;
+use App\Http\Controllers\Central\PlatformProductTypeController;
+use App\Http\Controllers\Central\PlatformResellerController;
 use App\Http\Controllers\Central\PlatformSettingsController;
 use App\Http\Controllers\Central\PlatformTenantComplianceController;
 use App\Http\Controllers\Central\PlatformTenantController;
 use App\Http\Controllers\Central\PlatformTenantImpersonationController;
-use App\Http\Controllers\Tenant\BranchController;
+use App\Http\Controllers\Central\PlatformTwoFactorSetupController;
+use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\Tenant\AttendanceController;
 use App\Http\Controllers\Tenant\BarcodePrintController;
+use App\Http\Controllers\Tenant\BranchController;
+use App\Http\Controllers\Tenant\CategoryController;
 use App\Http\Controllers\Tenant\CustomerBillsController;
 use App\Http\Controllers\Tenant\CustomerController;
 use App\Http\Controllers\Tenant\DashboardController;
-use App\Http\Controllers\Tenant\AttendanceController;
 use App\Http\Controllers\Tenant\EmployeeController;
+use App\Http\Controllers\Tenant\InventoryController;
 use App\Http\Controllers\Tenant\LeaveRequestController;
 use App\Http\Controllers\Tenant\LeaveTypeController;
-use App\Http\Controllers\Tenant\PayrollController;
-use App\Http\Controllers\Tenant\PharmacyNoteController;
-use App\Http\Controllers\Tenant\InventoryController;
 use App\Http\Controllers\Tenant\LedgerAccountController;
 use App\Http\Controllers\Tenant\LedgerEntryController;
-use App\Http\Controllers\Tenant\PackageSaleController;
-use App\Http\Controllers\Tenant\PackageTemplateController;
-use App\Http\Controllers\Tenant\PosController;
-use App\Http\Controllers\Tenant\CategoryController;
-use App\Http\Controllers\Tenant\StorageLocationController;
 use App\Http\Controllers\Tenant\ManufacturerController;
 use App\Http\Controllers\Tenant\MasterCatalogController;
+use App\Http\Controllers\Tenant\PackageSaleController;
+use App\Http\Controllers\Tenant\PackageTemplateController;
+use App\Http\Controllers\Tenant\PayrollController;
+use App\Http\Controllers\Tenant\PharmacyNoteController;
+use App\Http\Controllers\Tenant\PosController;
 use App\Http\Controllers\Tenant\ProductBatchController;
 use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\ProductImportController;
@@ -68,6 +70,7 @@ use App\Http\Controllers\Tenant\SalePaymentController;
 use App\Http\Controllers\Tenant\SaleReturnController;
 use App\Http\Controllers\Tenant\SmsController;
 use App\Http\Controllers\Tenant\StockTransferController;
+use App\Http\Controllers\Tenant\StorageLocationController;
 use App\Http\Controllers\Tenant\SupplierBillsController;
 use App\Http\Controllers\Tenant\SupplierController;
 use App\Http\Controllers\Tenant\SupportController;
@@ -82,9 +85,9 @@ Route::get('/', function () {
 Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
 
 Route::middleware(['guest'])->group(function () {
-    Route::get('/platform/login', [\App\Http\Controllers\Central\PlatformLoginController::class, 'create'])
+    Route::get('/platform/login', [PlatformLoginController::class, 'create'])
         ->name('platform.login');
-    Route::post('/platform/login', [\App\Http\Controllers\Central\PlatformLoginController::class, 'store'])
+    Route::post('/platform/login', [PlatformLoginController::class, 'store'])
         ->middleware('throttle:platform-login')
         ->name('platform.login.store');
 });
@@ -250,14 +253,14 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
 
             Route::get('/catalog/product-search', ProductSearchController::class)->name('catalog.product-search');
             Route::get('/catalog/products/{product}/last-purchase', ProductLastPurchaseController::class)->name('catalog.products.last-purchase');
-            Route::get('/sales/customer-search', \App\Http\Controllers\Api\Sales\CustomerSearchController::class)->name('sales.customer-search');
+            Route::get('/sales/customer-search', CustomerSearchController::class)->name('sales.customer-search');
 
             Route::get('/barcodes/{product}', [BarcodePrintController::class, 'show'])->name('barcodes.show');
         });
     });
 
     Route::middleware(['role:super admin', 'platform.2fa'])->prefix('platform')->name('platform.')->group(function () {
-        Route::get('/two-factor', [\App\Http\Controllers\Central\PlatformTwoFactorSetupController::class, 'show'])
+        Route::get('/two-factor', [PlatformTwoFactorSetupController::class, 'show'])
             ->name('two-factor.setup');
         Route::get('/dashboard', [PlatformDashboardController::class, 'index'])->name('dashboard');
         Route::get('/health', [PlatformHealthController::class, 'index'])->name('health.index');
@@ -278,6 +281,8 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
             ->name('tenants.purge');
         Route::post('/tenants/{tenant}/impersonate', [PlatformTenantImpersonationController::class, 'store'])
             ->name('tenants.impersonate');
+        Route::post('/tenants/{tenant}/master-catalog', [PlatformTenantController::class, 'activateMasterCatalog'])
+            ->name('tenants.master-catalog');
         Route::post('/impersonation/stop', [PlatformTenantImpersonationController::class, 'destroy'])
             ->name('impersonation.destroy');
         Route::resource('plans', PlatformPlanController::class)->except(['show']);

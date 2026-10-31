@@ -13,6 +13,8 @@ use App\Domain\Tenant\Actions\UnsuspendTenantAction;
 use App\Domain\Tenant\Models\Branch;
 use App\Domain\Tenant\Models\Tenant;
 use App\Http\Controllers\Controller;
+use App\Jobs\ActivateMasterCatalogForTenantJob;
+use App\Support\Catalog\MasterCatalogSyncStatus;
 use App\Support\Platform\PlatformSettings;
 use App\Support\Tenant\TenantFeatures;
 use App\Support\Tenant\TenantPresenter;
@@ -141,7 +143,44 @@ final class PlatformTenantController extends Controller
                 ->withCount('items')
                 ->orderBy('name')
                 ->get(['id', 'name', 'slug']),
+            'masterCatalogSync' => MasterCatalogSyncStatus::present($tenant),
         ]);
+    }
+
+    public function activateMasterCatalog(Request $request, Tenant $tenant): RedirectResponse
+    {
+        $this->authorize('update', $tenant);
+
+        if ($tenant->suspended_at) {
+            return back()->withErrors(['master_catalog' => __('platform.master_sync_suspended')]);
+        }
+
+        $snapshot = MasterCatalogSyncStatus::present($tenant);
+
+        if ($snapshot['is_busy']) {
+            return back()->with('success', __('platform.master_sync_already_running'));
+        }
+
+        if ($snapshot['pending'] < 1) {
+            return back()->with('success', __('platform.master_sync_nothing_pending'));
+        }
+
+        if ($snapshot['blocked_by_limit']) {
+            return back()->withErrors(['master_catalog' => __('platform.master_sync_limit')]);
+        }
+
+        MasterCatalogSyncStatus::markQueued($tenant, $request->user(), (int) $snapshot['will_add']);
+        ActivateMasterCatalogForTenantJob::dispatch($tenant, $request->user(), (int) $snapshot['will_add']);
+
+        $message = $snapshot['remaining_product_slots'] !== null
+            && $snapshot['will_add'] < $snapshot['pending']
+            ? __('platform.master_sync_queued_partial', [
+                'count' => $snapshot['will_add'],
+                'pending' => $snapshot['pending'],
+            ])
+            : __('platform.master_sync_queued', ['count' => $snapshot['will_add']]);
+
+        return back()->with('success', $message);
     }
 
     public function storeOwner(Request $request, Tenant $tenant): RedirectResponse
@@ -357,7 +396,7 @@ final class PlatformTenantController extends Controller
         activity()
             ->causedBy($request->user())
             ->performedOn($tenant)
-            ->tap(fn (\Spatie\Activitylog\Models\Activity $activity) => $activity->tenant_id = $tenant->getKey())
+            ->tap(fn (Activity $activity) => $activity->tenant_id = $tenant->getKey())
             ->event('tenant.updated')
             ->log('Pharmacy updated');
 

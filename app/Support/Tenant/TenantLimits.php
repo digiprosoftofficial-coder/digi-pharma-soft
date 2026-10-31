@@ -64,15 +64,35 @@ final class TenantLimits
 
     /**
      * Number of additional products the tenant may still create (null = unlimited).
+     *
+     * Uses the current tenant scope when present. Prefer remainingProductsForTenant()
+     * from platform/admin code that has no tenant context.
      */
     public static function remainingProducts(?Tenant $tenant): ?int
+    {
+        if ($tenant === null) {
+            return null;
+        }
+
+        return self::remainingProductsForTenant($tenant);
+    }
+
+    /**
+     * Remaining product slots for a specific pharmacy, ignoring request tenant context.
+     */
+    public static function remainingProductsForTenant(Tenant $tenant): ?int
     {
         $max = self::maxProducts($tenant);
         if ($max === null) {
             return null;
         }
 
-        return max(0, $max - Product::query()->count());
+        $used = Product::query()
+            ->withoutGlobalScopes()
+            ->where('tenant_id', $tenant->getKey())
+            ->count();
+
+        return max(0, $max - $used);
     }
 
     public static function productLimitReached(?Tenant $tenant): bool
@@ -83,7 +103,7 @@ final class TenantLimits
     }
 
     /**
-     * @return 'inherit'|int  The override value or 'inherit' if using plan default.
+     * @return 'inherit'|int The override value or 'inherit' if using plan default.
      */
     public static function maxProductsOverrideMode(Tenant $tenant): string|int
     {
@@ -91,7 +111,7 @@ final class TenantLimits
     }
 
     /**
-     * @return 'inherit'|int  The override value or 'inherit' if using plan default.
+     * @return 'inherit'|int The override value or 'inherit' if using plan default.
      */
     public static function maxImportRowsOverrideMode(Tenant $tenant): string|int
     {

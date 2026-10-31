@@ -287,6 +287,36 @@
                 <p v-else class="text-muted mb-0">{{ t('platform.billing_no_invoices') }}</p>
             </div>
         </div>
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-header bg-white fw-semibold">{{ t('platform.master_sync_title') }}</div>
+            <div class="card-body small">
+                <p class="text-muted mb-2">{{ t('platform.master_sync_help') }}</p>
+                <ul class="list-unstyled mb-3">
+                    <li>{{ t('platform.master_sync_master_total', { count: String(masterCatalogSync.active_master_count ?? 0) }) }}</li>
+                    <li>{{ t('platform.master_sync_already', { count: String(masterCatalogSync.already_added ?? 0) }) }}</li>
+                    <li>{{ t('platform.master_sync_pending', { count: String(masterCatalogSync.pending ?? 0) }) }}</li>
+                    <li v-if="masterCatalogSync.remaining_product_slots === null">{{ t('platform.master_sync_slots_unlimited') }}</li>
+                    <li v-else>{{ t('platform.master_sync_slots', { count: String(masterCatalogSync.remaining_product_slots) }) }}</li>
+                </ul>
+                <p v-if="masterCatalogSync.is_busy" class="text-primary mb-2">
+                    {{ busyStatusLabel }}
+                </p>
+                <p v-else-if="lastSyncLabel" class="mb-2" :class="masterCatalogSync.status === 'failed' ? 'text-danger' : 'text-muted'">
+                    {{ lastSyncLabel }}
+                </p>
+                <div v-if="$page.props.errors?.master_catalog" class="alert alert-danger py-2 px-3 mb-2">
+                    {{ $page.props.errors.master_catalog }}
+                </div>
+                <button
+                    type="button"
+                    class="btn btn-sm btn-primary"
+                    :disabled="!masterCatalogSync.can_add || masterSyncForm.processing"
+                    @click="openMasterSyncModal"
+                >
+                    {{ t('platform.master_sync_button') }}
+                </button>
+            </div>
+        </div>
         <div v-if="catalogTemplates?.length" class="card border-0 shadow-sm mt-3">
             <div class="card-header bg-white fw-semibold">{{ t('platform.catalog_apply_title') }}</div>
             <div class="card-body small">
@@ -345,6 +375,26 @@
             </ul>
         </div>
 
+        <ConfirmModal
+            :show="showMasterSyncModal"
+            :title="t('platform.master_sync_confirm_title', { name: tenant.name })"
+            :confirm-label="t('platform.master_sync_button')"
+            confirm-class="btn-primary"
+            :processing="masterSyncForm.processing"
+            @close="closeMasterSyncModal"
+            @confirm="submitMasterSync"
+        >
+            <p class="small mb-2">{{ t('platform.master_sync_confirm', { count: String(masterCatalogSync.will_add ?? 0) }) }}</p>
+            <p
+                v-if="masterCatalogSync.remaining_product_slots !== null && masterCatalogSync.will_add < masterCatalogSync.pending"
+                class="small text-warning mb-0"
+            >
+                {{ t('platform.master_sync_confirm_partial', {
+                    count: String(masterCatalogSync.will_add ?? 0),
+                    pending: String(masterCatalogSync.pending ?? 0),
+                }) }}
+            </p>
+        </ConfirmModal>
         <ConfirmModal
             :show="showSuspendModal"
             :title="t('platform.suspend_modal_title', { name: tenant.name })"
@@ -439,7 +489,7 @@ import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { formatHumanDate as formatDate } from '@/utils/dates';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps({
     tenant: { type: Object, required: true },
@@ -455,6 +505,7 @@ const props = defineProps({
     gracePeriodEndsAt: { type: String, default: null },
     catalogTemplates: { type: Array, default: () => [] },
     branches: { type: Array, default: () => [] },
+    masterCatalogSync: { type: Object, default: () => ({}) },
 });
 
 const { t } = useLocale();
@@ -466,6 +517,99 @@ const suspendForm = useForm({ reason: '' });
 const unsuspendForm = useForm({});
 const purgeForm = useForm({ confirm_slug: '', reason: '' });
 const catalogForm = useForm({ catalog_template_id: null });
+const masterSyncForm = useForm({});
+const showMasterSyncModal = ref(false);
+let masterSyncPoll = null;
+
+const busyStatusLabel = computed(() => {
+    const sync = props.masterCatalogSync || {};
+    if (sync.status === 'queued') {
+        return t('platform.master_sync_status_queued');
+    }
+    if (sync.status === 'running') {
+        return t('platform.master_sync_status_running', {
+            processed: String(sync.processed ?? 0),
+            total: String(sync.total ?? 0),
+        });
+    }
+
+    return t('platform.master_sync_status_queued');
+});
+
+const lastSyncLabel = computed(() => {
+    const sync = props.masterCatalogSync || {};
+    if (sync.status === 'completed') {
+        return t('platform.master_sync_status_completed', {
+            created: String(sync.created ?? 0),
+            skipped: String(sync.skipped ?? 0),
+        });
+    }
+    if (sync.status === 'partial') {
+        return t('platform.master_sync_status_partial', { created: String(sync.created ?? 0) });
+    }
+    if (sync.status === 'failed') {
+        return t('platform.master_sync_status_failed', { error: sync.error || '' });
+    }
+
+    return '';
+});
+
+function stopMasterSyncPoll() {
+    if (masterSyncPoll) {
+        clearInterval(masterSyncPoll);
+        masterSyncPoll = null;
+    }
+}
+
+function startMasterSyncPoll() {
+    stopMasterSyncPoll();
+    if (!props.masterCatalogSync?.is_busy) {
+        return;
+    }
+    masterSyncPoll = setInterval(() => {
+        router.reload({
+            only: ['masterCatalogSync', 'activities'],
+            preserveScroll: true,
+            preserveState: true,
+            onFinish: () => {
+                if (!props.masterCatalogSync?.is_busy) {
+                    stopMasterSyncPoll();
+                }
+            },
+        });
+    }, 3000);
+}
+
+onMounted(startMasterSyncPoll);
+onUnmounted(stopMasterSyncPoll);
+watch(() => props.masterCatalogSync?.is_busy, (busy) => {
+    if (busy) {
+        startMasterSyncPoll();
+    } else {
+        stopMasterSyncPoll();
+    }
+});
+
+function openMasterSyncModal() {
+    showMasterSyncModal.value = true;
+}
+
+function closeMasterSyncModal() {
+    if (masterSyncForm.processing) {
+        return;
+    }
+    showMasterSyncModal.value = false;
+}
+
+function submitMasterSync() {
+    masterSyncForm.post(`/platform/tenants/${props.tenant.id}/master-catalog`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showMasterSyncModal.value = false;
+            startMasterSyncPoll();
+        },
+    });
+}
 
 const resendInviteForm = useForm({});
 
