@@ -1,0 +1,5 @@
+brand id,brand name,type,slug,dosage form,generic,strength,manufacturer,package container,Package Size 
+10452,Napa,allopathic,napatablet500-mg,Tablet,Paracetamol,500 mg,Beximco Pharmaceuticals Ltd.,"Unit Price: ৳ 1.20,(10's pack: ৳ 12.00),",(10's pack: ৳ 12.00)
+6171,A-Clox,allopathic,a-cloxcapsule500-mg,Capsule,Cloxacillin Sodium,500 mg,ACME Laboratories Ltd.,"Unit Price: ৳ 5.98,(100's pack: ৳ 598.00),",(100's pack: ৳ 598.00)
+4077,A-Cold,allopathic,a-coldsyrup4-mg5-ml,Syrup,Bromhexine Hydrochloride,4 mg/5 ml,ACME Laboratories Ltd.,100 ml bottle: ৳ 40.12,
+610,Maxpro,allopathic,maxproiv-injection40-mg,IV Injection,Esomeprazole,40 mg,Renata Limited,40 mg vial: ৳ 90.00,

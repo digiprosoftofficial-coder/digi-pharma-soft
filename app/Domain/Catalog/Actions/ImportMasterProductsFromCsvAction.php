@@ -18,13 +18,30 @@ final class ImportMasterProductsFromCsvAction
      */
     public function preview(UploadedFile $file): array
     {
-        $handle = fopen($file->getRealPath(), 'r');
+        $path = $file->getRealPath();
+        if ($path === false) {
+            return ['headers' => [], 'rows' => [], 'valid_count' => 0, 'error_count' => 0];
+        }
+
+        return $this->previewFromPath($path);
+    }
+
+    /**
+     * @return array{headers:list<string>,rows:list<array{row:int,data:array<string,mixed>,raw:array<string,string>,errors:list<string>}>,valid_count:int,error_count:int}
+     */
+    public function previewFromPath(string $path): array
+    {
+        $handle = fopen($path, 'r');
         if ($handle === false) {
             return ['headers' => [], 'rows' => [], 'valid_count' => 0, 'error_count' => 0];
         }
 
         $headers = fgetcsv($handle) ?: [];
-        $headers = array_map(fn ($h) => Str::snake(trim((string) $h)), $headers);
+        $headers = array_map(function ($header) {
+            $header = preg_replace('/^\xEF\xBB\xBF/', '', (string) $header) ?? (string) $header;
+
+            return Str::snake(trim($header));
+        }, $headers);
 
         $rawRows = [];
         $rowNum = 1;
