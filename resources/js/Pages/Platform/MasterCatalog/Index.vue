@@ -62,11 +62,13 @@
                             class="form-control"
                             :placeholder="t('platform.master_search_placeholder')"
                             autocomplete="off"
+                            @input="debouncedApplyFilters"
                         />
+                        <div v-if="filterLoading" class="form-text text-primary">{{ t('common.searching') }}</div>
                     </div>
                     <div class="col-sm-6 col-md-2">
                         <label class="form-label small mb-1">{{ t('platform.master_status') }}</label>
-                        <select v-model="local.status" class="form-select">
+                        <select v-model="local.status" class="form-select" @change="applyFilters">
                             <option value="all">{{ t('platform.master_status_all') }}</option>
                             <option value="active">{{ t('common.active') }}</option>
                             <option value="inactive">{{ t('common.inactive') }}</option>
@@ -74,14 +76,15 @@
                     </div>
                     <div class="col-sm-6 col-md-3">
                         <label class="form-label small mb-1">{{ t('catalog.product_type') }}</label>
-                        <select v-model="local.product_type" class="form-select">
+                        <select v-model="local.product_type" class="form-select" @change="applyFilters">
                             <option value="">{{ t('platform.master_type_all') }}</option>
                             <option v-for="type in productTypes" :key="type" :value="type">{{ typeLabel(type) }}</option>
                         </select>
                     </div>
                     <div class="col-md-2 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary flex-grow-1">{{ t('common.search') }}</button>
-                        <button type="button" class="btn btn-outline-secondary" @click="clearFilters">{{ t('platform.master_clear') }}</button>
+                        <button type="button" class="btn btn-outline-secondary flex-grow-1" :disabled="filterLoading" @click="clearFilters">
+                            {{ t('platform.master_clear') }}
+                        </button>
                     </div>
                 </div>
             </div>
@@ -187,7 +190,7 @@ import PlatformShellLayout from '@/Layouts/PlatformShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { reactive, ref } from 'vue';
+import { onUnmounted, reactive, ref } from 'vue';
 
 const props = defineProps({
     products: { type: Object, required: true },
@@ -200,6 +203,8 @@ const props = defineProps({
 const { t } = useLocale();
 const { formatMoney } = useMoney();
 const togglingId = ref(null);
+const filterLoading = ref(false);
+let filterTimer = null;
 
 const local = reactive({
     q: props.filters.q ?? '',
@@ -211,12 +216,29 @@ function typeLabel(type) {
     return t(`catalog.types.${type}`, type);
 }
 
+function debouncedApplyFilters() {
+    clearTimeout(filterTimer);
+    filterTimer = setTimeout(() => applyFilters(), 350);
+}
+
 function applyFilters() {
+    clearTimeout(filterTimer);
     router.get('/platform/master-catalog', {
         q: local.q || undefined,
         status: local.status !== 'all' ? local.status : undefined,
         product_type: local.product_type || undefined,
-    }, { preserveState: true, replace: true });
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+        only: ['products', 'filters'],
+        onStart: () => {
+            filterLoading.value = true;
+        },
+        onFinish: () => {
+            filterLoading.value = false;
+        },
+    });
 }
 
 function clearFilters() {
@@ -225,6 +247,10 @@ function clearFilters() {
     local.product_type = '';
     applyFilters();
 }
+
+onUnmounted(() => {
+    clearTimeout(filterTimer);
+});
 
 function toggleActive(item) {
     if (togglingId.value) {

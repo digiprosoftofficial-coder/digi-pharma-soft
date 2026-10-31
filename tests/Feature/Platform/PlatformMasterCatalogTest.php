@@ -147,6 +147,42 @@ class PlatformMasterCatalogTest extends TestCase
         $this->assertSame('Linked Med', $product->name);
     }
 
+    public function test_super_admin_can_filter_master_catalog_by_search_query(): void
+    {
+        $this->seed();
+        $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
+
+        MasterProduct::query()->create([
+            'name' => 'Napa Rapid Search',
+            'generic_name' => 'Paracetamol',
+            'sku' => 'MSTR-LIVE-NAPA',
+            'product_type' => 'tablet',
+            'base_unit' => 'strip',
+            'mrp' => 10,
+            'default_purchase_price' => 8,
+            'is_active' => true,
+        ]);
+        MasterProduct::query()->create([
+            'name' => 'Seclo Rapid Search',
+            'generic_name' => 'Omeprazole',
+            'sku' => 'MSTR-LIVE-SECLO',
+            'product_type' => 'capsule',
+            'base_unit' => 'strip',
+            'mrp' => 20,
+            'default_purchase_price' => 15,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('platform.master-catalog.index', ['q' => 'Napa Rapid']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Platform/MasterCatalog/Index')
+                ->where('filters.q', 'Napa Rapid')
+                ->has('products.data', 1)
+                ->where('products.data.0.name', 'Napa Rapid Search'));
+    }
+
     public function test_pharmacy_owner_cannot_access_platform_master_catalog(): void
     {
         $this->seed();
