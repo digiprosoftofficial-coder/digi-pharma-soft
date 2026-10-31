@@ -24,6 +24,8 @@ return [
     'actions' => 'কর্ম',
     'confirm' => 'নিশ্চিত',
     'logout' => 'লগ আউট',
+    'menu' => 'মেনু',
+    'close' => 'বন্ধ',
     'language' => 'ভাষা',
     'english' => 'English',
     'bangla' => 'বাংলা',

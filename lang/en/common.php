@@ -24,6 +24,8 @@ return [
     'actions' => 'Actions',
     'confirm' => 'Confirm',
     'logout' => 'Log out',
+    'menu' => 'Menu',
+    'close' => 'Close',
     'language' => 'Language',
     'english' => 'English',
     'bangla' => 'বাংলা',

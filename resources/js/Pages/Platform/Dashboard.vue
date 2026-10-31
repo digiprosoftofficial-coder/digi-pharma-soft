@@ -1,14 +1,14 @@
 <template>
     <PlatformShellLayout :page-title="t('platform.dashboard_title')">
         <Head :title="t('platform.nav_overview')" />
-        <header class="platform-hero rounded-3 border bg-body-tertiary px-4 py-4 mb-4">
+        <header class="platform-hero rounded-3 border bg-body-tertiary px-3 py-3 px-md-4 py-md-4 mb-4">
             <div class="row align-items-center g-3">
                 <div class="col-lg">
                     <p class="text-uppercase text-muted small fw-semibold mb-1">Platform admin</p>
                     <h2 class="h4 mb-2 fw-semibold">{{ t('platform.dashboard_title') }}</h2>
                     <p class="text-secondary mb-0 small">{{ t('platform.dashboard_sub') }}</p>
                 </div>
-                <div class="col-lg-auto d-flex flex-wrap gap-2">
+                <div class="col-lg-auto d-grid d-sm-flex flex-wrap gap-2">
                     <Link href="/platform/tenants/create" class="btn btn-primary">{{ t('platform.add_pharmacy') }}</Link>
                     <Link href="/platform/tenants" class="btn btn-outline-primary">{{ t('platform.manage_pharmacies') }}</Link>
                 </div>
@@ -16,10 +16,10 @@
         </header>
         <section class="mb-4">
             <div class="row g-3">
-                <div v-for="card in kpiCards" :key="card.key" class="col-sm-6 col-xl-3">
-                    <article class="platform-stat-card h-100 p-4 border-start border-4 rounded-3 bg-body" :class="card.border">
+                <div v-for="card in kpiCards" :key="card.key" class="col-6 col-xl-3">
+                    <article class="platform-stat-card h-100 p-3 p-md-4 border-start border-4 rounded-3 bg-body" :class="card.border">
                         <span class="text-muted small fw-semibold text-uppercase">{{ card.label }}</span>
-                        <p class="platform-stat-value display-6 fw-semibold mb-0 mt-2">{{ card.value }}</p>
+                        <p class="platform-stat-value h2 fw-semibold mb-0 mt-2">{{ card.value }}</p>
                     </article>
                 </div>
             </div>
@@ -38,13 +38,13 @@
                 <Link href="/platform/billing" class="small">{{ t('platform.billing_view') }}</Link>
             </div>
             <div class="row g-3 mb-4">
-                <div class="col-sm-4">
+                <div class="col-12 col-sm-4">
                     <article class="platform-stat-card h-100 p-3 border rounded-3 bg-body">
                         <span class="text-muted small fw-semibold text-uppercase">{{ t('platform.billing_mrr') }}</span>
                         <p class="h5 fw-semibold mb-0 mt-1">{{ formatBillingMoney(billing.mrr_cents) }}</p>
                     </article>
                 </div>
-                <div class="col-sm-4">
+                <div class="col-12 col-sm-4">
                     <article class="platform-stat-card h-100 p-3 border rounded-3 bg-body">
                         <span class="text-muted small fw-semibold text-uppercase">{{ t('platform.billing_past_due') }}</span>
                         <p class="h5 fw-semibold mb-0 mt-1" :class="{ 'text-warning': billing.past_due_tenants > 0 }">
@@ -52,7 +52,7 @@
                         </p>
                     </article>
                 </div>
-                <div class="col-sm-4">
+                <div class="col-12 col-sm-4">
                     <article class="platform-stat-card h-100 p-3 border rounded-3 bg-body">
                         <span class="text-muted small fw-semibold text-uppercase">{{ t('platform.billing_open_invoices') }}</span>
                         <p class="h5 fw-semibold mb-0 mt-1">{{ billing.open_invoices }}</p>
@@ -64,8 +64,8 @@
         <section class="mb-4">
             <h3 class="h6 text-uppercase text-muted fw-semibold mb-3">{{ t('platform.analytics_title') }}</h3>
             <div class="row g-3">
-                <div v-for="card in revenueCards" :key="card.key" class="col-sm-6 col-lg-4">
-                    <article class="platform-stat-card h-100 p-4 border rounded-3 bg-body">
+                <div v-for="card in revenueCards" :key="card.key" class="col-12 col-sm-6 col-lg-4">
+                    <article class="platform-stat-card h-100 p-3 p-md-4 border rounded-3 bg-body">
                         <span class="text-muted small fw-semibold text-uppercase">{{ card.label }}</span>
                         <p class="platform-stat-value h3 fw-semibold mb-0 mt-2">{{ formatMoney(card.value) }}</p>
                         <p v-if="card.hint" class="small text-muted mb-0 mt-1">{{ card.hint }}</p>
@@ -182,8 +182,8 @@
                 <div class="card border-0 shadow-sm mb-3">
                     <div class="card-header bg-white fw-semibold">{{ t('platform.recent_pharmacies') }}</div>
                     <ul class="list-group list-group-flush small">
-                        <li v-for="row in recentTenants" :key="row.id" class="list-group-item d-flex justify-content-between">
-                            <Link :href="`/platform/tenants/${row.id}`" class="text-decoration-none">{{ row.name }}</Link>
+                        <li v-for="row in recentTenants" :key="row.id" class="list-group-item d-flex justify-content-between align-items-center gap-2">
+                            <Link :href="`/platform/tenants/${row.id}`" class="text-decoration-none text-truncate">{{ row.name }}</Link>
                             <TenantStatusBadge :status="row.status" />
                         </li>
                     </ul>
@@ -192,9 +192,9 @@
                     <div class="card-header bg-white fw-semibold">{{ t('platform.recent_audit') }}</div>
                     <ul class="list-group list-group-flush small">
                         <li v-for="(a, i) in recentAudit" :key="i" class="list-group-item">
-                            <div class="d-flex justify-content-between">
-                                <span>{{ a.description }}</span>
-                                <span class="text-muted">{{ a.created_at?.slice(0, 10) }}</span>
+                            <div class="d-flex justify-content-between gap-2">
+                                <span class="text-break">{{ a.description }}</span>
+                                <span class="text-muted text-nowrap">{{ a.created_at?.slice(0, 10) }}</span>
                             </div>
                         </li>
                     </ul>
@@ -295,6 +295,12 @@ function goTenant(id) {
 <style scoped>
 .platform-stat-value {
     font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 575.98px) {
+    .platform-stat-value.h2 {
+        font-size: 1.5rem;
+    }
 }
 .cursor-pointer {
     cursor: pointer;
