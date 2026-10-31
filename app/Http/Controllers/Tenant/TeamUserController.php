@@ -11,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 final class TeamUserController extends Controller
 {
@@ -79,10 +80,10 @@ final class TeamUserController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'tenant_id' => tenant_id(),
-            'is_platform_super_admin' => false,
         ]);
+        $user->forceFill(['email_verified_at' => now()])->save();
 
-        app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId((int) tenant_id());
+        app(PermissionRegistrar::class)->setPermissionsTeamId((int) tenant_id());
         $user->syncRoles([$validated['role']]);
 
         return redirect()->route('tenant.team.users.index')->with('success', __('User created.'));
@@ -128,7 +129,7 @@ final class TeamUserController extends Controller
         }
         $user->save();
 
-        app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId((int) tenant_id());
+        app(PermissionRegistrar::class)->setPermissionsTeamId((int) tenant_id());
         $user->syncRoles([$validated['role']]);
 
         return redirect()->route('tenant.team.users.index')->with('success', __('User updated.'));

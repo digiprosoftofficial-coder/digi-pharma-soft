@@ -92,9 +92,12 @@
                 </svg>
             </button>
 
-            <p v-if="!platformOnly" class="text-center small text-muted mt-4 mb-0">
+            <p v-if="!platformOnly && registrationEnabled" class="text-center small text-muted mt-4 mb-0">
                 {{ t('auth.no_account') }}
                 <Link :href="withTenant('/register')" class="text-decoration-none fw-semibold">{{ t('auth.create_account') }}</Link>
+            </p>
+            <p v-else-if="!platformOnly" class="text-center small text-muted mt-4 mb-0">
+                {{ t('auth.ask_owner') }}
             </p>
         </form>
     </GuestLayout>
@@ -104,7 +107,7 @@
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import { useAuthLinks } from '@/composables/useAuthLinks';
 import { useLocale } from '@/composables/useLocale';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 const props = defineProps({
@@ -113,7 +116,9 @@ const props = defineProps({
 
 const { t } = useLocale();
 const { withTenant } = useAuthLinks();
+const page = usePage();
 const showPassword = ref(false);
+const registrationEnabled = computed(() => Boolean(page.props.registrationEnabled));
 
 const title = computed(() => (props.platformOnly ? t('auth.platform_welcome') : t('auth.welcome_back')));
 const subtitle = computed(() => (props.platformOnly ? t('auth.platform_subtitle') : t('auth.sign_in_subtitle')));

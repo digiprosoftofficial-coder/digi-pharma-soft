@@ -46,6 +46,9 @@
                 @endif
             </div>
         </div>
+        @if ($sale->soldByUser)
+            <p><strong>{{ __('sales.sold_by') }}:</strong> {{ $sale->soldByUser->name }}</p>
+        @endif
         @if ($sale->customer)
             <p><strong>{{ __('sales.customer') }}:</strong> {{ $sale->customer->name }}
                 @if ($sale->customer->phone) — {{ $sale->customer->phone }} @endif

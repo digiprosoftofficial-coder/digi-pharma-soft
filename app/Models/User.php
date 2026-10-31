@@ -2,22 +2,25 @@
 
 namespace App\Models;
 
+use App\Domain\Tenant\Models\Tenant;
+use App\Support\Permission\PlatformTeam;
+use Database\Factories\UserFactory;
 use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Support\Permission\PlatformTeam;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\PermissionRegistrar;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, LogsActivity, MustVerifyEmailTrait, Notifiable, TwoFactorAuthenticatable;
 
     protected $fillable = [
@@ -25,7 +28,6 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'tenant_id',
-        'is_platform_super_admin',
     ];
 
     protected $hidden = [
@@ -54,14 +56,14 @@ class User extends Authenticatable implements MustVerifyEmail
             ->dontSubmitEmptyLogs();
     }
 
-    public function tapActivity(\Spatie\Activitylog\Models\Activity $activity, string $eventName): void
+    public function tapActivity(Activity $activity, string $eventName): void
     {
         $activity->tenant_id = $this->tenant_id;
     }
 
     public function tenant(): BelongsTo
     {
-        return $this->belongsTo(\App\Domain\Tenant\Models\Tenant::class);
+        return $this->belongsTo(Tenant::class);
     }
 
     public function shouldUsePlatformDashboard(): bool

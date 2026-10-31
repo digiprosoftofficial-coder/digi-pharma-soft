@@ -3,20 +3,22 @@
 namespace App\Domain\Sales\Services;
 
 use App\Domain\Catalog\Models\ProductBatch;
-use App\Support\Catalog\BatchExpiry;
-use App\Support\Catalog\BatchSalePricing;
-use App\Support\Catalog\FefoBatchAllocator;
-use App\Support\Catalog\ProductUnitResolver;
-use App\Support\Sales\InvoiceRounding;
-use InvalidArgumentException;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Sales\Models\Customer;
 use App\Domain\Sales\Models\DiscountCoupon;
 use App\Domain\Sales\Models\Sale;
 use App\Domain\Sales\Models\SaleLine;
 use App\Domain\Sales\Models\SalePayment;
+use App\Models\User;
+use App\Support\Catalog\BatchExpiry;
+use App\Support\Catalog\BatchSalePricing;
+use App\Support\Catalog\FefoBatchAllocator;
+use App\Support\Catalog\ProductUnitResolver;
+use App\Support\Sales\InvoiceRounding;
+use App\Support\Tenant\TenantImpersonation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use RuntimeException;
 
 final class SaleService
@@ -79,6 +81,7 @@ final class SaleService
 
             $sale = Sale::query()->create([
                 'customer_id' => $customerId,
+                'sold_by_user_id' => $this->soldByUserId(),
                 'invoice_no' => $this->nextInvoiceNo(),
                 'sold_at' => now(),
                 'subtotal' => $subtotal,
@@ -327,6 +330,21 @@ final class SaleService
 
             return $payment;
         });
+    }
+
+    private function soldByUserId(): ?int
+    {
+        $impersonation = app(TenantImpersonation::class);
+        if ($impersonation->isActive()) {
+            $acting = $impersonation->actingUser();
+            if ($acting instanceof User) {
+                return $acting->getKey();
+            }
+        }
+
+        $user = auth()->user();
+
+        return $user instanceof User ? $user->getKey() : null;
     }
 
     private function nextInvoiceNo(): string

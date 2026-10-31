@@ -32,6 +32,7 @@ return [
     'forgot_password' => 'Forgot password?',
     'sign_in' => 'Sign in',
     'no_account' => "Don't have an account?",
+    'ask_owner' => 'Need an account? Ask your pharmacy owner to add you.',
     'create_account' => 'Create account',
     'have_account' => 'Already registered?',
     'back_to_login' => 'Back to login',

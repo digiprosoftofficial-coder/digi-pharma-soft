@@ -174,7 +174,9 @@ return [
     */
 
     'features' => array_values(array_filter([
-        Features::registration(),
+        filter_var(env('AUTH_REGISTRATION', false), FILTER_VALIDATE_BOOLEAN)
+            ? Features::registration()
+            : null,
         Features::resetPasswords(),
         filter_var(env('AUTH_EMAIL_VERIFICATION', true), FILTER_VALIDATE_BOOLEAN)
             ? Features::emailVerification()

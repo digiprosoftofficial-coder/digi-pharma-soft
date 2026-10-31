@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Domain\Accounting\Models\LedgerAccount;
 use App\Domain\Billing\Models\SubscriptionPlan;
 use App\Domain\Billing\Models\TenantSubscription;
 use App\Domain\Catalog\Models\Category;
@@ -9,15 +10,14 @@ use App\Domain\Catalog\Models\Manufacturer;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductBatch;
 use App\Domain\Catalog\Models\StorageLocation;
-use App\Support\Catalog\ProductUnitResolver;
-use App\Support\Catalog\SeedDefaultProductTypes;
-use App\Support\Tenant\BranchProvisioner;
-use App\Domain\Accounting\Models\LedgerAccount;
 use App\Domain\Purchasing\Models\Supplier;
 use App\Domain\Sales\Models\DiscountCoupon;
 use App\Domain\Tenant\Models\Tenant;
 use App\Models\User;
+use App\Support\Catalog\ProductUnitResolver;
+use App\Support\Catalog\SeedDefaultProductTypes;
 use App\Support\Permission\PlatformTeam;
+use App\Support\Tenant\BranchProvisioner;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;
@@ -66,9 +66,11 @@ class DatabaseSeeder extends Seeder
             'email' => 'admin@example.com',
             'password' => Hash::make('password'),
             'tenant_id' => null,
+        ]);
+        $platform->forceFill([
             'is_platform_super_admin' => true,
             'email_verified_at' => now(),
-        ]);
+        ])->save();
         $platform->assignRole('super admin');
 
         $registrar->setPermissionsTeamId($tenant->getKey());
@@ -339,9 +341,8 @@ class DatabaseSeeder extends Seeder
             'email' => 'owner@example.com',
             'password' => Hash::make('password'),
             'tenant_id' => $tenant->getKey(),
-            'is_platform_super_admin' => false,
-            'email_verified_at' => now(),
         ]);
+        $owner->forceFill(['email_verified_at' => now()])->save();
         $registrar->setPermissionsTeamId($tenant->getKey());
         $owner->assignRole('pharmacy owner');
     }

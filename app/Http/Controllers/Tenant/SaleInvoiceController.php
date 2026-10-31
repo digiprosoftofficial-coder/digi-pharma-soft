@@ -12,7 +12,7 @@ final class SaleInvoiceController extends Controller
     {
         $this->authorize('view', $sale);
 
-        $sale->load(['customer', 'lines.product', 'lines.batch', 'payments']);
+        $sale->load(['customer', 'soldByUser:id,name', 'lines.product', 'lines.batch', 'payments']);
 
         return view('sales.invoice-print', [
             'sale' => $sale,

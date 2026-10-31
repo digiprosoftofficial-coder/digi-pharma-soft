@@ -2,12 +2,13 @@
 
 namespace App\Http\Middleware;
 
+use App\Domain\Tenant\Models\Branch;
+use App\Domain\Tenant\Models\Tenant;
 use App\Models\User;
 use App\Support\Locale\TranslationLoader;
 use App\Support\Money\MoneyFormatter;
 use App\Support\Platform\PlatformAnnouncementService;
 use App\Support\Platform\PlatformSettings;
-use App\Domain\Tenant\Models\Branch;
 use App\Support\Tenant\BranchContext;
 use App\Support\Tenant\TenantContext;
 use App\Support\Tenant\TenantFeatures;
@@ -15,6 +16,7 @@ use App\Support\Tenant\TenantImpersonation;
 use App\Support\Theme\ThemeCatalog;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Laravel\Fortify\Features;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -63,6 +65,7 @@ class HandleInertiaRequests extends Middleware
             'networkAnnouncement' => $tenant && ! $request->routeIs('platform.*')
                 ? PlatformAnnouncementService::activeBanner()
                 : null,
+            'registrationEnabled' => Features::enabled(Features::registration()),
             'auth' => [
                 'user' => $authUser instanceof User ? [
                     'id' => $authUser->getKey(),
@@ -88,7 +91,7 @@ class HandleInertiaRequests extends Middleware
     /**
      * @return array{id:int, name:string, code:string}|null
      */
-    private function branchShare(?\App\Domain\Tenant\Models\Tenant $tenant): ?array
+    private function branchShare(?Tenant $tenant): ?array
     {
         if ($tenant === null) {
             return null;
@@ -109,7 +112,7 @@ class HandleInertiaRequests extends Middleware
     /**
      * @return list<array{id:int, name:string, code:string, is_default:bool}>
      */
-    private function branchesShare(?\App\Domain\Tenant\Models\Tenant $tenant): array
+    private function branchesShare(?Tenant $tenant): array
     {
         if ($tenant === null || ! TenantFeatures::multiBranchEnabled($tenant)) {
             return [];
@@ -130,7 +133,7 @@ class HandleInertiaRequests extends Middleware
             ->all();
     }
 
-    private function moneyShare(?\App\Domain\Tenant\Models\Tenant $tenant, string $appLocale): array
+    private function moneyShare(?Tenant $tenant, string $appLocale): array
     {
         $currency = $tenant && method_exists($tenant, 'currency')
             ? $tenant->currency()

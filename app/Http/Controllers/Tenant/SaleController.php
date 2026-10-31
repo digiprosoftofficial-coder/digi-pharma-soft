@@ -20,7 +20,8 @@ final class SaleController extends Controller
         $sales = Sale::query()
             ->with([
                 'customer',
-                'lines.product',
+                'soldByUser:id,name',
+                'lines.product:id,name',
                 'lines.batch',
             ])
             ->orderByDesc('sold_at')

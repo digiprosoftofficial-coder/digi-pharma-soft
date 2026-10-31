@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Platform;
 
+use App\Domain\Platform\Models\PlatformSetting;
 use App\Models\User;
 use App\Support\Platform\PlatformSettings;
 use Database\Seeders\DatabaseSeeder;
@@ -30,6 +31,12 @@ class PlatformSettingsTest extends TestCase
         $this->assertSame(21, $settings['default_trial_days']);
         $this->assertSame('support@pharmacy.test', $settings['support_email']);
         $this->assertTrue($settings['sms_api_key_set']);
+        $this->assertNull($settings['sms_api_key']);
+
+        $row = PlatformSetting::query()->firstOrFail();
+        $this->assertNotSame('secret-key', $row->getRawOriginal('sms_api_key'));
+        $this->assertSame('secret-key', $row->sms_api_key);
+
         $this->assertFalse($settings['feature_flags']['stock_transfers']);
         $this->assertTrue($settings['feature_flags']['package_sales']);
         $this->assertSame('BDT', $settings['default_currency']);

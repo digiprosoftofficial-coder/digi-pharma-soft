@@ -24,7 +24,13 @@ final class StripeBillingWebhookController extends Controller
         $payload = $request->getContent();
         $secret = (string) config('services.stripe.webhook_secret');
 
-        if ($secret !== '' && ! $this->verifySignature($payload, (string) $request->header('Stripe-Signature'), $secret)) {
+        if ($secret === '') {
+            Log::warning('Stripe webhook received but STRIPE_WEBHOOK_SECRET is not configured.');
+
+            return response('Webhook secret not configured', 503);
+        }
+
+        if (! $this->verifySignature($payload, (string) $request->header('Stripe-Signature'), $secret)) {
             return response('Invalid signature', 400);
         }
 

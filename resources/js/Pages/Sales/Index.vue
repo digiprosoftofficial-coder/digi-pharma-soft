@@ -17,6 +17,8 @@
                         <div class="min-w-0">
                             <div class="fw-semibold text-truncate">{{ s.invoice_no }}</div>
                             <div class="small text-muted">{{ formatHumanDateTime(s.sold_at) }}</div>
+                            <div class="small text-muted text-truncate">{{ t('sales.sold_by') }}: {{ soldByName(s) }}</div>
+                            <div class="small text-truncate" :title="allItemNames(s)">{{ itemNames(s) }}</div>
                         </div>
                         <span v-if="s.status === 'voided'" class="badge text-bg-secondary">{{ t('sales.status_voided') }}</span>
                         <span v-else class="badge text-bg-success">{{ t('sales.status_posted') }}</span>
@@ -94,6 +96,8 @@
                         <th style="width: 2rem"></th>
                         <th>{{ t('sales.invoice') }}</th>
                         <th>{{ t('sales.date') }}</th>
+                        <th>{{ t('sales.sold_by') }}</th>
+                        <th>{{ t('sales.items') }}</th>
                         <th>{{ t('sales.status') }}</th>
                         <th class="text-end">{{ t('sales.total') }} ({{ currencyCode() }})</th>
                         <th class="text-end">{{ t('sales.due') }} ({{ currencyCode() }})</th>
@@ -116,6 +120,10 @@
                             </td>
                             <td>{{ s.invoice_no }}</td>
                             <td>{{ formatHumanDateTime(s.sold_at) }}</td>
+                            <td class="text-truncate" style="max-width: 9rem">{{ soldByName(s) }}</td>
+                            <td class="small" style="max-width: 16rem">
+                                <span class="text-truncate d-inline-block w-100" :title="allItemNames(s)">{{ itemNames(s) }}</span>
+                            </td>
                             <td>
                                 <span v-if="s.status === 'voided'" class="badge text-bg-secondary">{{ t('sales.status_voided') }}</span>
                                 <span v-else class="badge text-bg-success">{{ t('sales.status_posted') }}</span>
@@ -143,7 +151,7 @@
                         </tr>
                         <tr v-if="expanded === s.id && s.lines?.length" class="table-light sales-expanded-row">
                             <td></td>
-                            <td colspan="6" class="py-2">
+                            <td colspan="8" class="py-2">
                                 <div class="sales-line-list">
                                     <div v-for="line in s.lines" :key="line.id" class="sales-line-row">
                                         <div class="sales-line-row__product min-w-0">
@@ -197,6 +205,32 @@ function toggle(id) {
     expanded.value = expanded.value === id ? null : id;
 }
 
+function productNames(sale) {
+    return (sale.lines || []).map((line) => line.product?.name).filter(Boolean);
+}
+
+function itemNames(sale) {
+    const names = productNames(sale);
+    if (!names.length) {
+        return '—';
+    }
+    if (names.length <= 2) {
+        return names.join(', ');
+    }
+
+    return `${names.slice(0, 2).join(', ')} ${t('sales.more_items', { count: names.length - 2 })}`;
+}
+
+function allItemNames(sale) {
+    const names = productNames(sale);
+
+    return names.length ? names.join(', ') : '—';
+}
+
+function soldByName(sale) {
+    return sale.sold_by_user?.name || '—';
+}
+
 function batchLineLabel(batch) {
     return formatBatchLabel(batch);
 }
@@ -218,7 +252,7 @@ function confirmVoid(sale) {
 
 <style scoped>
 .sales-table table {
-    min-width: 720px;
+    min-width: 980px;
 }
 
 .sales-mobile-card__amounts {

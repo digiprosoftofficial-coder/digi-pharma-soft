@@ -27,21 +27,35 @@ final class TenantContextResolver
         }
 
         if ($user instanceof User) {
-            $slug = $request->header('X-Tenant-Slug')
-                ?? $request->route('tenant');
-
-            if (is_string($slug) && $slug !== '') {
-                return Tenant::query()->where('slug', $slug)->where('is_active', true)->first();
-            }
-
-            if ($user->tenant_id) {
-                return Tenant::query()->whereKey($user->tenant_id)->where('is_active', true)->first();
-            }
-
-            return null;
+            return $this->resolveAuthenticatedTenant($user, $request);
         }
 
         return $this->resolveGuestBrandingTenant($request);
+    }
+
+    private function resolveAuthenticatedTenant(User $user, Request $request): ?Tenant
+    {
+        $userTenant = $user->tenant_id
+            ? Tenant::query()->whereKey($user->tenant_id)->where('is_active', true)->first()
+            : null;
+
+        $slug = $request->header('X-Tenant-Slug')
+            ?? $request->route('tenant');
+
+        if (! is_string($slug) || $slug === '') {
+            return $userTenant;
+        }
+
+        $fromSlug = Tenant::query()->where('slug', $slug)->where('is_active', true)->first();
+        if ($fromSlug === null) {
+            return $userTenant;
+        }
+
+        if ($userTenant !== null && (int) $fromSlug->getKey() === (int) $userTenant->getKey()) {
+            return $fromSlug;
+        }
+
+        return $userTenant;
     }
 
     private function resolveGuestBrandingTenant(Request $request): ?Tenant

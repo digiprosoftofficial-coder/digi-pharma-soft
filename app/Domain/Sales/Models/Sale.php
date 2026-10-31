@@ -3,6 +3,7 @@
 namespace App\Domain\Sales\Models;
 
 use App\Domain\Tenant\Models\Branch;
+use App\Models\User;
 use App\Support\Models\TenantModel;
 use App\Support\Traits\BranchScoped;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,7 +14,7 @@ class Sale extends TenantModel
     use BranchScoped;
 
     protected $fillable = [
-        'tenant_id', 'branch_id', 'customer_id', 'invoice_no', 'sold_at',
+        'tenant_id', 'branch_id', 'customer_id', 'sold_by_user_id', 'invoice_no', 'sold_at',
         'subtotal', 'discount', 'tax', 'total', 'rounded_total', 'round_adjustment',
         'paid', 'amount_tendered', 'change_returned', 'due', 'status',
         'offline_client_id',
@@ -47,6 +48,11 @@ class Sale extends TenantModel
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function soldByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sold_by_user_id');
     }
 
     public function branch(): BelongsTo

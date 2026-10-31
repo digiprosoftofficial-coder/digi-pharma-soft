@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\PermissionRegistrar;
 
 final class AttachTenantOwnerAction
@@ -41,9 +42,10 @@ final class AttachTenantOwnerAction
                 'email' => $data['email'],
                 'password' => $invite ? Hash::make(Str::password(64)) : Hash::make($data['password']),
                 'tenant_id' => $tenant->getKey(),
-                'is_platform_super_admin' => false,
-                'email_verified_at' => $invite ? null : now(),
             ]);
+            if (! $invite) {
+                $user->forceFill(['email_verified_at' => now()])->save();
+            }
 
             $registrar = app(PermissionRegistrar::class);
             $registrar->setPermissionsTeamId((int) $tenant->getKey());
@@ -56,7 +58,7 @@ final class AttachTenantOwnerAction
                 activity()
                     ->causedBy($causer)
                     ->performedOn($tenant)
-                    ->tap(fn (\Spatie\Activitylog\Models\Activity $activity) => $activity->tenant_id = $tenant->getKey())
+                    ->tap(fn (Activity $activity) => $activity->tenant_id = $tenant->getKey())
                     ->withProperties(['owner_email' => $user->email])
                     ->event('tenant.owner_invited')
                     ->log('Pharmacy owner invitation sent');
@@ -64,7 +66,7 @@ final class AttachTenantOwnerAction
                 activity()
                     ->causedBy($causer)
                     ->performedOn($tenant)
-                    ->tap(fn (\Spatie\Activitylog\Models\Activity $activity) => $activity->tenant_id = $tenant->getKey())
+                    ->tap(fn (Activity $activity) => $activity->tenant_id = $tenant->getKey())
                     ->withProperties(['owner_email' => $user->email])
                     ->event('tenant.owner_attached')
                     ->log('Pharmacy owner account created');
@@ -95,7 +97,7 @@ final class AttachTenantOwnerAction
         activity()
             ->causedBy($causer)
             ->performedOn($tenant)
-            ->tap(fn (\Spatie\Activitylog\Models\Activity $activity) => $activity->tenant_id = $tenant->getKey())
+            ->tap(fn (Activity $activity) => $activity->tenant_id = $tenant->getKey())
             ->withProperties(['owner_email' => $owner->email])
             ->event('tenant.owner_invite_resent')
             ->log('Pharmacy owner invitation resent');

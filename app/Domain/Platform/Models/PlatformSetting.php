@@ -2,7 +2,10 @@
 
 namespace App\Domain\Platform\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Crypt;
+use Throwable;
 
 class PlatformSetting extends Model
 {
@@ -33,5 +36,32 @@ class PlatformSetting extends Model
             'billing_grace_days' => 'integer',
             'auto_suspend_on_payment_failure' => 'boolean',
         ];
+    }
+
+    /**
+     * @return Attribute<string|null, string|null>
+     */
+    protected function smsApiKey(): Attribute
+    {
+        return Attribute::make(
+            get: function (?string $value): ?string {
+                if ($value === null || $value === '') {
+                    return null;
+                }
+
+                try {
+                    return Crypt::decryptString($value);
+                } catch (Throwable) {
+                    return $value;
+                }
+            },
+            set: function (?string $value): ?string {
+                if ($value === null || $value === '') {
+                    return null;
+                }
+
+                return Crypt::encryptString($value);
+            },
+        );
     }
 }

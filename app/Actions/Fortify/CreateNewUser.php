@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
+use Spatie\Permission\PermissionRegistrar;
 
 class CreateNewUser implements CreatesNewUsers
 {
@@ -46,10 +47,9 @@ class CreateNewUser implements CreatesNewUsers
                 'email' => $input['email'],
                 'password' => Hash::make($input['password']),
                 'tenant_id' => $tenant->getKey(),
-                'is_platform_super_admin' => false,
             ]);
 
-            app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenant->getKey());
+            app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->getKey());
             $user->assignRole('cashier');
 
             return $user;
