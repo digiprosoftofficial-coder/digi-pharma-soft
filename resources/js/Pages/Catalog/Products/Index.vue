@@ -281,7 +281,7 @@
                                     <strong>{{ formatMoney(p.sale_price) }}</strong>
                                 </div>
                                 <div>
-                                    <span class="text-muted">{{ t('catalog.current_stock') }}</span>
+                                    <span class="text-muted">{{ t('catalog.current_stock_this_branch') }}</span>
                                     <strong>
                                         {{ formatQty(p.stock_on_hand) }}
                                         <span class="fw-normal text-muted">{{ unitLabel(p.base_unit || p.unit) }}</span>
@@ -325,7 +325,7 @@
                         <th>SKU</th>
                         <th>{{ t('catalog.sell_unit') }}</th>
                         <th class="text-end">{{ t('catalog.sale_price') }} ({{ currencyCode() }})</th>
-                        <th class="text-end">{{ t('catalog.current_stock') }}</th>
+                        <th class="text-end">{{ t('catalog.current_stock_this_branch') }}</th>
                         <th class="text-end">{{ t('reports.purchases') }}</th>
                         <th>{{ t('catalog.status') }}</th>
                         <th></th>
@@ -567,7 +567,7 @@
                                     <strong>{{ formatMoney(p.sale_price) }}</strong>
                                 </div>
                                 <div>
-                                    <span class="text-muted">{{ t('catalog.current_stock') }}</span>
+                                    <span class="text-muted">{{ t('catalog.current_stock_this_branch') }}</span>
                                     <strong>{{ formatQty(p.stock_on_hand) }} <span class="fw-normal">{{ unitLabel(p.base_unit || p.unit) }}</span></strong>
                                 </div>
                             </div>
@@ -602,7 +602,7 @@
                         <th>{{ t('catalog.product_name') }}</th>
                         <th>{{ t('catalog.product_type') }}</th>
                         <th class="text-end">{{ t('catalog.sale_price') }} ({{ currencyCode() }})</th>
-                        <th class="text-end">{{ t('catalog.current_stock') }}</th>
+                        <th class="text-end">{{ t('catalog.current_stock_this_branch') }}</th>
                         <th>{{ t('catalog.status') }}</th>
                         <th></th>
                     </tr>
@@ -703,7 +703,7 @@
                             <div class="product-stock-modal__product rounded-3 p-3 my-3 text-start">
                                 <strong class="d-block text-truncate">{{ stockAlertProduct.name }}</strong>
                                 <span class="small text-muted">
-                                    {{ t('catalog.current_stock') }}:
+                                    {{ t('catalog.current_stock_this_branch') }}:
                                     {{ formatQty(stockAlertProduct.stock_on_hand) }}
                                     {{ unitLabel(stockAlertProduct.base_unit || stockAlertProduct.unit) }}
                                 </span>

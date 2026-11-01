@@ -106,6 +106,7 @@ final class PosController extends Controller
         $this->authorize('create', Sale::class);
 
         $products = $this->productCardQuery()
+            ->whereHas('batches', fn (Builder $query) => $this->sellableBatchScope($query))
             ->orderBy('name')
             ->limit(300)
             ->get();
@@ -217,7 +218,6 @@ final class PosController extends Controller
     {
         return Product::query()
             ->where('is_active', true)
-            ->whereHas('batches', fn (Builder $query) => $this->sellableBatchScope($query))
             ->with([
                 'units',
                 'storageLocation',

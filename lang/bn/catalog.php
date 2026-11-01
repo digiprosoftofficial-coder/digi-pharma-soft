@@ -58,6 +58,7 @@ return [
     'opening_stock' => 'প্রারম্ভিক স্টক',
     'opening_stock_hint' => 'ঐচ্ছিক। খালি রাখলে পরে ক্রয়ের মাধ্যমে স্টক যোগ করুন।',
     'current_stock' => 'বর্তমান স্টক',
+    'current_stock_this_branch' => 'স্টক (এই শাখা)',
     'stock_adjustment' => 'পরিমাণ সমন্বয়',
     'stock_adjustment_hint' => 'ধনাত্মক বা ঋণাত্মক সংখ্যা লিখুন (যেমন +৫০ বা -১০), মূল ইউনিটে।',
     'stock_adjust_batch' => 'ব্যাচ নির্বাচন',
@@ -202,7 +203,7 @@ return [
     'products_stat_in_stock' => 'স্টকে আছে',
     'products_stat_out_of_stock' => 'স্টক শূন্য',
     'products_stat_branch' => ':name: স্টকে :countটি',
-    'products_stat_help' => 'এই ফার্মেসির ক্যাটালগ। স্টক কাউন্টে সব শাখা ধরা হয়।',
+    'products_stat_help' => 'ক্যাটালগ সব শাখায় একই। স্টক কাউন্টে সব শাখা ধরা হয়; তালিকার স্টক শুধু এই শাখার।'
     'product_type_icon' => 'আইকন ছবি',
     'product_type_icon_hint' => 'ঐচ্ছিক। শুধু এই ফার্মেসির জন্য প্ল্যাটফর্ম ডিফল্ট বদলাবে।',
     'product_type_using_platform_default' => 'প্ল্যাটফর্ম ডিফল্ট আইকন ব্যবহার হচ্ছে।',

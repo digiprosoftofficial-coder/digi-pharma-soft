@@ -136,6 +136,47 @@ class MultiBranchFeatureTest extends TestCase
         $this->assertSame($branch->getKey(), session('active_branch_id'));
     }
 
+    public function test_owner_sees_the_same_catalog_after_switching_branch(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+        $tenant = Tenant::query()->firstOrFail();
+        $this->enableMultiBranch($tenant, maxBranches: 3);
+
+        $catalogTotal = (int) Product::query()->count();
+        $this->assertGreaterThan(0, $catalogTotal);
+
+        $east = Branch::query()->create([
+            'tenant_id' => $tenant->getKey(),
+            'name' => 'East',
+            'code' => 'EAST',
+            'is_active' => true,
+            'is_default' => false,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('tenant.products.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('productStats.total', $catalogTotal)
+                ->has('products.data', $catalogTotal > 25 ? 25 : $catalogTotal));
+
+        $this->post('/branches/switch', ['branch_id' => $east->getKey()])
+            ->assertRedirect();
+
+        $this->get(route('tenant.products.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('productStats.total', $catalogTotal)
+                ->has('products.data', $catalogTotal > 25 ? 25 : $catalogTotal));
+
+        $this->get('/pos')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('quickProducts.latest')
+                ->where('quickProducts.latest', fn ($rows) => collect($rows)->count() === min(12, $catalogTotal)));
+    }
+
     public function test_product_batches_are_branch_scoped_in_queries(): void
     {
         $this->seed(DatabaseSeeder::class);
