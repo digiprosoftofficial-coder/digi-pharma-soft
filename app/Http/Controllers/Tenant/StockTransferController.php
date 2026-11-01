@@ -20,7 +20,7 @@ final class StockTransferController extends Controller
     public function index(): Response
     {
         $this->authorize('viewAny', StockTransfer::class);
-        abort_unless(TenantFeatures::multiBranchEnabled(tenant()), 404);
+        abort_unless(TenantFeatures::multiBranchEnabled(tenant()), 403, __('branches.feature_disabled'));
 
         $transfers = StockTransfer::query()
             ->with(['fromBranch:id,name,code', 'toBranch:id,name,code'])
@@ -37,7 +37,7 @@ final class StockTransferController extends Controller
     public function create(): Response
     {
         $this->authorize('create', StockTransfer::class);
-        abort_unless(TenantFeatures::multiBranchEnabled(tenant()), 404);
+        abort_unless(TenantFeatures::multiBranchEnabled(tenant()), 403, __('branches.feature_disabled'));
 
         return Inertia::render('StockTransfers/Create', [
             'branches' => Branch::query()->where('is_active', true)->orderByDesc('is_default')->orderBy('name')->get(['id', 'name', 'code', 'is_default']),
@@ -49,7 +49,7 @@ final class StockTransferController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $this->authorize('create', StockTransfer::class);
-        abort_unless(TenantFeatures::multiBranchEnabled(tenant()), 404);
+        abort_unless(TenantFeatures::multiBranchEnabled(tenant()), 403, __('branches.feature_disabled'));
 
         $tid = tenant_id();
 

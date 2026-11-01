@@ -21,7 +21,7 @@ class PayrollTest extends TestCase
 
         $this->actingAs($owner)
             ->get('/hr/payroll')
-            ->assertForbidden();
+            ->assertAppDialogRedirect(__('employees.payroll_feature_disabled'));
     }
 
     public function test_owner_can_generate_and_finalize_payroll(): void

@@ -41,6 +41,6 @@ class PlatformPlanCrudTest extends TestCase
 
         $this->actingAs($owner)
             ->get('/platform/plans')
-            ->assertForbidden();
+            ->assertAppDialogRedirect();
     }
 }

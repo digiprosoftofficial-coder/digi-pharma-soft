@@ -25,7 +25,7 @@ final class EnsureTenantContext
                 return redirect()->route('platform.dashboard');
             }
 
-            abort(403, 'Tenant context missing or inactive.');
+            abort(403, __('errors.tenant_context_missing'));
         }
 
         $registrar = app(\Spatie\Permission\PermissionRegistrar::class);

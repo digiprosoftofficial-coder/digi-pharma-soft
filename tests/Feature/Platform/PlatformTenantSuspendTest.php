@@ -33,7 +33,8 @@ class PlatformTenantSuspendTest extends TestCase
 
         $this->actingAs($owner)
             ->get('/dashboard')
-            ->assertForbidden();
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Shared/AppNotice'));
 
         $activity = Activity::query()
             ->where('event', 'tenant.suspended')

@@ -23,8 +23,9 @@ export function useLocale() {
         }
 
         if (replacements) {
-            for (const [name, replacement] of Object.entries(replacements)) {
-                value = value.replaceAll(`:${name}`, String(replacement));
+            const names = Object.keys(replacements).sort((a, b) => b.length - a.length);
+            for (const name of names) {
+                value = value.replaceAll(`:${name}`, String(replacements[name]));
             }
         }
 

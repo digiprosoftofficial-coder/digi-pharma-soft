@@ -13,6 +13,7 @@ use App\Support\Tenant\BranchContext;
 use App\Support\Tenant\TenantContext;
 use App\Support\Tenant\TenantFeatures;
 use App\Support\Tenant\TenantImpersonation;
+use App\Support\Http\UserFacingDialog;
 use App\Support\Theme\ThemeCatalog;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -66,6 +67,11 @@ class HandleInertiaRequests extends Middleware
                 ? PlatformAnnouncementService::activeBanner()
                 : null,
             'registrationEnabled' => Features::enabled(Features::registration()),
+            'flash' => [
+                'success' => $request->session()->get('success'),
+                'info' => $request->session()->get('info'),
+                'app_dialog' => $request->session()->get(UserFacingDialog::SESSION_KEY),
+            ],
             'auth' => [
                 'user' => $authUser instanceof User ? [
                     'id' => $authUser->getKey(),

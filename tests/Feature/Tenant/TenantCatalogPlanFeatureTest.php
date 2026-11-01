@@ -64,8 +64,8 @@ class TenantCatalogPlanFeatureTest extends TestCase
         $plan->save();
         $tenant->refresh();
 
-        $this->actingAs($user)->get('/catalog/import')->assertForbidden();
-        $this->actingAs($user)->get('/catalog/import/sample')->assertForbidden();
+        $this->actingAs($user)->get('/catalog/import')->assertAppDialogRedirect(__('catalog.import_feature_disabled'));
+        $this->actingAs($user)->get('/catalog/import/sample')->assertAppDialogRedirect(__('catalog.import_feature_disabled'));
     }
 
     public function test_advanced_fields_ignored_on_create_when_disabled_by_plan(): void

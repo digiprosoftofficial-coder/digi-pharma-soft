@@ -15,6 +15,7 @@ use App\Http\Requests\Catalog\StoreProductRequest;
 use App\Http\Requests\Catalog\UpdateProductRequest;
 use App\Http\Resources\Catalog\ProductResource;
 use App\Support\Catalog\ProductCatalogOptions;
+use App\Support\Catalog\ProductCatalogStats;
 use App\Support\Catalog\ProductListPagination;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -50,6 +51,7 @@ final class ProductController extends Controller
             'categories' => $this->categoryOptions(),
             'storageLocations' => $this->storageLocationOptions(),
             'perPageOptions' => ProductListPagination::options(),
+            'productStats' => ProductCatalogStats::forTenant(),
         ]);
     }
 

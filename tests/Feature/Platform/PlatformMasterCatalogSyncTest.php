@@ -122,7 +122,7 @@ class PlatformMasterCatalogSyncTest extends TestCase
 
         $this->actingAs($owner)
             ->post(route('platform.tenants.master-catalog', $tenant))
-            ->assertForbidden();
+            ->assertAppDialogRedirect();
     }
 
     private function tenantProductCount(Tenant $tenant): int

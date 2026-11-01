@@ -140,7 +140,7 @@ final class ProductImportController extends Controller
     {
         $this->authorize('create', Product::class);
 
-        abort_unless(TenantFeatures::bulkImportEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::bulkImportEnabled(tenant()), 403, __('catalog.import_feature_disabled'));
     }
 
     /**

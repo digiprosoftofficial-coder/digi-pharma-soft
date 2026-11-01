@@ -22,7 +22,7 @@ final class PackageSaleController extends Controller
     public function index(): Response
     {
         $this->authorize('create', \App\Domain\Sales\Models\Sale::class);
-        abort_unless(TenantFeatures::packageSalesEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::packageSalesEnabled(tenant()), 403, __('sales.package_feature_disabled'));
 
         $lastSaleId = session('last_sale_id');
         session()->forget('last_sale_id');
@@ -35,7 +35,7 @@ final class PackageSaleController extends Controller
 
     public function store(StorePosSaleRequest $request): RedirectResponse
     {
-        abort_unless(TenantFeatures::packageSalesEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::packageSalesEnabled(tenant()), 403, __('sales.package_feature_disabled'));
 
         $customerId = $request->validated('customer_id');
         $newCustomerData = $request->validated('new_customer');

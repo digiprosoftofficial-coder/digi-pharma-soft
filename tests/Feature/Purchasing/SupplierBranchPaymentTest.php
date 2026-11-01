@@ -154,7 +154,7 @@ class SupplierBranchPaymentTest extends TestCase
         $this->post("/purchases/{$purchase->getKey()}/payments", [
             'method' => 'cash',
             'amount' => 10,
-        ])->assertForbidden();
+        ])->assertAppDialogRedirect();
     }
 
     public function test_manager_can_pay_when_policy_enabled(): void

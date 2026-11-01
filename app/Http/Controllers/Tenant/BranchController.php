@@ -20,6 +20,7 @@ final class BranchController extends Controller
 
     public function index(): Response
     {
+        abort_unless(TenantFeatures::multiBranchEnabled(tenant()), 403, __('branches.feature_disabled'));
         $this->authorize('viewAny', Branch::class);
 
         $tenant = tenant();
@@ -36,6 +37,7 @@ final class BranchController extends Controller
 
     public function create(): Response
     {
+        abort_unless(TenantFeatures::multiBranchEnabled(tenant()), 403, __('branches.feature_disabled'));
         $this->authorize('create', Branch::class);
 
         return Inertia::render('Branches/Form', ['branch' => null]);
@@ -43,6 +45,7 @@ final class BranchController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        abort_unless(TenantFeatures::multiBranchEnabled(tenant()), 403, __('branches.feature_disabled'));
         $this->authorize('create', Branch::class);
 
         $validated = $request->validate([
@@ -64,6 +67,7 @@ final class BranchController extends Controller
 
     public function edit(Branch $branch): Response
     {
+        abort_unless(TenantFeatures::multiBranchEnabled(tenant()), 403, __('branches.feature_disabled'));
         $this->authorize('update', $branch);
 
         return Inertia::render('Branches/Form', ['branch' => $branch]);
@@ -71,6 +75,7 @@ final class BranchController extends Controller
 
     public function update(Request $request, Branch $branch): RedirectResponse
     {
+        abort_unless(TenantFeatures::multiBranchEnabled(tenant()), 403, __('branches.feature_disabled'));
         $this->authorize('update', $branch);
 
         $validated = $request->validate([
@@ -92,6 +97,7 @@ final class BranchController extends Controller
 
     public function destroy(Branch $branch): RedirectResponse
     {
+        abort_unless(TenantFeatures::multiBranchEnabled(tenant()), 403, __('branches.feature_disabled'));
         $this->authorize('delete', $branch);
 
         try {

@@ -117,6 +117,6 @@ class EmployeeCrudTest extends TestCase
 
         $this->actingAs($owner)
             ->get('/employees')
-            ->assertForbidden();
+            ->assertAppDialogRedirect(__('employees.feature_disabled'));
     }
 }

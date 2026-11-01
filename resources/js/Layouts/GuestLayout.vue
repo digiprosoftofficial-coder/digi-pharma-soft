@@ -76,6 +76,8 @@
                     </div>
                 </div>
 
+                <AppMessageModal />
+
                 <footer class="auth-main__footer text-center small text-muted px-3 pb-3">
                     <span class="d-inline-flex align-items-center gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary" aria-hidden="true">
@@ -90,6 +92,7 @@
 </template>
 
 <script setup>
+import AppMessageModal from '@/Components/AppMessageModal.vue';
 import LocaleSwitcher from '@/Components/LocaleSwitcher.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useTheme } from '@/composables/useTheme';

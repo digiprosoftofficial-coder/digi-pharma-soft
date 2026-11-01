@@ -77,6 +77,6 @@ class PlatformAnalyticsTest extends TestCase
 
         $this->actingAs($owner)
             ->get(route('platform.health.index'))
-            ->assertForbidden();
+            ->assertAppDialogRedirect();
     }
 }

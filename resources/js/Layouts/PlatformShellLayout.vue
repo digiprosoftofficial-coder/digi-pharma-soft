@@ -86,10 +86,12 @@
                 <slot />
             </main>
         </div>
+        <AppMessageModal />
     </div>
 </template>
 
 <script setup>
+import AppMessageModal from '@/Components/AppMessageModal.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useTheme } from '@/composables/useTheme';
 import { Link, usePage } from '@inertiajs/vue3';

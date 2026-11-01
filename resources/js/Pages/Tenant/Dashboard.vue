@@ -74,7 +74,13 @@
 
         <div class="row g-3 mb-4">
             <div v-for="card in kpiCards" :key="card.label" class="col-6 col-xl-3">
-                <div class="card kpi-card border-0 shadow-sm h-100" :class="`kpi-card--${card.tone}`">
+                <component
+                    :is="card.href ? Link : 'div'"
+                    :href="card.href || undefined"
+                    class="card kpi-card border-0 shadow-sm h-100"
+                    :class="[`kpi-card--${card.tone}`, { 'kpi-card--link': Boolean(card.href) }]"
+                    :aria-label="card.href ? card.label : undefined"
+                >
                     <div class="card-body d-flex align-items-start gap-3">
                         <span class="kpi-card__icon" :class="`kpi-card__icon--${card.tone}`">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -89,7 +95,7 @@
                             <div class="kpi-card__help">{{ card.help }}</div>
                         </div>
                     </div>
-                </div>
+                </component>
             </div>
         </div>
 
@@ -198,6 +204,7 @@
                             <th class="text-end">{{ t('dashboard.sales_column') }}</th>
                             <th class="text-end">{{ t('dashboard.purchase_column') }}</th>
                             <th class="text-end">{{ t('dashboard.sales_due') }}</th>
+                            <th class="text-end">{{ t('dashboard.medicines_in_stock_column') }}</th>
                             <th class="text-end">{{ t('dashboard.stock_value') }}</th>
                         </tr>
                     </thead>
@@ -210,10 +217,11 @@
                             <td class="text-end">{{ formatMoney(branch.sales_today) }}</td>
                             <td class="text-end">{{ formatMoney(branch.purchases_today) }}</td>
                             <td class="text-end text-danger">{{ formatMoney(branch.sales_due) }}</td>
+                            <td class="text-end">{{ formatNumber(branch.products_in_stock) }}</td>
                             <td class="text-end">{{ formatMoney(branch.stock_value) }}</td>
                         </tr>
                         <tr v-if="!branchPerformance?.length">
-                            <td colspan="5" class="text-center text-muted py-4">{{ t('dashboard.no_branch_performance') }}</td>
+                            <td colspan="6" class="text-center text-muted py-4">{{ t('dashboard.no_branch_performance') }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -276,7 +284,8 @@ import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { useQuantity } from '@/composables/useQuantity';
 import { formatHumanDateTime as formatDate } from '@/utils/dates';
-import { Head, router } from '@inertiajs/vue3';
+import { usePermissions } from '@/composables/usePermissions';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 const props = defineProps({
@@ -301,6 +310,7 @@ const props = defineProps({
 const { t } = useLocale();
 const { formatMoney } = useMoney();
 const { formatQty } = useQuantity();
+const { can } = usePermissions();
 
 const customFrom = ref(props.dateRange.date_from || '');
 const customTo = ref(props.dateRange.date_to || '');
@@ -364,7 +374,46 @@ const kpiIcons = {
     ],
     expired: ['M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z', 'M12 9v4', 'M12 17h.01'],
     nearExpiry: ['M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z', 'M12 6v6l4 2'],
+    medicines: [
+        'M9 3h6v4H9z',
+        'M10 7v13a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V7',
+        'M8 12h8',
+    ],
 };
+
+function withRange(path, extra = {}) {
+    const params = new URLSearchParams();
+    if (props.dateRange.date_from) {
+        params.set('date_from', props.dateRange.date_from);
+    }
+    if (props.dateRange.date_to) {
+        params.set('date_to', props.dateRange.date_to);
+    }
+    Object.entries(extra).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== '') {
+            params.set(key, String(value));
+        }
+    });
+    const query = params.toString();
+
+    return query ? `${path}?${query}` : path;
+}
+
+function permittedHref(...candidates) {
+    for (const candidate of candidates) {
+        if (!candidate) {
+            continue;
+        }
+        if (typeof candidate === 'string') {
+            return candidate;
+        }
+        if (!candidate.permission || can(candidate.permission)) {
+            return candidate.href;
+        }
+    }
+
+    return null;
+}
 
 const kpiCards = computed(() => [
     {
@@ -376,6 +425,10 @@ const kpiCards = computed(() => [
             : rangeSummary.value,
         tone: 'success',
         iconPaths: kpiIcons.sales,
+        href: permittedHref(
+            { permission: 'reports.view', href: withRange('/reports/sales/summary') },
+            { permission: 'sales.view', href: '/sales' },
+        ),
     },
     {
         label: isTodayRange.value ? t('dashboard.todays_profit') : t('dashboard.total_profit'),
@@ -384,6 +437,10 @@ const kpiCards = computed(() => [
         help: t('dashboard.gross_line_profit'),
         tone: 'primary',
         iconPaths: kpiIcons.profit,
+        href: permittedHref(
+            { permission: 'reports.view', href: withRange('/reports/sales/summary') },
+            { permission: 'sales.view', href: '/sales' },
+        ),
     },
     {
         label: isTodayRange.value ? t('dashboard.todays_purchase') : t('dashboard.total_purchase'),
@@ -392,8 +449,35 @@ const kpiCards = computed(() => [
         help: t('dashboard.posted_purchase_total'),
         tone: 'info',
         iconPaths: kpiIcons.purchase,
+        href: permittedHref(
+            { permission: 'reports.view', href: withRange('/reports/purchases/summary') },
+            { permission: 'purchases.view', href: '/purchases' },
+        ),
     },
-    { label: t('dashboard.total_stock_value'), value: props.kpis.stockValue, money: true, help: t('dashboard.current_inventory_value'), tone: 'teal', iconPaths: kpiIcons.stock },
+    {
+        label: t('dashboard.total_stock_value'),
+        value: props.kpis.stockValue,
+        money: true,
+        help: t('dashboard.current_inventory_value'),
+        tone: 'teal',
+        iconPaths: kpiIcons.stock,
+        href: permittedHref(
+            { permission: 'inventory.view', href: '/inventory' },
+            { permission: 'reports.view', href: '/reports/inventory/health' },
+        ),
+    },
+    {
+        label: t('dashboard.total_medicines'),
+        value: props.kpis.productCount ?? 0,
+        money: false,
+        help: t('dashboard.medicines_help', {
+            active: formatNumber(props.kpis.activeProductCount),
+            in_stock: formatNumber(props.kpis.inStockProductCount),
+        }),
+        tone: 'secondary',
+        iconPaths: kpiIcons.medicines,
+        href: permittedHref({ permission: 'products.view', href: '/products' }),
+    },
     {
         label: t('dashboard.total_due_customer'),
         value: props.kpis.customerDue,
@@ -401,10 +485,47 @@ const kpiCards = computed(() => [
         help: t('dashboard.due_sales_count', { count: formatNumber(props.kpis.pendingOrders) }),
         tone: 'danger',
         iconPaths: kpiIcons.customerDue,
+        href: permittedHref(
+            { permission: 'sales.view', href: '/sales/customer-bills' },
+            { permission: 'reports.view', href: '/reports/dues' },
+        ),
     },
-    { label: t('dashboard.total_due_supplier'), value: props.kpis.supplierDue, money: true, help: t('dashboard.open_supplier_payable'), tone: 'warning', iconPaths: kpiIcons.supplierDue },
-    { label: t('dashboard.expired_products'), value: props.kpis.expiredProducts, money: false, help: t('dashboard.batches_past_expiry'), tone: 'danger', iconPaths: kpiIcons.expired },
-    { label: t('dashboard.near_expiry_products'), value: props.kpis.nearExpiryProducts, money: false, help: t('dashboard.expiring_within_30_days'), tone: 'warning', iconPaths: kpiIcons.nearExpiry },
+    {
+        label: t('dashboard.total_due_supplier'),
+        value: props.kpis.supplierDue,
+        money: true,
+        help: t('dashboard.open_supplier_payable'),
+        tone: 'warning',
+        iconPaths: kpiIcons.supplierDue,
+        href: permittedHref(
+            { permission: 'purchases.view', href: '/purchases/supplier-bills' },
+            { permission: 'reports.view', href: '/reports/dues' },
+        ),
+    },
+    {
+        label: t('dashboard.expired_products'),
+        value: props.kpis.expiredProducts,
+        money: false,
+        help: t('dashboard.batches_past_expiry'),
+        tone: 'danger',
+        iconPaths: kpiIcons.expired,
+        href: permittedHref(
+            { permission: 'reports.view', href: withRange('/reports/expiry', { expiry_status: 'expired' }) },
+            { permission: 'inventory.view', href: '/inventory' },
+        ),
+    },
+    {
+        label: t('dashboard.near_expiry_products'),
+        value: props.kpis.nearExpiryProducts,
+        money: false,
+        help: t('dashboard.expiring_within_30_days'),
+        tone: 'warning',
+        iconPaths: kpiIcons.nearExpiry,
+        href: permittedHref(
+            { permission: 'reports.view', href: withRange('/reports/expiry', { expiry_status: 'expiring_30' }) },
+            { permission: 'inventory.view', href: '/inventory' },
+        ),
+    },
 ]);
 
 function selectRange(key) {
@@ -744,6 +865,17 @@ function formatNumber(value) {
 .kpi-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 0.65rem 1.5rem rgba(15, 23, 42, 0.12) !important;
+}
+
+a.kpi-card--link {
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+a.kpi-card--link:focus-visible {
+    outline: 2px solid var(--kpi-color);
+    outline-offset: 2px;
 }
 
 .kpi-card--success { --kpi-color: #16a34a; --kpi-tint: rgba(22, 163, 74, 0.12); }

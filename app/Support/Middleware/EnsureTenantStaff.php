@@ -22,7 +22,7 @@ final class EnsureTenantStaff
                 return $next($request);
             }
 
-            abort(403);
+            abort(403, __('errors.platform_console_only'));
         }
 
         return $next($request);

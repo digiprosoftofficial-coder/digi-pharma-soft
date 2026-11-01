@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'package_feature_disabled' => 'Package sales are not enabled for this pharmacy.',
     'print_invoice' => 'Print invoice',
     'print' => 'Print',
     'sales' => 'Sales',

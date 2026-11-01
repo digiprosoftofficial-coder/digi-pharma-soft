@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'feature_disabled' => 'Employee management is not enabled on your plan.',
+    'attendance_feature_disabled' => 'Attendance is not enabled on your plan.',
+    'payroll_feature_disabled' => 'Payroll and leave are not enabled on your plan.',
     'title' => 'Employees',
     'new' => 'New employee',
     'edit' => 'Edit employee',

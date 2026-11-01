@@ -117,7 +117,7 @@ class PlatformBillingTest extends TestCase
 
         $this->actingAs($owner)
             ->get(route('platform.billing.index'))
-            ->assertForbidden();
+            ->assertAppDialogRedirect();
     }
 
     public function test_super_admin_can_download_edit_and_void_open_invoice(): void
@@ -189,11 +189,11 @@ class PlatformBillingTest extends TestCase
             ->put(route('platform.billing.invoices.update', $invoice), [
                 'amount_cents' => 9900,
             ])
-            ->assertForbidden();
+            ->assertAppDialogRedirect();
 
         $this->actingAs($admin)
             ->delete(route('platform.billing.invoices.destroy', $invoice))
-            ->assertForbidden();
+            ->assertAppDialogRedirect();
 
         $invoice->refresh();
         $this->assertSame(4900, $invoice->amount_cents);

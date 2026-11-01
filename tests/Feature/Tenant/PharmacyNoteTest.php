@@ -90,11 +90,11 @@ class PharmacyNoteTest extends TestCase
 
         $this->assertFalse(TenantFeatures::pharmacyNotesEnabled($tenant));
 
-        $this->actingAs($user)->get('/notes')->assertForbidden();
+        $this->actingAs($user)->get('/notes')->assertAppDialogRedirect(__('notes.feature_disabled'));
         $this->actingAs($user)->post('/notes', [
             'body' => 'Should fail',
             'type' => 'general',
-        ])->assertForbidden();
+        ])->assertAppDialogRedirect(__('notes.feature_disabled'));
     }
 
     public function test_cashier_cannot_access_notes(): void
@@ -113,11 +113,11 @@ class PharmacyNoteTest extends TestCase
         $cashier->forceFill(['email_verified_at' => now()])->save();
         $cashier->assignRole('cashier');
 
-        $this->actingAs($cashier)->get('/notes')->assertForbidden();
+        $this->actingAs($cashier)->get('/notes')->assertAppDialogRedirect();
         $this->actingAs($cashier)->post('/notes', [
             'body' => 'Nope',
             'type' => 'general',
-        ])->assertForbidden();
+        ])->assertAppDialogRedirect();
     }
 
     public function test_tenant_isolation_hides_other_tenant_notes(): void

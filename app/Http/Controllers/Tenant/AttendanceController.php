@@ -19,7 +19,7 @@ final class AttendanceController extends Controller
 
     public function index(Request $request): Response
     {
-        abort_unless(TenantFeatures::attendanceEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::attendanceEnabled(tenant()), 403, __('employees.attendance_feature_disabled'));
         abort_unless($this->canAccessAttendance($request), 403);
 
         $date = $request->string('date')->toString() ?: now()->toDateString();
@@ -49,7 +49,7 @@ final class AttendanceController extends Controller
 
     public function clockIn(Request $request, ?Employee $employee = null): RedirectResponse
     {
-        abort_unless(TenantFeatures::attendanceEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::attendanceEnabled(tenant()), 403, __('employees.attendance_feature_disabled'));
 
         $target = $this->resolveEmployee($request, $employee);
         $this->authorizeAttendance($request, $target, $employee !== null);
@@ -65,7 +65,7 @@ final class AttendanceController extends Controller
 
     public function clockOut(Request $request, ?Employee $employee = null): RedirectResponse
     {
-        abort_unless(TenantFeatures::attendanceEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::attendanceEnabled(tenant()), 403, __('employees.attendance_feature_disabled'));
 
         $target = $this->resolveEmployee($request, $employee);
         $this->authorizeAttendance($request, $target, $employee !== null);

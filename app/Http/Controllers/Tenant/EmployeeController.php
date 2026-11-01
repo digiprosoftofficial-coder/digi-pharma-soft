@@ -21,7 +21,7 @@ final class EmployeeController extends Controller
 
     public function index(): Response
     {
-        abort_unless(TenantFeatures::employeeManagementEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::employeeManagementEnabled(tenant()), 403, __('employees.feature_disabled'));
 
         return Inertia::render('Employees/Index', [
             'employees' => Employee::query()
@@ -33,7 +33,7 @@ final class EmployeeController extends Controller
 
     public function show(Employee $employee): Response
     {
-        abort_unless(TenantFeatures::employeeManagementEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::employeeManagementEnabled(tenant()), 403, __('employees.feature_disabled'));
 
         $employee->load(['user:id,name,email', 'defaultBranch:id,name,code']);
 
@@ -44,7 +44,7 @@ final class EmployeeController extends Controller
 
     public function create(): Response
     {
-        abort_unless(TenantFeatures::employeeManagementEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::employeeManagementEnabled(tenant()), 403, __('employees.feature_disabled'));
 
         return Inertia::render('Employees/Form', [
             'employee' => null,
@@ -55,7 +55,7 @@ final class EmployeeController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless(TenantFeatures::employeeManagementEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::employeeManagementEnabled(tenant()), 403, __('employees.feature_disabled'));
 
         $validated = $request->validate($this->rules());
         $validated['is_active'] = $request->boolean('is_active', true);
@@ -67,7 +67,7 @@ final class EmployeeController extends Controller
 
     public function edit(Employee $employee): Response
     {
-        abort_unless(TenantFeatures::employeeManagementEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::employeeManagementEnabled(tenant()), 403, __('employees.feature_disabled'));
 
         return Inertia::render('Employees/Form', [
             'employee' => $employee->load('user:id,name,email'),
@@ -78,7 +78,7 @@ final class EmployeeController extends Controller
 
     public function update(Request $request, Employee $employee): RedirectResponse
     {
-        abort_unless(TenantFeatures::employeeManagementEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::employeeManagementEnabled(tenant()), 403, __('employees.feature_disabled'));
 
         $validated = $request->validate($this->rules($employee));
         $validated['is_active'] = $request->boolean('is_active', true);
@@ -90,7 +90,7 @@ final class EmployeeController extends Controller
 
     public function destroy(Employee $employee): RedirectResponse
     {
-        abort_unless(TenantFeatures::employeeManagementEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::employeeManagementEnabled(tenant()), 403, __('employees.feature_disabled'));
 
         if ($employee->attendances()->exists() || $employee->payrollLines()->exists() || $employee->leaveRequests()->exists()) {
             return redirect()

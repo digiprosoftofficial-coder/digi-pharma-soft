@@ -6,6 +6,7 @@ use App\Domain\Catalog\Models\ProductBatch;
 use App\Domain\Sales\Models\Customer;
 use App\Domain\Sales\Models\Sale;
 use App\Http\Controllers\Controller;
+use App\Support\Catalog\ProductCatalogStats;
 use App\Support\Dashboard\DashboardDateRange;
 use App\Support\Tenant\TenantImpersonation;
 use Carbon\CarbonImmutable;
@@ -96,6 +97,7 @@ final class DashboardController extends Controller
             ->where('products.is_active', true)
             ->count();
         $customerCount = Customer::query()->count();
+        $productStats = ProductCatalogStats::forTenant($tenantId);
 
         $chartDays = $this->chartDays();
 
@@ -152,6 +154,9 @@ final class DashboardController extends Controller
             ->where('tenant_id', $tenantId)
             ->groupBy('branch_id');
 
+        $productsInStockByBranch = collect($productStats['by_branch'])
+            ->keyBy('id');
+
         $branchPerformance = DB::table('branches')
             ->leftJoinSub($salesInRangeByBranch, 'sales_today_by_branch', 'sales_today_by_branch.branch_id', '=', 'branches.id')
             ->leftJoinSub($purchasesInRangeByBranch, 'purchases_today_by_branch', 'purchases_today_by_branch.branch_id', '=', 'branches.id')
@@ -170,7 +175,12 @@ final class DashboardController extends Controller
             )
             ->orderByDesc('sales_today')
             ->limit(8)
-            ->get();
+            ->get()
+            ->map(function ($row) use ($productsInStockByBranch) {
+                $row->products_in_stock = (int) ($productsInStockByBranch[(int) $row->id]['in_stock'] ?? 0);
+
+                return $row;
+            });
 
         $activities = Activity::query()
             ->where('tenant_id', $tenantId)
@@ -206,6 +216,10 @@ final class DashboardController extends Controller
                 'pendingOrders' => $pendingOrders,
                 'lowStockCount' => $lowStockCount,
                 'customerCount' => $customerCount,
+                'productCount' => $productStats['total'],
+                'activeProductCount' => $productStats['active'],
+                'inStockProductCount' => $productStats['in_stock'],
+                'outOfStockProductCount' => $productStats['out_of_stock'],
             ],
             'chartDays' => $chartDays,
             'criticalStock' => $criticalStock,

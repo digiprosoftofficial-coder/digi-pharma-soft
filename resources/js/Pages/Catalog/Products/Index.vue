@@ -9,6 +9,50 @@
                 <Link v-if="can('products.manage')" href="/products/create" class="btn btn-primary">{{ t('catalog.add_product') }}</Link>
             </div>
         </div>
+        <div class="row g-2 mb-3">
+            <div class="col-6 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 product-stat-card">
+                    <div class="card-body py-2 px-3">
+                        <div class="small text-muted">{{ t('catalog.products_stat_total') }}</div>
+                        <div class="fs-4 fw-semibold lh-sm">{{ formatCount(productStats.total) }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 product-stat-card">
+                    <div class="card-body py-2 px-3">
+                        <div class="small text-muted">{{ t('catalog.products_stat_active') }}</div>
+                        <div class="fs-4 fw-semibold lh-sm">{{ formatCount(productStats.active) }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 product-stat-card">
+                    <div class="card-body py-2 px-3">
+                        <div class="small text-muted">{{ t('catalog.products_stat_in_stock') }}</div>
+                        <div class="fs-4 fw-semibold lh-sm text-success">{{ formatCount(productStats.in_stock) }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 product-stat-card">
+                    <div class="card-body py-2 px-3">
+                        <div class="small text-muted">{{ t('catalog.products_stat_out_of_stock') }}</div>
+                        <div class="fs-4 fw-semibold lh-sm" :class="productStats.out_of_stock ? 'text-danger' : ''">
+                            {{ formatCount(productStats.out_of_stock) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p v-if="productStats.by_branch.length" class="small text-muted mb-3">
+            {{ t('catalog.products_stat_help') }}
+            <span v-for="(branch, index) in productStats.by_branch" :key="branch.id">
+                <span v-if="index === 0"> — </span>
+                <span v-else> · </span>
+                {{ t('catalog.products_stat_branch', { name: branch.name, count: formatCount(branch.in_stock) }) }}
+            </span>
+        </p>
         <form class="card border-0 shadow-sm card-body mb-3 product-filter-card" @submit.prevent="applyFilters">
             <div class="product-filters">
                 <div class="product-filter-field product-filter-field--search">
@@ -698,6 +742,16 @@ const props = defineProps({
     categories: { type: Array, default: () => [] },
     storageLocations: { type: Array, default: () => [] },
     perPageOptions: { type: Array, default: () => [15, 25, 50, 100] },
+    productStats: {
+        type: Object,
+        default: () => ({
+            total: 0,
+            active: 0,
+            in_stock: 0,
+            out_of_stock: 0,
+            by_branch: [],
+        }),
+    },
 });
 
 const { t } = useLocale();
@@ -874,6 +928,14 @@ const filterForm = reactive({
     per_page: Number(props.filters.per_page) || 25,
 });
 
+const productStats = computed(() => ({
+    total: Number(props.productStats?.total || 0),
+    active: Number(props.productStats?.active || 0),
+    in_stock: Number(props.productStats?.in_stock || 0),
+    out_of_stock: Number(props.productStats?.out_of_stock || 0),
+    by_branch: Array.isArray(props.productStats?.by_branch) ? props.productStats.by_branch : [],
+}));
+
 const resultsSummary = computed(() => {
     const total = props.products.total ?? 0;
     if (total === 0) {
@@ -885,6 +947,10 @@ const resultsSummary = computed(() => {
 
     return t('catalog.products_showing_range', { from, to, total });
 });
+
+function formatCount(value) {
+    return new Intl.NumberFormat().format(Number(value || 0));
+}
 
 const pageProducts = computed(() => props.products.data ?? []);
 
@@ -1182,6 +1248,10 @@ onBeforeUnmount(() => {
 
 .table-responsive table {
     min-width: 860px;
+}
+
+.product-stat-card {
+    min-height: 100%;
 }
 
 .product-filters {

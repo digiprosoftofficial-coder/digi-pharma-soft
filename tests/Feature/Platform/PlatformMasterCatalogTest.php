@@ -190,6 +190,6 @@ class PlatformMasterCatalogTest extends TestCase
 
         $this->actingAs($owner)
             ->get(route('platform.master-catalog.index'))
-            ->assertForbidden();
+            ->assertAppDialogRedirect();
     }
 }

@@ -16,7 +16,7 @@ final class LeaveRequestController extends Controller
 {
     public function index(): Response
     {
-        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403, __('employees.payroll_feature_disabled'));
         $this->authorize('viewAny', Employee::class);
 
         return Inertia::render('Hr/LeaveRequests/Index', [
@@ -31,7 +31,7 @@ final class LeaveRequestController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403, __('employees.payroll_feature_disabled'));
         $this->authorize('create', Employee::class);
 
         $validated = $request->validate($this->rules());
@@ -51,7 +51,7 @@ final class LeaveRequestController extends Controller
 
     public function update(Request $request, LeaveRequest $leaveRequest): RedirectResponse
     {
-        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403, __('employees.payroll_feature_disabled'));
         $this->authorize('create', Employee::class);
 
         $validated = $request->validate([

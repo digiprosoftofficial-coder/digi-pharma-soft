@@ -80,7 +80,7 @@ class PlatformSettingsTest extends TestCase
 
         $this->actingAs($owner)
             ->get(route('platform.settings.edit'))
-            ->assertForbidden();
+            ->assertAppDialogRedirect();
     }
 
     /**

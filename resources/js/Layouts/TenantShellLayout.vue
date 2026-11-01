@@ -195,13 +195,6 @@
                         >
                             {{ t('tenant_nav.product_list') }}
                         </Link>
-                        <Link
-                            v-if="pharmacyNotesEnabled && can('notes.manage')"
-                            href="/notes"
-                            class="btn btn-sm btn-outline-secondary tenant-topbar-action d-none d-lg-inline-flex"
-                        >
-                            {{ t('tenant_nav.notes') }}
-                        </Link>
                         <Link v-if="can('pos.access')" href="/pos" class="btn btn-sm btn-primary tenant-topbar-action d-none d-lg-inline-flex">{{ t('tenant_nav.new_sale') }}</Link>
                         <span class="small text-muted d-none d-md-inline">{{ userName }}</span>
                         <Link href="/logout" method="post" as="button" class="btn btn-sm btn-outline-secondary tenant-topbar-action">{{ t('common.logout') }}</Link>
@@ -215,10 +208,12 @@
         <TenantBottomNav @open-more="openMobileNav" />
         <ProductSearchOverlay v-model:open="mobileSearchOpen" />
         <SmartSearchFab />
+        <AppMessageModal />
     </div>
 </template>
 
 <script setup>
+import AppMessageModal from '@/Components/AppMessageModal.vue';
 import ProductSearchOverlay from '@/Components/Tenant/ProductSearchOverlay.vue';
 import SmartSearchFab from '@/Components/Tenant/SmartSearchFab.vue';
 import TenantBottomNav from '@/Components/Tenant/TenantBottomNav.vue';

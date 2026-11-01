@@ -88,7 +88,7 @@ final class PackageTemplateController extends Controller
     private function guard(Request $request): void
     {
         abort_unless($request->user()?->can('pos.access'), 403);
-        abort_unless(TenantFeatures::packageSalesEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::packageSalesEnabled(tenant()), 403, __('sales.package_feature_disabled'));
     }
 
     /**

@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'package_feature_disabled' => 'এই ফার্মেসিতে প্যাকেজ সেল চালু নেই।',
     'print_invoice' => 'ইনভয়েস প্রিন্ট',
     'print' => 'প্রিন্ট',
     'sales' => 'বিক্রি',

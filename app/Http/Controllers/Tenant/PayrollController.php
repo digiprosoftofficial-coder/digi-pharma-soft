@@ -20,7 +20,7 @@ final class PayrollController extends Controller
 
     public function index(): Response
     {
-        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403, __('employees.payroll_feature_disabled'));
         $this->authorize('viewAny', Employee::class);
 
         return Inertia::render('Hr/Payroll/Index', [
@@ -34,7 +34,7 @@ final class PayrollController extends Controller
 
     public function show(PayrollRun $payrollRun): Response
     {
-        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403, __('employees.payroll_feature_disabled'));
         $this->authorize('viewAny', Employee::class);
 
         $payrollRun->load(['lines.employee:id,name,employee_code']);
@@ -46,7 +46,7 @@ final class PayrollController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403, __('employees.payroll_feature_disabled'));
         $this->authorize('create', Employee::class);
 
         $validated = $request->validate([
@@ -66,7 +66,7 @@ final class PayrollController extends Controller
 
     public function finalize(PayrollRun $payrollRun): RedirectResponse
     {
-        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403, __('employees.payroll_feature_disabled'));
         $this->authorize('create', Employee::class);
 
         try {

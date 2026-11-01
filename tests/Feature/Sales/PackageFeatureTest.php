@@ -24,7 +24,7 @@ class PackageFeatureTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('tenant.sales.package'))
-            ->assertForbidden();
+            ->assertAppDialogRedirect(__('sales.package_feature_disabled'));
     }
 
     public function test_package_sale_is_blocked_when_owner_toggle_is_disabled(): void
@@ -36,7 +36,7 @@ class PackageFeatureTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('tenant.sales.package'))
-            ->assertForbidden();
+            ->assertAppDialogRedirect(__('sales.package_feature_disabled'));
     }
 
     public function test_package_sale_is_blocked_when_plan_feature_is_disabled(): void
@@ -48,7 +48,7 @@ class PackageFeatureTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('tenant.sales.package'))
-            ->assertForbidden();
+            ->assertAppDialogRedirect(__('sales.package_feature_disabled'));
     }
 
     public function test_owner_can_create_package_template_when_feature_is_enabled(): void

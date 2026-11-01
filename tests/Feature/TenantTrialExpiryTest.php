@@ -28,6 +28,7 @@ class TenantTrialExpiryTest extends TestCase
 
         $this->actingAs($user)
             ->get('/dashboard')
-            ->assertForbidden();
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Shared/AppNotice'));
     }
 }

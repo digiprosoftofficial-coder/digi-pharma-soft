@@ -55,11 +55,11 @@ class ReportHubExpansionTest extends TestCase
 
         $this->actingAs($owner)
             ->get('/reports/branches')
-            ->assertForbidden();
+            ->assertAppDialogRedirect(__('branches.feature_disabled'));
 
         $this->actingAs($owner)
             ->get('/reports/branches/export?format=print')
-            ->assertForbidden();
+            ->assertAppDialogRedirect(__('branches.feature_disabled'));
     }
 
     public function test_report_downloads_require_export_permission(): void
@@ -71,7 +71,7 @@ class ReportHubExpansionTest extends TestCase
 
         $this->actingAs($user)
             ->get('/reports/finance/export?format=pdf')
-            ->assertForbidden();
+            ->assertAppDialogRedirect();
     }
 
     public function test_branch_limited_user_sees_current_branch_report_only(): void

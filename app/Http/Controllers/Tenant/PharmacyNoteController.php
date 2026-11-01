@@ -163,7 +163,7 @@ final class PharmacyNoteController extends Controller
 
     private function ensureFeatureEnabled(): void
     {
-        abort_unless(TenantFeatures::pharmacyNotesEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::pharmacyNotesEnabled(tenant()), 403, __('notes.feature_disabled'));
     }
 
     /**

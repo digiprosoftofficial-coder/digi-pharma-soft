@@ -23,7 +23,7 @@ final class BranchReportController extends Controller
 
     public function index(Request $request): InertiaResponse
     {
-        abort_unless(TenantFeatures::multiBranchEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::multiBranchEnabled(tenant()), 403, __('branches.feature_disabled'));
         abort_unless(auth()->user()?->can('reports.view_all_branches') || auth()->user()?->can('branches.view'), 403);
         $filter = ReportFilter::fromRequest($request);
 
@@ -39,7 +39,7 @@ final class BranchReportController extends Controller
 
     public function export(Request $request): Response
     {
-        abort_unless(TenantFeatures::multiBranchEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::multiBranchEnabled(tenant()), 403, __('branches.feature_disabled'));
         abort_unless($this->canOutput($request), 403);
         $filter = ReportFilter::fromRequest($request);
 

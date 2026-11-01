@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'feature_disabled' => 'Quick notes are not enabled on your plan.',
     'title' => 'Quick notes',
     'subtitle' => 'Jot down medicines to buy, phone numbers, or anything you need to remember.',
     'composer_placeholder' => 'What came to mind? Medicine to buy, a phone number, a reminder…',

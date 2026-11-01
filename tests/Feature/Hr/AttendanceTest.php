@@ -19,7 +19,7 @@ class AttendanceTest extends TestCase
 
         $this->actingAs($owner)
             ->get('/attendance')
-            ->assertForbidden();
+            ->assertAppDialogRedirect(__('employees.attendance_feature_disabled'));
     }
 
     public function test_linked_employee_can_clock_in_and_out(): void

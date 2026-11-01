@@ -16,7 +16,7 @@ final class LeaveTypeController extends Controller
 {
     public function index(): Response
     {
-        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403, __('employees.payroll_feature_disabled'));
         $this->authorize('viewAny', Employee::class);
 
         return Inertia::render('Hr/LeaveTypes/Index', [
@@ -26,7 +26,7 @@ final class LeaveTypeController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403, __('employees.payroll_feature_disabled'));
         $this->authorize('create', Employee::class);
 
         $validated = $request->validate($this->rules());
@@ -38,7 +38,7 @@ final class LeaveTypeController extends Controller
 
     public function update(Request $request, LeaveType $leaveType): RedirectResponse
     {
-        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403, __('employees.payroll_feature_disabled'));
         $this->authorize('create', Employee::class);
 
         $leaveType->update($request->validate($this->rules($leaveType)));
@@ -48,7 +48,7 @@ final class LeaveTypeController extends Controller
 
     public function destroy(LeaveType $leaveType): RedirectResponse
     {
-        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403);
+        abort_unless(TenantFeatures::hrPayrollEnabled(tenant()), 403, __('employees.payroll_feature_disabled'));
         $this->authorize('create', Employee::class);
 
         if ($leaveType->leaveRequests()->exists()) {

@@ -189,7 +189,7 @@ class MultiBranchFeatureTest extends TestCase
 
         $this->actingAs($user)
             ->get('/branches')
-            ->assertForbidden();
+            ->assertAppDialogRedirect(__('branches.feature_disabled'));
     }
 
     private function enableMultiBranch(Tenant $tenant, int $maxBranches = 3): void
