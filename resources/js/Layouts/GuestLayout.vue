@@ -77,6 +77,7 @@
                 </div>
 
                 <AppMessageModal />
+                <FlashToasts />
 
                 <footer class="auth-main__footer text-center small text-muted px-3 pb-3">
                     <span class="d-inline-flex align-items-center gap-1">
@@ -93,6 +94,7 @@
 
 <script setup>
 import AppMessageModal from '@/Components/AppMessageModal.vue';
+import FlashToasts from '@/Components/FlashToasts.vue';
 import LocaleSwitcher from '@/Components/LocaleSwitcher.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useTheme } from '@/composables/useTheme';

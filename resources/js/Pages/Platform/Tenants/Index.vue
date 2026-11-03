@@ -1,6 +1,7 @@
 <template>
     <PlatformShellLayout :page-title="t('platform.pharmacy_directory')">
         <Head :title="t('platform.nav_pharmacies')" />
+
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <p class="text-muted small mb-0">{{ t('platform.dashboard_sub') }}</p>
             <Link href="/platform/tenants/create" class="btn btn-primary btn-sm">{{ t('platform.add_pharmacy') }}</Link>

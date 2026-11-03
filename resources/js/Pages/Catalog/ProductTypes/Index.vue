@@ -1,14 +1,14 @@
 <template>
     <TenantShellLayout :page-title="tr('tenant_nav.product_types')">
         <Head :title="tr('tenant_nav.product_types')" />
+
         <div class="product-types-page">
-            <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
             <div v-if="$page.props.errors?.product_type" class="alert alert-danger small">
                 {{ $page.props.errors.product_type }}
             </div>
 
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 product-types-header">
-                <h1 class="page-heading mb-0 product-types-title">{{ tr('tenant_nav.product_types') }}</h1>
+                <h1 class="page-heading d-none d-lg-block mb-0 product-types-title">{{ tr('tenant_nav.product_types') }}</h1>
                 <Link href="/product-types/create" class="btn btn-primary btn-sm product-types-add">
                     {{ tr('catalog.add_product_type') }}
                 </Link>

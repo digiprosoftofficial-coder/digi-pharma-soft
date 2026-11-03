@@ -2,10 +2,11 @@
     <PlatformShellLayout :page-title="t('platform.master_makers_title')">
         <Head :title="t('platform.master_makers_title')" />
 
+
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
             <div>
                 <Link href="/platform/master-catalog" class="small text-decoration-none">← {{ t('platform.master_title') }}</Link>
-                <h1 class="page-heading mb-1 mt-1">{{ t('platform.master_makers_title') }}</h1>
+                <h1 class="page-heading d-none d-lg-block mb-1 mt-1">{{ t('platform.master_makers_title') }}</h1>
                 <p class="text-muted small mb-0">
                     {{ t('platform.master_makers_sub', { count: String(totalManufacturers) }) }}
                 </p>

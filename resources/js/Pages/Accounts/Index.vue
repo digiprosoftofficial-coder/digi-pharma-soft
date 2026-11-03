@@ -1,8 +1,9 @@
 <template>
     <TenantShellLayout :page-title="t('common.general_accounts')">
         <Head :title="t('common.accounts')" />
+
         <div class="d-flex justify-content-between mb-3">
-            <h1 class="page-heading mb-0">{{ t('common.ledger_accounts') }}</h1>
+            <h1 class="page-heading d-none d-lg-block mb-0">{{ t('common.ledger_accounts') }}</h1>
             <Link href="/accounts/create" class="btn btn-primary btn-sm">{{ t('common.new_account') }}</Link>
         </div>
         <div class="card border-0 shadow-sm">

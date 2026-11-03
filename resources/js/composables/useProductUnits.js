@@ -167,6 +167,62 @@ export function buildPurchaseUnitOptions(product, { stripTypes = ['tablet', 'cap
     });
 }
 
+/**
+ * Units available when selling a product.
+ * Keeps configured catalog units and only synthesizes pack units when conversion
+ * can be derived safely (pieces_per_strip / strips_per_box / etc.).
+ *
+ * @returns {Array<{sell_unit:string,conversion_factor:number,purchase_price:number|string,sale_price:number|string,is_default:boolean}>}
+ */
+export function buildSaleUnitOptions(product, options = {}) {
+    const existing = Array.isArray(product?.units)
+        ? product.units
+        : (product?.units?.data ?? []);
+    const byUnit = Object.fromEntries(existing.map((u) => [u.sell_unit, u]));
+    const base = product?.base_unit ?? product?.unit ?? 'strip';
+    const pps = catalogPiecesPerStrip(product);
+    const spb = catalogStripsPerBox({ ...product, units: existing, base_unit: base });
+    const ppb = catalogPiecesPerBox({ ...product, units: existing, base_unit: base });
+    const bpc = catalogBoxesPerCarton({ ...product, units: existing });
+    const boxFactor = (() => {
+        if (base === 'box') {
+            return 1;
+        }
+        if (base === 'strip' && spb) {
+            return spb;
+        }
+        if (base === 'piece' && ppb) {
+            return ppb;
+        }
+        return boxConversionFactor(existing);
+    })();
+
+    return buildPurchaseUnitOptions(product, options).filter((row) => {
+        if (byUnit[row.sell_unit] || row.sell_unit === base) {
+            return true;
+        }
+        if (row.sell_unit === 'piece' && base === 'strip') {
+            return pps > 0;
+        }
+        if (row.sell_unit === 'strip' && base === 'piece') {
+            return pps > 0;
+        }
+        if (row.sell_unit === 'box' && base === 'strip') {
+            return spb > 0;
+        }
+        if (row.sell_unit === 'box' && base === 'piece') {
+            return ppb > 0;
+        }
+        if (row.sell_unit === 'carton' && base === 'box') {
+            return bpc > 0;
+        }
+        if (row.sell_unit === 'carton' && (base === 'strip' || base === 'piece')) {
+            return boxFactor > 0 && bpc > 0;
+        }
+        return false;
+    });
+}
+
 export function hasBoxAndCartonUnits(units) {
     if (!Array.isArray(units)) {
         return false;

@@ -1,6 +1,7 @@
 <template>
     <PlatformShellLayout :page-title="t('platform.announcements_title')">
         <Head :title="t('platform.nav_announcements')" />
+
         <div class="d-flex justify-content-between align-items-center mb-3">
             <p class="text-muted small mb-0">{{ t('platform.announcements_sub') }}</p>
             <Link href="/platform/announcements/create" class="btn btn-primary btn-sm">{{ t('platform.new_announcement') }}</Link>

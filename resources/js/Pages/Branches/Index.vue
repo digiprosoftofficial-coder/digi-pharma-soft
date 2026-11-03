@@ -1,11 +1,11 @@
 <template>
     <TenantShellLayout :page-title="t('branches.title')">
         <Head :title="t('branches.title')" />
-        <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
+
         <div v-if="$page.props.errors?.branch" class="alert alert-danger small">{{ $page.props.errors.branch }}</div>
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
-                <h1 class="page-heading mb-0">{{ t('branches.title') }}</h1>
+                <h1 class="page-heading d-none d-lg-block mb-0">{{ t('branches.title') }}</h1>
                 <p v-if="maxBranches" class="text-muted small mb-0">
                     {{ t('branches.usage', { count: branchCount, max: maxBranches }) }}
                 </p>

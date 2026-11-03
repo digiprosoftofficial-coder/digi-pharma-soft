@@ -1,7 +1,6 @@
 <template>
     <TenantShellLayout :page-title="t('purchases.supplier_bill_detail')">
         <Head :title="supplier.name" />
-        <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
 
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3 supplier-bill-header">
             <div>

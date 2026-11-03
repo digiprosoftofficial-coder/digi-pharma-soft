@@ -1,6 +1,7 @@
 <template>
     <TenantShellLayout :page-title="t('purchases.new_purchase_return')">
         <Head :title="t('purchases.new_purchase_return')" />
+
         <h1 class="page-heading mb-3">{{ t('purchases.new_purchase_return') }}</h1>
         <div v-if="form.errors.lines" class="alert alert-danger small">{{ form.errors.lines }}</div>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">

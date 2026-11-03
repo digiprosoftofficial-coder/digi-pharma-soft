@@ -30,6 +30,8 @@ return [
     'filter_by_date' => 'Filter by date',
     'filter_by_branch' => 'View',
     'all_branches' => 'All branches',
+    'view_all_branches' => 'View all branches',
+    'view_active_branch' => 'Back to :name',
     'current_branch' => 'Current branch',
     'apply_range' => 'Apply',
     'showing_range' => 'Showing :from to :to',

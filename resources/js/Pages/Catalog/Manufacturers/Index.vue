@@ -1,12 +1,12 @@
 <template>
     <TenantShellLayout :page-title="t('tenant_nav.manufacturers')">
         <Head :title="t('tenant_nav.manufacturers')" />
-        <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
+
         <div v-if="$page.props.errors?.manufacturer" class="alert alert-danger small">
             {{ $page.props.errors.manufacturer }}
         </div>
         <div class="d-flex justify-content-between mb-3">
-            <h1 class="page-heading mb-0">{{ t('tenant_nav.manufacturers') }}</h1>
+            <h1 class="page-heading d-none d-lg-block mb-0">{{ t('tenant_nav.manufacturers') }}</h1>
             <Link href="/manufacturers/create" class="btn btn-primary btn-sm">{{ t('catalog.add_manufacturer') }}</Link>
         </div>
         <div class="card border-0 shadow-sm table-responsive">

@@ -1,6 +1,7 @@
 <template>
     <PlatformShellLayout :page-title="t('platform.add_pharmacy')">
         <Head :title="t('platform.add_pharmacy')" />
+
         <ul class="nav nav-pills mb-4 small">
             <li v-for="(label, i) in stepLabels" :key="i" class="nav-item">
                 <span class="nav-link" :class="{ active: step === i + 1, disabled: step < i + 1 }">{{ i + 1 }}. {{ label }}</span>

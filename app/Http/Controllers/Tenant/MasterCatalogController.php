@@ -8,6 +8,7 @@ use App\Domain\Catalog\Services\MasterProductActivationService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Catalog\MasterProductResource;
 use App\Http\Resources\Catalog\ProductResource;
+use App\Support\Catalog\CatalogSearchRelevance;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -57,7 +58,13 @@ final class MasterCatalogController extends Controller
             });
         }
 
-        $results = $query->orderBy('name')->limit(50)->get();
+        $results = $query->limit(120)->get();
+        if ($term !== '') {
+            $results = CatalogSearchRelevance::sort($results, $term);
+        } else {
+            $results = $results->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values();
+        }
+        $results = $results->take(50)->values();
 
         return response()->json([
             'data' => $this->decorate($results),

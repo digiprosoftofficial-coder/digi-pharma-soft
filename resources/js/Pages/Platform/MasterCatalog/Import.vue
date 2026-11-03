@@ -2,6 +2,7 @@
     <PlatformShellLayout :page-title="t('platform.master_import_title')">
         <Head :title="t('platform.master_import_title')" />
 
+
         <Link href="/platform/master-catalog" class="small text-decoration-none text-teal">← {{ t('platform.master_title') }}</Link>
 
         <section class="import-hero rounded-4 mt-2 mb-4 p-4 p-md-5">

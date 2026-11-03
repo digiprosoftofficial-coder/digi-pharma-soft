@@ -1,6 +1,7 @@
 <template>
     <TenantShellLayout :page-title="isEdit ? 'Edit package template' : 'New package template'">
         <Head :title="isEdit ? 'Edit package template' : 'New package template'" />
+
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
                 <h1 class="page-heading mb-1">{{ isEdit ? 'Edit package template' : 'New package template' }}</h1>

@@ -180,20 +180,23 @@ final class SaleService
             $product = $preferredBatch->product;
 
             try {
-                ProductUnitResolver::forProduct($product, $sellUnit);
+                $factor = ProductUnitResolver::conversionFactorForBatch(
+                    $product,
+                    $preferredBatch,
+                    $sellUnit,
+                );
             } catch (InvalidArgumentException $e) {
                 $default = $product->defaultUnit();
                 if (! $default) {
                     throw $e;
                 }
                 $sellUnit = $default->sell_unit;
+                $factor = ProductUnitResolver::conversionFactorForBatch(
+                    $product,
+                    $preferredBatch,
+                    $sellUnit,
+                );
             }
-
-            $factor = ProductUnitResolver::conversionFactorForBatch(
-                $product,
-                $preferredBatch,
-                $sellUnit,
-            );
 
             $quantityBase = (float) ProductUnitResolver::quantityBase($line['quantity'], $factor);
             $unitPrice = (float) $line['unit_price'];

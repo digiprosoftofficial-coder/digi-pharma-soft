@@ -1,6 +1,7 @@
 <template>
     <PlatformShellLayout :page-title="tenant.name">
         <Head :title="tenant.name" />
+
         <Link href="/platform/tenants" class="small text-decoration-none">← {{ t('platform.nav_pharmacies') }}</Link>
         <h1 class="page-heading mt-2 mb-3">{{ t('common.edit') }}: {{ tenant.name }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">

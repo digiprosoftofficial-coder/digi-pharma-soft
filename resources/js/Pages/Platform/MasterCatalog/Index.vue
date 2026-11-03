@@ -2,6 +2,7 @@
     <PlatformShellLayout :page-title="t('platform.master_title')">
         <Head :title="t('platform.master_title')" />
 
+
         <section class="master-hero rounded-4 mb-4 p-4 p-md-5 text-white">
             <div class="row align-items-end g-3">
                 <div class="col-lg-7">

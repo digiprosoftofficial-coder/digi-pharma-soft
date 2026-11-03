@@ -1,6 +1,7 @@
 <template>
     <PlatformShellLayout :page-title="t('platform.catalog_title')">
         <Head :title="t('platform.nav_catalog')" />
+
         <div class="d-flex justify-content-between align-items-center mb-3">
             <p class="text-muted small mb-0">{{ t('platform.catalog_sub') }}</p>
             <Link href="/platform/catalog-templates/create" class="btn btn-primary btn-sm">{{ t('platform.new_catalog') }}</Link>

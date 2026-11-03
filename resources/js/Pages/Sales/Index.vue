@@ -1,7 +1,8 @@
 <template>
     <TenantShellLayout :page-title="t('sales.sales_list')">
         <Head :title="t('sales.sales')" />
-        <h1 class="page-heading mb-3">{{ t('sales.sales_list') }}</h1>
+
+        <h1 class="page-heading d-none d-lg-block mb-3">{{ t('sales.sales_list') }}</h1>
         <div class="sales-mobile-list d-md-none">
             <div v-if="!sales.data?.length" class="card border-0 shadow-sm card-body text-center text-muted small">
                 {{ t('common.no_results') }}

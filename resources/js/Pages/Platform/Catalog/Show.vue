@@ -1,7 +1,7 @@
 <template>
     <PlatformShellLayout :page-title="template.name">
         <Head :title="template.name" />
-        <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
+
         <Link href="/platform/catalog-templates" class="small text-decoration-none">← {{ t('platform.nav_catalog') }}</Link>
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mt-1 mb-3">
             <div>

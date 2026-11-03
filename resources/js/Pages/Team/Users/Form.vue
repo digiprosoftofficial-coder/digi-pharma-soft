@@ -1,6 +1,7 @@
 <template>
     <TenantShellLayout page-title="User">
         <Head :title="user ? 'Edit user' : 'New user'" />
+
         <h1 class="page-heading mb-3">{{ user ? 'Edit user' : 'New user' }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="mb-2">

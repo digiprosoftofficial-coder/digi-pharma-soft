@@ -79,19 +79,17 @@
                 </Link>
             </header>
             <main class="platform-main flex-grow-1 p-3 p-md-4 overflow-auto">
-                <div v-if="flashSuccess" class="alert alert-success alert-dismissible fade show" role="alert">
-                    {{ flashSuccess }}
-                    <button type="button" class="btn-close" @click="flashSuccess = null"></button>
-                </div>
                 <slot />
             </main>
         </div>
         <AppMessageModal />
+        <FlashToasts />
     </div>
 </template>
 
 <script setup>
 import AppMessageModal from '@/Components/AppMessageModal.vue';
+import FlashToasts from '@/Components/FlashToasts.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useTheme } from '@/composables/useTheme';
 import { Link, usePage } from '@inertiajs/vue3';
@@ -106,17 +104,7 @@ useTheme();
 const page = usePage();
 
 const userName = computed(() => page.props.auth?.user?.name ?? 'Admin');
-const flashSuccess = ref(page.props.flash?.success ?? null);
 const mobileNavOpen = ref(false);
-
-watch(
-    () => page.props.flash?.success,
-    (v) => {
-        if (v) {
-            flashSuccess.value = v;
-        }
-    },
-);
 
 watch(
     () => page.url,

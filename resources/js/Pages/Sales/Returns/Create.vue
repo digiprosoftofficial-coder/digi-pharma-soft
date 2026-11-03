@@ -1,6 +1,7 @@
 <template>
     <TenantShellLayout page-title="New return">
         <Head title="New return" />
+
         <h1 class="page-heading mb-3">Record return to stock</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="mb-2">

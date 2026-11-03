@@ -1,6 +1,7 @@
 <template>
     <PlatformShellLayout :page-title="t('platform.health_title')">
         <Head :title="t('platform.health_title')" />
+
         <p class="text-secondary small mb-4">{{ t('platform.health_sub') }}</p>
 
         <div class="row g-3 mb-4">

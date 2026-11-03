@@ -1,8 +1,9 @@
 <template>
     <TenantShellLayout page-title="Users">
         <Head title="Team users" />
+
         <div class="d-flex justify-content-between mb-3">
-            <h1 class="page-heading mb-0">Team users</h1>
+            <h1 class="page-heading d-none d-lg-block mb-0">Team users</h1>
             <Link href="/team/users/create" class="btn btn-primary btn-sm">Invite user</Link>
         </div>
         <div class="card border-0 shadow-sm table-responsive">

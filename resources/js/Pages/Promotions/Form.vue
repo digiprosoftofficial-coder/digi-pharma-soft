@@ -1,6 +1,7 @@
 <template>
     <TenantShellLayout page-title="Coupon">
         <Head :title="coupon ? 'Edit coupon' : 'New coupon'" />
+
         <h1 class="page-heading mb-3">{{ coupon ? 'Edit coupon' : 'New coupon' }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="mb-2">

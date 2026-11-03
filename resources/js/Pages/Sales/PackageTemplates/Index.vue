@@ -1,11 +1,10 @@
 <template>
     <TenantShellLayout page-title="Package templates">
         <Head title="Package templates" />
-        <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
 
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
-                <h1 class="page-heading mb-1">Package templates</h1>
+                <h1 class="page-heading d-none d-lg-block mb-1">Package templates</h1>
                 <p class="text-muted small mb-0">Prepare common product bundles for faster package sale checkout.</p>
             </div>
             <div class="d-flex flex-wrap gap-2">

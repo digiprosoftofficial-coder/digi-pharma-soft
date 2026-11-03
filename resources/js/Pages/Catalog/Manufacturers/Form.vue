@@ -1,6 +1,7 @@
 <template>
     <TenantShellLayout :page-title="manufacturer ? 'Edit manufacturer' : 'New manufacturer'">
         <Head :title="manufacturer ? 'Edit manufacturer' : 'New manufacturer'" />
+
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="mb-3">
                 <label class="form-label">Name</label>

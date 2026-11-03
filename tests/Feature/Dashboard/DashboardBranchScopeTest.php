@@ -19,7 +19,7 @@ class DashboardBranchScopeTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_owner_dashboard_defaults_to_all_branches_and_can_filter_one(): void
+    public function test_owner_dashboard_defaults_to_active_branch_and_can_view_all(): void
     {
         $this->seed(DatabaseSeeder::class);
 
@@ -28,6 +28,10 @@ class DashboardBranchScopeTest extends TestCase
         $this->enableMultiBranch($tenant);
 
         $product = Product::query()->firstOrFail();
+        $main = Branch::query()
+            ->where('tenant_id', $tenant->getKey())
+            ->where('is_default', true)
+            ->firstOrFail();
         $east = Branch::query()->create([
             'tenant_id' => $tenant->getKey(),
             'name' => 'East',
@@ -47,6 +51,10 @@ class DashboardBranchScopeTest extends TestCase
         $allStock = (float) DB::table('product_batches')
             ->where('tenant_id', $tenant->getKey())
             ->sum(DB::raw('quantity_on_hand * purchase_unit_cost'));
+        $mainStock = (float) DB::table('product_batches')
+            ->where('tenant_id', $tenant->getKey())
+            ->where('branch_id', $main->getKey())
+            ->sum(DB::raw('quantity_on_hand * purchase_unit_cost'));
         $eastStock = 500.0;
 
         $this->actingAs($owner)
@@ -54,11 +62,18 @@ class DashboardBranchScopeTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Tenant/Dashboard')
+                ->where('branchScope.key', (string) $main->getKey())
+                ->where('branchScope.all', false)
+                ->where('branchScope.can_view_all', true)
+                ->where('kpis.stockValue', fn ($value) => (float) $value === $mainStock)
+                ->has('branchScope.options', 3));
+
+        $this->get('/dashboard?branch_id=all')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
                 ->where('branchScope.key', 'all')
                 ->where('branchScope.all', true)
-                ->where('branchScope.can_view_all', true)
-                ->where('kpis.stockValue', fn ($value) => (float) $value === $allStock)
-                ->has('branchScope.options', 3));
+                ->where('kpis.stockValue', fn ($value) => (float) $value === $allStock));
 
         $this->get('/dashboard?branch_id='.$east->getKey())
             ->assertOk()
@@ -73,8 +88,81 @@ class DashboardBranchScopeTest extends TestCase
         $this->get('/dashboard?branch_id=999999')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->where('branchScope.key', 'all')
-                ->where('kpis.stockValue', fn ($value) => (float) $value === $allStock));
+                ->where('branchScope.key', (string) $main->getKey())
+                ->where('branchScope.all', false)
+                ->where('kpis.stockValue', fn ($value) => (float) $value === $mainStock));
+    }
+
+    public function test_owner_can_leave_all_branches_scope_via_query_without_branch_id(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $owner = User::query()->where('email', 'owner@example.com')->firstOrFail();
+        $tenant = Tenant::query()->findOrFail($owner->tenant_id);
+        $this->enableMultiBranch($tenant);
+
+        $main = Branch::query()
+            ->where('tenant_id', $tenant->getKey())
+            ->where('is_default', true)
+            ->firstOrFail();
+
+        Branch::query()->create([
+            'tenant_id' => $tenant->getKey(),
+            'name' => 'East',
+            'code' => 'EAST',
+            'is_active' => true,
+            'is_default' => false,
+        ]);
+
+        $this->actingAs($owner)
+            ->get('/dashboard?branch_id=all')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('branchScope.all', true));
+
+        $this->get('/dashboard')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('branchScope.all', false)
+                ->where('branchScope.key', (string) $main->getKey())
+                ->where('branchScope.label', $main->name));
+    }
+
+    public function test_switching_active_branch_from_dashboard_clears_all_scope(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $owner = User::query()->where('email', 'owner@example.com')->firstOrFail();
+        $tenant = Tenant::query()->findOrFail($owner->tenant_id);
+        $this->enableMultiBranch($tenant);
+
+        $main = Branch::query()
+            ->where('tenant_id', $tenant->getKey())
+            ->where('is_default', true)
+            ->firstOrFail();
+        $east = Branch::query()->create([
+            'tenant_id' => $tenant->getKey(),
+            'name' => 'East',
+            'code' => 'EAST',
+            'is_active' => true,
+            'is_default' => false,
+        ]);
+
+        $this->actingAs($owner)
+            ->from('/dashboard?branch_id=all&range=today')
+            ->post('/branches/switch', ['branch_id' => $east->getKey()])
+            ->assertRedirect('/dashboard?range=today');
+
+        $this->get('/dashboard?range=today')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('branchScope.key', (string) $east->getKey())
+                ->where('branchScope.all', false)
+                ->where('branchScope.label', 'East'));
+
+        $this->from('/dashboard?branch_id=all')
+            ->post('/branches/switch', ['branch_id' => $main->getKey()])
+            ->assertRedirect('/dashboard');
     }
 
     public function test_manager_cannot_open_all_branches_dashboard_scope(): void

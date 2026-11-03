@@ -1,6 +1,7 @@
 <template>
     <GuestLayout>
         <Head :title="dialog?.title || t('errors.server_title')" />
+
         <div class="text-center">
             <h1 class="page-heading mb-2">{{ dialog?.title || t('errors.server_title') }}</h1>
             <p class="text-muted mb-0">{{ dialog?.message || t('errors.server_body') }}</p>

@@ -1,10 +1,10 @@
 <template>
     <TenantShellLayout :page-title="t('employees.attendance_title')">
         <Head :title="t('employees.attendance_title')" />
-        <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
+
         <div v-if="formError" class="alert alert-danger small">{{ formError }}</div>
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-            <h1 class="page-heading mb-0">{{ t('employees.attendance_title') }}</h1>
+            <h1 class="page-heading d-none d-lg-block mb-0">{{ t('employees.attendance_title') }}</h1>
             <form class="d-flex gap-2 align-items-center" @submit.prevent="filterDate">
                 <input v-model="dateInput" type="date" class="form-control form-control-sm" />
                 <button type="submit" class="btn btn-sm btn-outline-secondary">{{ t('common.search') }}</button>

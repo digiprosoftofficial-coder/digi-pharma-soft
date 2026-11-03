@@ -1,6 +1,7 @@
 <template>
     <TenantShellLayout :page-title="account.name">
         <Head :title="account.name" />
+
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
                 <Link href="/accounts" class="small text-decoration-none">← Accounts</Link>

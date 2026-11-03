@@ -40,8 +40,13 @@ final class DashboardBranchScope
             );
         }
 
-        $requested = (string) $request->input('branch_id', 'all');
-        if ($requested === '' || $requested === 'all') {
+        // Default to the session active branch; owners opt into all-branches explicitly.
+        if (! $request->filled('branch_id')) {
+            return self::forCurrentBranch($currentId, $canViewAll, $options);
+        }
+
+        $requested = (string) $request->input('branch_id');
+        if ($requested === 'all') {
             return new self(
                 key: 'all',
                 branchId: null,
@@ -58,14 +63,7 @@ final class DashboardBranchScope
             ->first();
 
         if ($branch === null) {
-            return new self(
-                key: 'all',
-                branchId: null,
-                all: true,
-                canViewAll: true,
-                label: __('dashboard.all_branches'),
-                options: $options,
-            );
+            return self::forCurrentBranch($currentId, $canViewAll, $options);
         }
 
         return new self(
@@ -74,6 +72,23 @@ final class DashboardBranchScope
             all: false,
             canViewAll: true,
             label: $branch->name,
+            options: $options,
+        );
+    }
+
+    /**
+     * @param  list<array{value:string,label:string}>  $options
+     */
+    private static function forCurrentBranch(?int $currentId, bool $canViewAll, array $options): self
+    {
+        $branch = $currentId ? Branch::query()->whereKey($currentId)->first() : null;
+
+        return new self(
+            key: $currentId ? (string) $currentId : 'current',
+            branchId: $currentId,
+            all: false,
+            canViewAll: $canViewAll,
+            label: $branch?->name ?? __('dashboard.current_branch'),
             options: $options,
         );
     }

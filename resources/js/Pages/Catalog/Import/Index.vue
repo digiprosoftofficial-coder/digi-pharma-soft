@@ -1,8 +1,8 @@
 <template>
     <TenantShellLayout page-title="Bulk import">
         <Head title="Bulk import" />
-        <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
-        <h1 class="page-heading mb-3">Import products from CSV</h1>
+
+        <h1 class="page-heading d-none d-lg-block mb-3">Import products from CSV</h1>
         <p class="text-muted small mb-1">
             Upload a CSV with the columns below. <code>name</code> is required; <code>sku</code> is optional (auto-generated if empty).
             Use existing <code>category_slug</code> and <code>storage_location_code</code> values from your catalog.

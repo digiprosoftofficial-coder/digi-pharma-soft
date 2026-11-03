@@ -1,10 +1,11 @@
 <template>
     <TenantShellLayout page-title="Purchases">
         <Head title="Purchases" />
+
         <div class="purchases-page">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 purchases-page-header">
-            <h1 class="page-heading mb-0 purchases-page-title">{{ t('purchases.purchase_list') }}</h1>
-            <div class="d-flex flex-wrap gap-2 purchases-page-actions">
+            <h1 class="page-heading d-none d-lg-block mb-0 me-auto purchases-page-title">{{ t('purchases.purchase_list') }}</h1>
+            <div class="d-flex flex-wrap gap-2 purchases-page-actions ms-auto ms-lg-0">
                 <a :href="exportUrl" class="btn btn-sm btn-outline-secondary">{{ t('purchases.export_csv') }}</a>
                 <Link
                     v-if="$page.props.auth?.user?.permissions?.includes('purchases.manage')"

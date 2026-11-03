@@ -1,7 +1,7 @@
 <template>
     <TenantShellLayout :page-title="run.period">
         <Head :title="run.period" />
-        <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
+
         <Link href="/hr/payroll" class="small text-decoration-none">← {{ t('employees.payroll_title') }}</Link>
         <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
             <h1 class="page-heading mb-0">{{ run.period }}</h1>

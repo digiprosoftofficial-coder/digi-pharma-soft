@@ -266,11 +266,13 @@
         <ProductSearchOverlay v-model:open="mobileSearchOpen" />
         <SmartSearchFab />
         <AppMessageModal />
+        <FlashToasts />
     </div>
 </template>
 
 <script setup>
 import AppMessageModal from '@/Components/AppMessageModal.vue';
+import FlashToasts from '@/Components/FlashToasts.vue';
 import ProductSearchOverlay from '@/Components/Tenant/ProductSearchOverlay.vue';
 import SmartSearchFab from '@/Components/Tenant/SmartSearchFab.vue';
 import TenantBottomNav from '@/Components/Tenant/TenantBottomNav.vue';

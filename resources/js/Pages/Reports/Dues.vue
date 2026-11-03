@@ -1,9 +1,10 @@
 <template>
     <TenantShellLayout :page-title="t('reports.quick_dues_title')">
         <Head :title="t('reports.quick_dues_title')" />
+
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
-                <h1 class="page-heading mb-0">{{ t('reports.quick_dues_title') }}</h1>
+                <h1 class="page-heading d-none d-lg-block mb-0">{{ t('reports.quick_dues_title') }}</h1>
                 <p class="small text-muted mb-0">{{ t('reports.quick_dues_help') }}</p>
             </div>
             <Link href="/reports" class="btn btn-sm btn-outline-secondary">{{ t('reports.hub') }}</Link>

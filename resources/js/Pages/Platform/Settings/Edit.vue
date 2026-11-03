@@ -1,6 +1,7 @@
 <template>
     <PlatformShellLayout :page-title="t('platform.settings_title')">
         <Head :title="t('platform.settings_title')" />
+
         <p class="text-muted small mb-3">{{ t('platform.settings_sub') }}</p>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div v-if="Object.keys(form.errors).length" class="alert alert-danger small" role="alert">

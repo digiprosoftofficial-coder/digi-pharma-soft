@@ -1,7 +1,8 @@
 <template>
     <TenantShellLayout page-title="New purchase">
         <Head title="New purchase" />
-        <h1 class="page-heading mb-3">Record purchase</h1>
+
+        <h1 class="page-heading d-none d-lg-block mb-3">Record purchase</h1>
         <form class="card border-0 shadow-sm card-body purchase-form" @submit.prevent="submit">
             <div class="row g-2 mb-3">
                 <div class="col-md-4">
@@ -103,11 +104,13 @@
                                 @click="addProductLine(item)"
                             >
                                 <div class="d-flex justify-content-between align-items-start gap-2">
-                                    <div>
-                                        <span class="fw-medium">{{ item.name }}</span>
-                                        <span class="text-muted small ms-2">{{ item.sku }}</span>
+                                    <div class="min-w-0 flex-grow-1">
+                                        <div class="text-truncate">
+                                            <span class="fw-medium">{{ item.name }}</span>
+                                            <span class="text-muted small ms-2">{{ item.sku }}</span>
+                                        </div>
                                     </div>
-                                    <span class="badge text-bg-secondary text-capitalize">{{ item.base_unit || item.unit }}</span>
+                                    <span class="badge text-bg-secondary text-capitalize flex-shrink-0">{{ item.base_unit || item.unit }}</span>
                                 </div>
                                 <div v-if="item.batches?.length" class="small text-muted mt-1">
                                     {{ item.batches.length }} batch(es) in stock
@@ -124,10 +127,12 @@
                                 :key="'m-'+item.id"
                                 class="list-group-item py-2"
                             >
-                                <div class="d-flex justify-content-between align-items-start gap-2">
-                                    <div class="min-w-0">
-                                        <span class="fw-medium">{{ item.name }}</span>
-                                        <span v-if="item.strength" class="text-muted small ms-1">{{ item.strength }}</span>
+                                <div class="d-flex justify-content-between align-items-start gap-2 purchase-master-result">
+                                    <div class="purchase-master-result__text min-w-0 flex-grow-1">
+                                        <div class="purchase-master-result__name text-truncate">
+                                            <span class="fw-medium">{{ item.name }}</span>
+                                            <span v-if="item.strength" class="text-muted small ms-1">{{ item.strength }}</span>
+                                        </div>
                                         <div class="small text-muted text-truncate">
                                             <span v-if="item.generic_name">{{ item.generic_name }}</span>
                                             <span v-if="item.manufacturer_name"> · {{ item.manufacturer_name }}</span>
@@ -135,7 +140,7 @@
                                     </div>
                                     <button
                                         type="button"
-                                        class="btn btn-sm btn-outline-primary flex-shrink-0"
+                                        class="btn btn-sm btn-outline-primary purchase-master-result__add flex-shrink-0"
                                         :disabled="activatingMasterId === item.id"
                                         @click.stop="activateMasterProduct(item)"
                                     >
@@ -312,32 +317,93 @@
                         <button type="button" class="btn btn-sm btn-outline-primary" @click="openLineEditor(i)">
                             {{ t('common.edit') }}
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline-danger" @click="removeLine(i)">
-                            {{ t('common.delete') }}
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-danger purchase-line-icon-btn"
+                            :aria-label="t('purchases.remove_line')"
+                            :title="t('purchases.remove_line')"
+                            @click="removeLine(i)"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M3 6h18" />
+                                <path d="M8 6V4h8v2" />
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                                <path d="M10 11v6" />
+                                <path d="M14 11v6" />
+                            </svg>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Desktop: full inline editors -->
+            <!-- Desktop: collapsible line editors -->
             <div class="d-none d-md-block">
-                <div v-for="(line, i) in form.lines" :key="line._key" class="purchase-line-card border rounded p-3 mb-2 bg-white">
-                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
-                        <div>
-                            <span class="fw-semibold">{{ line.product_name }}</span>
-                            <span class="text-muted small ms-2">{{ line.product_sku }}</span>
-                        </div>
-                        <button type="button" class="btn btn-sm btn-outline-danger purchase-line-remove" @click="removeLine(i)">
-                            {{ t('common.delete') }}
+                <div
+                    v-for="(line, i) in form.lines"
+                    :key="line._key"
+                    class="purchase-line-card border rounded mb-2 bg-white"
+                    :class="{
+                        'purchase-line-card--active': expandedLineIndex === i,
+                        'purchase-line-card--incomplete': lineIsIncomplete(line),
+                    }"
+                >
+                    <div class="purchase-line-card__header">
+                        <button
+                            type="button"
+                            class="purchase-line-card__toggle"
+                            :aria-expanded="expandedLineIndex === i"
+                            :aria-label="expandedLineIndex === i ? t('purchases.collapse_line') : t('purchases.expand_line')"
+                            @click="toggleLineExpanded(i)"
+                        >
+                            <span
+                                class="purchase-line-card__chevron"
+                                :class="{ 'purchase-line-card__chevron--open': expandedLineIndex === i }"
+                                aria-hidden="true"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m6 9 6 6 6-6" />
+                                </svg>
+                            </span>
+                            <span class="purchase-line-card__title min-w-0">
+                                <span class="fw-semibold text-truncate d-inline-block align-middle">{{ line.product_name }}</span>
+                                <span class="text-muted small ms-2">{{ line.product_sku }}</span>
+                                <span
+                                    v-if="lineIsIncomplete(line)"
+                                    class="badge text-bg-warning text-dark ms-2 align-middle"
+                                >
+                                    {{ t('purchases.line_incomplete_badge') }}
+                                </span>
+                            </span>
+                            <span v-if="expandedLineIndex !== i" class="purchase-line-card__summary text-muted small">
+                                {{ formatQty(line.quantity) }} {{ unitLabel(line.sell_unit) }}
+                                · {{ formatMoney(Number(line.quantity || 0) * Number(line.unit_cost || 0)) }}
+                            </span>
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-danger purchase-line-icon-btn"
+                            :aria-label="t('purchases.remove_line')"
+                            :title="t('purchases.remove_line')"
+                            @click="removeLine(i)"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M3 6h18" />
+                                <path d="M8 6V4h8v2" />
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                                <path d="M10 11v6" />
+                                <path d="M14 11v6" />
+                            </svg>
                         </button>
                     </div>
-                    <PurchaseLineFields
-                        :line="line"
-                        :storage-locations="storageLocations"
-                        :require-fields="true"
-                        @batch-change="applyBatchPick"
-                        @unit-change="onUnitChange"
-                    />
+                    <div v-show="expandedLineIndex === i" class="purchase-line-card__body">
+                        <PurchaseLineFields
+                            :line="line"
+                            :storage-locations="storageLocations"
+                            :require-fields="true"
+                            @batch-change="applyBatchPick"
+                            @unit-change="onUnitChange"
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -517,10 +583,10 @@
 <script setup>
 import PurchaseLineFields from '@/Components/Purchasing/PurchaseLineFields.vue';
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
+import { notifySuccess, notifyWarning } from '@/composables/useFlashToast';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { usePermissions } from '@/composables/usePermissions';
-import { useQuantity } from '@/composables/useQuantity';
 import {
     boxConversionFactor,
     buildPurchaseUnitOptions,
@@ -533,6 +599,7 @@ import {
     unitPurchasePrice,
     unitSalePrice,
 } from '@/composables/useProductUnits';
+import { useQuantity } from '@/composables/useQuantity';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 
@@ -562,6 +629,7 @@ const quickBaseUnits = ['piece', 'strip', 'box', 'carton'];
 
 const purchaseBatchTip = computed(() => t('catalog.purchase_batch_pack_tip'));
 const editingLineIndex = ref(null);
+const expandedLineIndex = ref(null);
 const lineEditorError = ref('');
 
 const editingLine = computed(() => {
@@ -575,6 +643,14 @@ const incompleteLinesCount = computed(() => form.lines.filter((line) => lineIsIn
 
 function isMobilePurchaseUi() {
     return typeof window !== 'undefined' && window.matchMedia('(max-width: 767.98px)').matches;
+}
+
+function toggleLineExpanded(index) {
+    expandedLineIndex.value = expandedLineIndex.value === index ? null : index;
+}
+
+function expandLine(index) {
+    expandedLineIndex.value = index;
 }
 
 function openLineEditor(index) {
@@ -1161,9 +1237,13 @@ function addProductLine(product) {
     searchResults.value = [];
     masterResults.value = [];
 
+    const newIndex = form.lines.length - 1;
     if (isMobilePurchaseUi()) {
-        openLineEditor(form.lines.length - 1);
+        openLineEditor(newIndex);
+    } else {
+        expandLine(newIndex);
     }
+    notifySuccess(t('purchases.line_added', { name: line.product_name }));
 }
 
 function applyPrefillProducts() {
@@ -1328,6 +1408,11 @@ function removeLine(index) {
     } else if (editingLineIndex.value !== null && editingLineIndex.value > index) {
         editingLineIndex.value -= 1;
     }
+    if (expandedLineIndex.value === index) {
+        expandedLineIndex.value = null;
+    } else if (expandedLineIndex.value !== null && expandedLineIndex.value > index) {
+        expandedLineIndex.value -= 1;
+    }
     form.lines.splice(index, 1);
 }
 
@@ -1439,11 +1524,13 @@ function submit() {
         const message = t('purchases.line_incomplete_detail', {
             fields: lineMissingFieldsLabel(line),
         });
+        notifyWarning(message);
         if (isMobilePurchaseUi()) {
             editingLineIndex.value = incompleteIndex;
             lineEditorError.value = message;
             void nextTick(scrollSheetBodyToTop);
         } else {
+            expandLine(incompleteIndex);
             lineEditorError.value = message;
         }
         return;
@@ -1548,6 +1635,25 @@ function submit() {
     box-shadow: 0 0 0 4px rgba(var(--bs-primary-rgb), 0.18);
 }
 
+.purchase-master-result {
+    min-width: 0;
+}
+
+.purchase-master-result__text {
+    min-width: 0;
+    overflow: hidden;
+}
+
+.purchase-master-result__name {
+    line-height: 1.3;
+}
+
+.purchase-master-result__add {
+    position: relative;
+    z-index: 1;
+    white-space: nowrap;
+}
+
 .purchase-line-summary__body {
     width: 100%;
     padding: 0.85rem 1rem 0.35rem;
@@ -1596,16 +1702,94 @@ function submit() {
     flex: 1 1 0;
 }
 
+.purchase-line-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.15rem;
+    height: 2.15rem;
+    padding: 0;
+    flex: 0 0 auto !important;
+}
+
+.purchase-line-card {
+    overflow: hidden;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.purchase-line-card--active {
+    border-color: rgba(var(--bs-primary-rgb), 0.45) !important;
+    box-shadow: 0 0 0 1px rgba(var(--bs-primary-rgb), 0.12);
+}
+
+.purchase-line-card--incomplete:not(.purchase-line-card--active) {
+    border-color: #f0c36d !important;
+}
+
+.purchase-line-card__header {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.7rem;
+}
+
+.purchase-line-card__toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    padding: 0.15rem 0.2rem;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    color: inherit;
+}
+
+.purchase-line-card__toggle:hover {
+    color: var(--bs-primary);
+}
+
+.purchase-line-card__chevron {
+    display: inline-flex;
+    flex: 0 0 auto;
+    color: #94a3b8;
+    transition: transform 0.15s ease;
+}
+
+.purchase-line-card__chevron--open {
+    transform: rotate(0deg);
+    color: var(--bs-primary);
+}
+
+.purchase-line-card__chevron:not(.purchase-line-card__chevron--open) {
+    transform: rotate(-90deg);
+}
+
+.purchase-line-card__title {
+    flex: 1 1 auto;
+    min-width: 0;
+    line-height: 1.3;
+}
+
+.purchase-line-card__summary {
+    flex: 0 1 auto;
+    white-space: nowrap;
+    margin-left: auto;
+}
+
+.purchase-line-card__body {
+    padding: 0 0.75rem 0.75rem;
+    border-top: 1px dashed #e2e8f0;
+    padding-top: 0.7rem;
+}
+
 @media (max-width: 575.98px) {
     .purchase-form {
         padding: 0.75rem !important;
     }
 
-    .purchase-line-card {
-        padding: 0.75rem !important;
-    }
-
-    .purchase-line-remove,
     .purchase-actions .btn {
         width: 100%;
     }

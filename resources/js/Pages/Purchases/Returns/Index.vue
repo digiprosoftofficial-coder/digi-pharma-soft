@@ -1,8 +1,9 @@
 <template>
     <TenantShellLayout :page-title="t('purchases.purchase_returns')">
         <Head :title="t('purchases.purchase_returns')" />
+
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h1 class="page-heading mb-0">{{ t('purchases.purchase_returns') }}</h1>
+            <h1 class="page-heading d-none d-lg-block mb-0">{{ t('purchases.purchase_returns') }}</h1>
             <Link
                 v-if="$page.props.auth?.user?.permissions?.includes('purchases.manage')"
                 href="/purchases/returns/create"

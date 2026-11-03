@@ -156,11 +156,24 @@ export async function searchCachedProducts(term, limit = 30) {
 
                     let score = 0;
                     if (sku === q || barcode === q) {
-                        score = 100;
-                    } else if (name.startsWith(q) || sku.startsWith(q)) {
-                        score = 80;
+                        score = 1000;
+                    } else if (name === q) {
+                        score = 950;
+                    } else if (name.startsWith(`${q} `) || name.startsWith(`${q}-`)) {
+                        score = 900;
+                    } else if (name.startsWith(q)) {
+                        const next = name.charAt(q.length);
+                        score = !next || !/[a-z]/i.test(next) ? 900 : 750;
+                    } else if (sku.startsWith(q)) {
+                        score = 700;
+                    } else if (name.includes(q)) {
+                        score = 650;
+                    } else if (generic.startsWith(q) || generic.startsWith(`${q} `)) {
+                        score = 450;
+                    } else if (generic.includes(q)) {
+                        score = 350;
                     } else if (hay.includes(q)) {
-                        score = 40;
+                        score = 100;
                     }
 
                     return { product: p, score };

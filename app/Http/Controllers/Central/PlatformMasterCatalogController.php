@@ -7,6 +7,7 @@ use App\Domain\Catalog\Models\MasterProduct;
 use App\Domain\Catalog\Models\MasterProductSuggestion;
 use App\Domain\Catalog\Models\Product;
 use App\Http\Controllers\Controller;
+use App\Support\Catalog\CatalogSearchRelevance;
 use App\Support\Catalog\MasterProductImportCsv;
 use App\Support\Catalog\ProductCatalogOptions;
 use App\Support\Catalog\ProductType;
@@ -40,7 +41,7 @@ final class PlatformMasterCatalogController extends Controller
         $type = $validated['product_type'] ?? null;
         $manufacturer = trim((string) ($validated['manufacturer'] ?? ''));
 
-        $query = MasterProduct::query()->orderBy('name');
+        $query = MasterProduct::query();
 
         if ($q !== '') {
             $query->where(function ($w) use ($q) {
@@ -52,6 +53,9 @@ final class PlatformMasterCatalogController extends Controller
                     ->orWhere('barcode', $q)
                     ->orWhere('drug_class', 'like', '%'.$q.'%');
             });
+            CatalogSearchRelevance::orderQuery($query, $q);
+        } else {
+            $query->orderBy('name');
         }
 
         if ($status === 'active') {

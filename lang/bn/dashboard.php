@@ -30,6 +30,8 @@ return [
     'filter_by_date' => 'তারিখ দিয়ে ফিল্টার',
     'filter_by_branch' => 'দেখুন',
     'all_branches' => 'সব শাখা',
+    'view_all_branches' => 'সব শাখা দেখুন',
+    'view_active_branch' => ':name-এ ফিরুন',
     'current_branch' => 'বর্তমান শাখা',
     'apply_range' => 'প্রয়োগ করুন',
     'showing_range' => ':from থেকে :to পর্যন্ত দেখানো হচ্ছে',

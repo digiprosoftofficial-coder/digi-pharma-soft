@@ -1,10 +1,10 @@
 <template>
     <TenantShellLayout :page-title="t('tenant_nav.products')">
         <Head :title="t('tenant_nav.products')" />
-        <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
+
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-            <h1 class="page-heading mb-0 d-lg-none">{{ t('tenant_nav.products') }}</h1>
-            <div class="d-flex flex-wrap gap-2">
+            <h1 class="page-heading mb-0 d-none d-lg-block me-auto">{{ t('tenant_nav.products') }}</h1>
+            <div class="d-flex flex-wrap gap-2 ms-lg-0 ms-auto">
                 <Link v-if="can('products.view')" href="/catalog/master" class="btn btn-outline-primary">{{ t('catalog.master_catalog_add_from') }}</Link>
                 <Link v-if="can('products.manage')" href="/products/create" class="btn btn-primary">{{ t('catalog.add_product') }}</Link>
             </div>

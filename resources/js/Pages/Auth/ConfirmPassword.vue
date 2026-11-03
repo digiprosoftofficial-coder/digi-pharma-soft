@@ -1,6 +1,7 @@
 <template>
     <GuestLayout>
         <Head :title="t('auth.confirm_title')" />
+
         <div class="text-center mb-4">
             <h1 class="page-heading mb-1">{{ t('auth.confirm_title') }}</h1>
             <p class="text-muted small mb-0">{{ t('auth.confirm_subtitle') }}</p>

@@ -1,7 +1,8 @@
 <template>
     <TenantShellLayout :page-title="t('sales.pos_title')">
         <Head title="POS" />
-        <h1 class="page-heading mb-3 d-lg-none">{{ t('sales.pos_title') }}</h1>
+
+        <h1 class="page-heading mb-3 d-none d-lg-block">{{ t('sales.pos_title') }}</h1>
         <div v-if="checkoutError" class="alert alert-danger">{{ checkoutError }}</div>
         <div v-if="showSaleSuccessAlert" class="alert alert-success pos-sale-alert">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -200,71 +201,120 @@
                     <p v-if="!cart.length" class="text-muted small">{{ t('sales.cart_empty_hint') }}</p>
                     <template v-else>
                     <div class="pos-cart-cards">
-                        <div v-for="(line, idx) in cart" :key="idx" class="pos-cart-line-card border rounded bg-white p-2 mb-2">
-                            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                                <div class="min-w-0 flex-grow-1">
-                                    <div class="pos-cart-line-title text-truncate">{{ line.name }}</div>
-                                    <div class="small text-muted pos-cart-line-card__meta">
-                                        <span>{{ unitLabel(line.sell_unit) }}</span>
-                                        <span v-if="lineBatchLabel(line)"> · {{ lineBatchLabel(line) }}</span>
-                                    </div>
-                                    <div class="small text-muted pos-cart-line-card__meta">{{ lineStockHint(line) }}</div>
-                                    <div v-if="linePriceSourceHint(line)" class="small pos-cart-line-card__meta" :class="line.uses_markup_pricing ? 'text-primary' : 'text-muted'">
-                                        {{ linePriceSourceHint(line) }}
-                                    </div>
-                                    <div v-if="linePricingHint(line)" class="small text-muted pos-cart-line-card__meta">{{ linePricingHint(line) }}</div>
-                                    <div v-if="selectedBatch(line)?.is_expired" class="small text-danger">
-                                        {{ t('catalog.pos_batch_expired') }}
-                                    </div>
-                                    <div v-if="lineMaySplit(line)" class="small text-warning">{{ t('catalog.pos_may_split_batches') }}</div>
-                                </div>
-                                <button type="button" class="btn btn-sm btn-outline-danger pos-cart-line-card__remove" @click="cart.splice(idx, 1)">
-                                    ×
+                        <div
+                            v-for="(line, idx) in cart"
+                            :key="line._key"
+                            class="pos-cart-line-card"
+                            :class="{
+                                'pos-cart-line-card--active': expandedCartKey === line._key,
+                                'pos-cart-line-card--danger': selectedBatch(line)?.is_expired,
+                            }"
+                        >
+                            <div class="pos-cart-line-card__header">
+                                <button
+                                    type="button"
+                                    class="pos-cart-line-card__toggle"
+                                    :aria-expanded="expandedCartKey === line._key"
+                                    :aria-label="expandedCartKey === line._key ? t('sales.pos_collapse_line') : t('sales.pos_expand_line')"
+                                    @click="toggleCartLine(line._key)"
+                                >
+                                    <span
+                                        class="pos-cart-line-card__chevron"
+                                        :class="{ 'pos-cart-line-card__chevron--open': expandedCartKey === line._key }"
+                                        aria-hidden="true"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="m6 9 6 6 6-6" />
+                                        </svg>
+                                    </span>
+                                    <span class="pos-cart-line-card__title-wrap min-w-0">
+                                        <span class="pos-cart-line-title text-truncate">{{ line.name }}</span>
+                                        <span class="pos-cart-line-card__summary text-muted">
+                                            {{ formatQty(line.quantity) }} {{ unitLabel(line.sell_unit) }}
+                                            · {{ formatMoney(Number(line.quantity || 0) * Number(line.unit_price || 0)) }}
+                                        </span>
+                                    </span>
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-outline-danger pos-cart-line-card__remove"
+                                    :aria-label="t('sales.pos_remove_line')"
+                                    :title="t('sales.pos_remove_line')"
+                                    @click="removeCartLine(idx)"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M3 6h18" />
+                                        <path d="M8 6V4h8v2" />
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                                        <path d="M10 11v6" />
+                                        <path d="M14 11v6" />
+                                    </svg>
                                 </button>
                             </div>
 
-                            <div v-if="line.batches?.length > 1" class="mb-2">
-                                <label class="form-label small mb-1">{{ t('catalog.batch') }}</label>
-                                <select
-                                    v-model.number="line.product_batch_id"
-                                    class="form-select form-select-sm"
-                                    @change="onBatchChange(line)"
+                            <div v-show="expandedCartKey === line._key" class="pos-cart-line-card__body">
+                                <div class="pos-cart-line-card__meta-row">
+                                    <span v-if="lineBatchLabel(line)">{{ lineBatchLabel(line) }}</span>
+                                    <span v-if="lineStockHint(line)">{{ lineStockHint(line) }}</span>
+                                    <span
+                                        v-if="linePriceSourceHint(line)"
+                                        :class="line.uses_markup_pricing ? 'text-primary' : ''"
+                                    >{{ linePriceSourceHint(line) }}</span>
+                                    <span v-if="linePricingHint(line)">{{ linePricingHint(line) }}</span>
+                                    <span v-if="selectedBatch(line)?.is_expired" class="text-danger">
+                                        {{ t('catalog.pos_batch_expired') }}
+                                    </span>
+                                    <span v-if="lineMaySplit(line)" class="text-warning">{{ t('catalog.pos_may_split_batches') }}</span>
+                                </div>
+
+                                <div
+                                    class="pos-cart-line-card__fields"
+                                    :class="{
+                                        'pos-cart-line-card__fields--with-unit': line.unit_options?.length > 0,
+                                        'pos-cart-line-card__fields--with-batch': line.batches?.length > 1,
+                                    }"
                                 >
-                                    <option v-for="b in line.batches" :key="b.id" :value="b.id">
-                                        {{ formatBatchLabel(b) }}
-                                    </option>
-                                </select>
-                            </div>
-
-                            <div class="pos-cart-line-card__fields" :class="{ 'pos-cart-line-card__fields--with-unit': line.unit_options?.length > 1 }">
-                                <div v-if="line.unit_options?.length > 1">
-                                    <label class="form-label small mb-1">{{ t('catalog.sell_unit') }}</label>
-                                    <select v-model="line.sell_unit" class="form-select form-select-sm" @change="onUnitChange(line)">
-                                        <option v-for="u in line.unit_options" :key="u.sell_unit" :value="u.sell_unit">
-                                            {{ unitLabel(u.sell_unit) }}
-                                        </option>
-                                    </select>
+                                    <div v-if="line.batches?.length > 1" class="pos-cart-line-card__field pos-cart-line-card__field--batch">
+                                        <label class="pos-cart-line-card__label">{{ t('catalog.pos_batch_column') }}</label>
+                                        <select
+                                            v-model.number="line.product_batch_id"
+                                            class="form-select form-select-sm"
+                                            @change="onBatchChange(line)"
+                                        >
+                                            <option v-for="b in line.batches" :key="b.id" :value="b.id">
+                                                {{ formatBatchLabel(b) }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div v-if="line.unit_options?.length" class="pos-cart-line-card__field">
+                                        <label class="pos-cart-line-card__label">{{ t('catalog.sell_unit') }}</label>
+                                        <select
+                                            v-model="line.sell_unit"
+                                            class="form-select form-select-sm"
+                                            :disabled="line.unit_options.length < 2"
+                                            @change="onUnitChange(line)"
+                                        >
+                                            <option v-for="u in line.unit_options" :key="u.sell_unit" :value="u.sell_unit">
+                                                {{ unitLabel(u.sell_unit) }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="pos-cart-line-card__field">
+                                        <label class="pos-cart-line-card__label">{{ t('sales.qty') }}</label>
+                                        <input
+                                            v-model.number="line.quantity"
+                                            type="number"
+                                            min="1"
+                                            step="1"
+                                            class="form-control form-control-sm"
+                                            @change="normalizeLineQuantity(line)"
+                                        />
+                                    </div>
+                                    <div class="pos-cart-line-card__field">
+                                        <label class="pos-cart-line-card__label">{{ t('sales.unit_price') }}</label>
+                                        <input v-model.number="line.unit_price" type="number" min="0" step="0.0001" class="form-control form-control-sm" />
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="form-label small mb-1">{{ t('sales.qty') }}</label>
-                                    <input
-                                        v-model.number="line.quantity"
-                                        type="number"
-                                        min="1"
-                                        step="1"
-                                        class="form-control form-control-sm"
-                                        @change="normalizeLineQuantity(line)"
-                                    />
-                                </div>
-                                <div>
-                                    <label class="form-label small mb-1">{{ t('sales.unit_price') }}</label>
-                                    <input v-model.number="line.unit_price" type="number" min="0" step="0.0001" class="form-control form-control-sm" />
-                                </div>
-                            </div>
-
-                            <div class="d-flex justify-content-between align-items-center border-top mt-2 pt-2">
-                                <span class="small text-muted">{{ t('sales.line_total') }}</span>
-                                <strong>{{ formatMoney(Number(line.quantity || 0) * Number(line.unit_price || 0)) }}</strong>
                             </div>
                         </div>
 
@@ -465,7 +515,13 @@ import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { useOfflinePos } from '@/composables/useOfflinePos';
 import { useQuantity } from '@/composables/useQuantity';
-import { defaultSellUnit, stockInSellUnit, unitLabel, unitSalePrice } from '@/composables/useProductUnits';
+import {
+    buildSaleUnitOptions,
+    defaultSellUnit,
+    stockInSellUnit,
+    unitLabel,
+    unitSalePrice,
+} from '@/composables/useProductUnits';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { Html5Qrcode } from 'html5-qrcode';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -504,6 +560,8 @@ const {
 const q = ref('');
 const results = ref([]);
 const cart = ref([]);
+const expandedCartKey = ref(null);
+let cartLineSeq = 0;
 const activeQuickProductTab = ref(
     typeof window !== 'undefined' && window.matchMedia('(min-width: 992px)').matches ? 'latest' : 'popular',
 );
@@ -766,6 +824,7 @@ onMounted(() => {
 
 function resetCartAfterSale() {
     cart.value = [];
+    expandedCartKey.value = null;
     q.value = '';
     results.value = [];
     amountPaid.value = 0;
@@ -1084,6 +1143,27 @@ function scrollToCart() {
     });
 }
 
+function nextCartLineKey() {
+    cartLineSeq += 1;
+    return `cart-${cartLineSeq}-${Date.now()}`;
+}
+
+function toggleCartLine(key) {
+    expandedCartKey.value = expandedCartKey.value === key ? null : key;
+}
+
+function expandCartLine(key) {
+    expandedCartKey.value = key;
+}
+
+function removeCartLine(index) {
+    const removed = cart.value[index];
+    cart.value.splice(index, 1);
+    if (removed && expandedCartKey.value === removed._key) {
+        expandedCartKey.value = cart.value[Math.min(index, cart.value.length - 1)]?._key ?? null;
+    }
+}
+
 function addLine(item) {
     const batches = batchesWithStock(item);
     const batch = batches[0];
@@ -1097,12 +1177,15 @@ function addLine(item) {
     );
     if (existing) {
         existing.quantity = Math.max(1, Math.round(Number(existing.quantity) || 1) + 1);
+        expandCartLine(existing._key);
         notifyProductAdded(item);
         return;
     }
 
-    const sellUnit = defaultSellUnit(item);
+    const unitOptions = buildSaleUnitOptions(item);
+    const sellUnit = defaultSellUnit({ ...item, units: unitOptions });
     const line = {
+        _key: nextCartLineKey(),
         product_id: item.id,
         product_batch_id: batch.id,
         batch_no: batch.batch_no,
@@ -1115,13 +1198,16 @@ function addLine(item) {
         batch_stock: Number(batch.quantity_on_hand ?? 0),
         product_stock_base: totalBaseStock(batches),
         sell_unit: sellUnit,
-        unit_options: item.units?.length ? item.units : [{ sell_unit: sellUnit, sale_price: item.sale_price }],
+        unit_options: unitOptions.length
+            ? unitOptions
+            : [{ sell_unit: sellUnit, conversion_factor: 1, sale_price: item.sale_price }],
         fallback_sale_price: item.sale_price,
         quantity: 1,
         unit_price: 0,
     };
     refreshLinePricing(line);
     cart.value.push(line);
+    expandCartLine(line._key);
     notifyProductAdded(item);
 }
 
@@ -1296,28 +1382,128 @@ async function submitSale() {
 .pos-cart-line-card {
     overflow: hidden;
     min-width: 0;
+    margin-bottom: 0.45rem;
+    border: 1px solid #dbe7f0;
+    border-radius: 0.75rem;
+    background: #fff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pos-cart-line-card--active {
+    border-color: rgba(var(--bs-primary-rgb), 0.45);
+    box-shadow: 0 0 0 1px rgba(var(--bs-primary-rgb), 0.1);
+}
+
+.pos-cart-line-card--danger {
+    border-color: #f1a8a8;
+}
+
+.pos-cart-line-card__header {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.45rem 0.4rem 0.35rem;
+}
+
+.pos-cart-line-card__toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    padding: 0.1rem 0.15rem;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    color: inherit;
+}
+
+.pos-cart-line-card__toggle:hover .pos-cart-line-title {
+    color: var(--bs-primary);
+}
+
+.pos-cart-line-card__chevron {
+    display: inline-flex;
+    flex: 0 0 auto;
+    color: #94a3b8;
+    transition: transform 0.15s ease;
+}
+
+.pos-cart-line-card__chevron:not(.pos-cart-line-card__chevron--open) {
+    transform: rotate(-90deg);
+}
+
+.pos-cart-line-card__chevron--open {
+    color: var(--bs-primary);
+}
+
+.pos-cart-line-card__title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.05rem;
+    min-width: 0;
+    line-height: 1.25;
 }
 
 .pos-cart-line-title {
     color: var(--bs-primary);
+    font-size: 0.92rem;
     font-weight: 700;
 }
 
-.pos-cart-line-card__meta,
-.pos-cart-line-card .small {
+.pos-cart-line-card__summary {
+    font-size: 0.72rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pos-cart-line-card__remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 1.9rem;
+    height: 1.9rem;
+    min-width: 1.9rem;
+    padding: 0;
+}
+
+.pos-cart-line-card__body {
+    padding: 0 0.55rem 0.55rem;
+    border-top: 1px dashed #e2e8f0;
+    padding-top: 0.5rem;
+}
+
+.pos-cart-line-card__meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem 0.55rem;
+    margin-bottom: 0.45rem;
+    color: #64748b;
+    font-size: 0.7rem;
+    line-height: 1.3;
+}
+
+.pos-cart-line-card__meta-row > span {
     overflow-wrap: anywhere;
     word-break: break-word;
 }
 
-.pos-cart-line-card__remove {
-    flex: 0 0 auto;
-    min-width: 2.15rem;
+.pos-cart-line-card__label {
+    display: block;
+    margin-bottom: 0.15rem;
+    color: #64748b;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.2;
 }
 
 .pos-cart-line-card__fields {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.5rem;
+    gap: 0.4rem;
     min-width: 0;
 }
 
@@ -1325,8 +1511,26 @@ async function submitSale() {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.pos-cart-line-card__fields > div {
+.pos-cart-line-card__fields--with-batch {
+    grid-template-columns: 1fr;
+}
+
+.pos-cart-line-card__fields--with-batch.pos-cart-line-card__fields--with-unit {
+    grid-template-columns: minmax(0, 1.3fr) repeat(3, minmax(0, 1fr));
+}
+
+.pos-cart-line-card__field {
     min-width: 0;
+}
+
+.pos-cart-line-card__field--batch {
+    grid-column: 1 / -1;
+}
+
+@media (min-width: 576px) {
+    .pos-cart-line-card__fields--with-batch.pos-cart-line-card__fields--with-unit .pos-cart-line-card__field--batch {
+        grid-column: auto;
+    }
 }
 
 .pos-cart-line-card__fields .form-control,
@@ -1575,15 +1779,28 @@ async function submitSale() {
 
     .pos-cart-line-card__fields {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.4rem;
+        gap: 0.35rem;
     }
 
-    .pos-cart-line-card__fields--with-unit {
-        grid-template-columns: 1fr 0.85fr 1fr;
+    .pos-cart-line-card__fields--with-unit,
+    .pos-cart-line-card__fields--with-batch.pos-cart-line-card__fields--with-unit {
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.75fr) minmax(0, 1.1fr);
     }
 
-    .pos-cart-line-card__fields .form-label {
-        font-size: 0.72rem;
+    .pos-cart-line-card__field--batch {
+        grid-column: 1 / -1;
+    }
+
+    .pos-cart-line-card__label {
+        font-size: 0.65rem;
+        margin-bottom: 0.1rem;
+    }
+
+    .pos-cart-line-card__fields .form-control,
+    .pos-cart-line-card__fields .form-select {
+        padding-left: 0.4rem;
+        padding-right: 0.4rem;
+        font-size: 0.8rem;
     }
 
     .pos-product-grid {

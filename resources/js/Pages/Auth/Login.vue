@@ -2,6 +2,7 @@
     <GuestLayout>
         <Head :title="t('auth.sign_in')" />
 
+
         <div class="text-center mb-4">
             <div class="auth-form-icon mx-auto mb-3 text-primary" aria-hidden="true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">

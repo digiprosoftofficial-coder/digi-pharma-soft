@@ -1,7 +1,8 @@
 <template>
     <TenantShellLayout :page-title="t('common.settings')">
         <Head :title="t('common.settings')" />
-        <h1 class="page-heading mb-3">{{ t('common.pharmacy_settings') }}</h1>
+
+        <h1 class="page-heading d-none d-lg-block mb-3">{{ t('common.pharmacy_settings') }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="mb-2">
                 <label class="form-label">{{ t('common.business_name') }}</label>

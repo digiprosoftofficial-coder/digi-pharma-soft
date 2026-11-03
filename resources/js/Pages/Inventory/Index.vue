@@ -1,7 +1,8 @@
 <template>
     <TenantShellLayout :page-title="t('tenant_nav.inventory')">
         <Head :title="t('tenant_nav.inventory')" />
-        <h1 class="page-heading mb-3">{{ t('reports.inventory_overview') }}</h1>
+
+        <h1 class="page-heading d-none d-lg-block mb-3">{{ t('reports.inventory_overview') }}</h1>
         <div class="row g-3">
             <div class="col-lg-6">
                 <div class="card border-0 shadow-sm">

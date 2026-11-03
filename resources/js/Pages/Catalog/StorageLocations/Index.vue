@@ -1,14 +1,14 @@
 <template>
     <TenantShellLayout :page-title="t('catalog.storage_locations_title')">
         <Head :title="t('catalog.storage_locations_title')" />
+
         <div class="storage-locations-page">
-            <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
             <div v-if="$page.props.errors?.storage_location" class="alert alert-danger small">
                 {{ $page.props.errors.storage_location }}
             </div>
 
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 storage-locations-header">
-                <h1 class="page-heading mb-0 storage-locations-title">{{ t('catalog.storage_locations_title') }}</h1>
+                <h1 class="page-heading d-none d-lg-block mb-0 storage-locations-title">{{ t('catalog.storage_locations_title') }}</h1>
                 <button type="button" class="btn btn-primary btn-sm storage-locations-add" @click="openCreate">
                     {{ t('catalog.new_storage_location') }}
                 </button>

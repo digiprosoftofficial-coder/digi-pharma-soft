@@ -1,8 +1,9 @@
 <template>
     <TenantShellLayout page-title="Returns">
         <Head title="Returns" />
+
         <div class="d-flex justify-content-between mb-3">
-            <h1 class="page-heading mb-0">Returns</h1>
+            <h1 class="page-heading d-none d-lg-block mb-0">Returns</h1>
             <Link href="/sales/returns/create" class="btn btn-primary btn-sm">New return</Link>
         </div>
         <div class="card border-0 shadow-sm table-responsive">

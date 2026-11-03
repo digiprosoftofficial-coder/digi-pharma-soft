@@ -2,6 +2,7 @@
     <TenantShellLayout page-title="Package sale">
         <Head title="Package sale" />
 
+
         <div v-if="checkoutError" class="alert alert-danger">{{ checkoutError }}</div>
         <div v-if="showSaleSuccessAlert" class="alert alert-success package-sale-alert">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -18,7 +19,7 @@
 
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
             <div>
-                <h1 class="page-heading mb-1 d-lg-none">Package sale</h1>
+                <h1 class="page-heading mb-1 d-none d-lg-block">Package sale</h1>
                 <p class="text-muted small mb-0">Select a prepared package or add products manually. Checkout stays on this page.</p>
             </div>
             <Link href="/sales/packages" class="btn btn-sm btn-outline-primary">Manage packages</Link>

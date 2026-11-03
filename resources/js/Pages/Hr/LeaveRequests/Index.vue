@@ -1,9 +1,9 @@
 <template>
     <TenantShellLayout :page-title="t('employees.leave_requests')">
         <Head :title="t('employees.leave_requests')" />
-        <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
+
         <Link href="/hr/payroll" class="small text-decoration-none">← {{ t('employees.payroll_title') }}</Link>
-        <h1 class="page-heading mt-2 mb-3">{{ t('employees.leave_requests') }}</h1>
+        <h1 class="page-heading d-none d-lg-block mt-2 mb-3">{{ t('employees.leave_requests') }}</h1>
         <form v-if="can('employees.manage')" class="card border-0 shadow-sm card-body mb-3" @submit.prevent="submit">
             <div class="row g-2">
                 <div class="col-md-3">

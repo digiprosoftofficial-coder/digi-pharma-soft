@@ -1,6 +1,7 @@
 <template>
     <TenantShellLayout :page-title="t('purchases.supplier')">
         <Head :title="supplier ? t('suppliers.edit_supplier') : t('suppliers.new_supplier')" />
+
         <div v-if="formError" class="alert alert-danger small">{{ formError }}</div>
         <h1 class="page-heading mb-3">{{ supplier ? t('suppliers.edit_supplier') : t('suppliers.new_supplier') }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">

@@ -1,7 +1,7 @@
 <template>
     <TenantShellLayout :page-title="supplier.name">
         <Head :title="supplier.name" />
-        <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
+
         <div v-if="formError" class="alert alert-danger small">{{ formError }}</div>
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
             <div>

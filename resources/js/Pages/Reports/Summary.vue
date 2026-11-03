@@ -1,9 +1,10 @@
 <template>
     <TenantShellLayout page-title="Sales summary">
         <Head title="Sales summary" />
+
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
-                <h1 class="page-heading mb-0">Sales summary</h1>
+                <h1 class="page-heading d-none d-lg-block mb-0">Sales summary</h1>
                 <p v-if="activeBranch" class="small text-muted mb-0">
                     {{ t('branches.switch_branch') }}: {{ activeBranch.name }} ({{ activeBranch.code }})
                 </p>

@@ -1,7 +1,8 @@
 <template>
     <TenantShellLayout :page-title="t('tenant_nav.stock_transfer')">
         <Head :title="t('tenant_nav.stock_transfer')" />
-        <h1 class="page-heading mb-3">{{ t('tenant_nav.stock_transfer') }}</h1>
+
+        <h1 class="page-heading d-none d-lg-block mb-3">{{ t('tenant_nav.stock_transfer') }}</h1>
         <div v-if="form.errors.lines" class="alert alert-danger small">{{ form.errors.lines }}</div>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="row g-2 mb-3">

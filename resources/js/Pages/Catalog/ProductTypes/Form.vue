@@ -1,6 +1,7 @@
 <template>
     <TenantShellLayout :page-title="productType ? 'Edit product type' : 'New product type'">
         <Head :title="productType ? 'Edit product type' : 'New product type'" />
+
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="mb-3">
                 <label class="form-label">Name</label>

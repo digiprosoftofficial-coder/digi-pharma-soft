@@ -3,6 +3,7 @@
 namespace App\Domain\Catalog\Repositories;
 
 use App\Domain\Catalog\Models\Product;
+use App\Support\Catalog\CatalogSearchRelevance;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -16,8 +17,7 @@ final class ProductRepository
         $query = Product::query()
             ->with(['category', 'manufacturer', 'storageLocation', 'units'])
             ->withSum('batches as stock_on_hand', 'quantity_on_hand')
-            ->withSum('purchaseLines as purchased_quantity', 'quantity_base')
-            ->orderByDesc('id');
+            ->withSum('purchaseLines as purchased_quantity', 'quantity_base');
 
         if (! empty($filters['q'])) {
             $term = $filters['q'];
@@ -28,6 +28,9 @@ final class ProductRepository
                     ->orWhere('sku', 'like', '%'.$term.'%')
                     ->orWhere('barcode', 'like', '%'.$term.'%');
             });
+            CatalogSearchRelevance::orderQuery($query, $term);
+        } else {
+            $query->orderByDesc('id');
         }
 
         if (! empty($filters['product_type'])) {
@@ -85,7 +88,13 @@ final class ProductRepository
                 ->orWhere('barcode', $term);
         });
 
-        return $q->limit($limit)->get();
+        $candidates = $q->limit(max($limit * 4, 80))->get();
+
+        return new Collection(
+            CatalogSearchRelevance::sort($candidates, $term)
+                ->take($limit)
+                ->all()
+        );
     }
 
     /**

@@ -1,6 +1,7 @@
 <template>
     <PlatformShellLayout :page-title="plan ? t('common.edit') : t('platform.new_plan')">
         <Head :title="plan ? 'Edit plan' : 'New plan'" />
+
         <h1 class="page-heading mb-3">{{ plan ? t('common.edit') : t('platform.new_plan') }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="mb-2">

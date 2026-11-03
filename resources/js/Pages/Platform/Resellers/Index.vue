@@ -1,6 +1,7 @@
 <template>
     <PlatformShellLayout :page-title="t('platform.resellers_title')">
         <Head :title="t('platform.nav_resellers')" />
+
         <div class="d-flex justify-content-between align-items-center mb-3">
             <p class="text-muted small mb-0">{{ t('platform.resellers_sub') }}</p>
             <Link href="/platform/resellers/create" class="btn btn-primary btn-sm">{{ t('platform.new_reseller') }}</Link>

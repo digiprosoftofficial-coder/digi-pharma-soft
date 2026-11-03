@@ -1,7 +1,7 @@
 <template>
     <div class="purchase-line-fields">
-        <div class="row g-2 align-items-end">
-            <div class="col-12 col-md-3">
+        <div class="purchase-batch-row">
+            <div class="purchase-batch-field purchase-batch-field--grow">
                 <label class="form-label small">Batch</label>
                 <select
                     v-model="line.batch_pick"
@@ -14,7 +14,7 @@
                     </option>
                 </select>
             </div>
-            <div v-if="line.batch_pick === '__new__'" class="col-12 col-md-3">
+            <div v-if="line.batch_pick === '__new__'" class="purchase-batch-field purchase-batch-field--grow">
                 <label class="form-label small">New batch no</label>
                 <input
                     v-model="line.batch_no"
@@ -24,11 +24,11 @@
                     placeholder="e.g. LOT-20261103"
                 />
             </div>
-            <div v-else class="col-12 col-md-3">
+            <div v-else class="purchase-batch-field purchase-batch-field--grow">
                 <label class="form-label small">Batch no</label>
                 <input :value="line.batch_no" type="text" class="form-control form-control-sm" disabled />
             </div>
-            <div class="col-6 col-md-2">
+            <div class="purchase-batch-field purchase-batch-field--date">
                 <label class="form-label small">
                     {{ t('purchases.expiry') }} <span class="text-danger">*</span>
                 </label>
@@ -39,7 +39,7 @@
                     :required="requireFields"
                 />
             </div>
-            <div class="col-6 col-md-2">
+            <div class="purchase-batch-field purchase-batch-field--date">
                 <label class="form-label small">
                     {{ t('purchases.manufactured_at') }} <span class="text-danger">*</span>
                 </label>
@@ -50,7 +50,7 @@
                     :required="requireFields"
                 />
             </div>
-            <div v-if="storageLocations.length" class="col-12 col-md-3">
+            <div v-if="storageLocations.length" class="purchase-batch-field purchase-batch-field--shelf">
                 <label class="form-label small">{{ t('catalog.storage_location_shelf') }}</label>
                 <select v-model="line.storage_location_id" class="form-select form-select-sm">
                     <option :value="null">{{ t('catalog.storage_location_use_default') }}</option>
@@ -61,10 +61,13 @@
             </div>
         </div>
 
-        <div class="purchase-unit-panel mt-3">
-            <div class="purchase-unit-panel__label">{{ t('purchases.buy_unit') }}</div>
-            <div class="purchase-unit-layout" :class="{ 'purchase-unit-layout--with-pack': needsPackSize }">
-                <div class="purchase-unit-layout__main">
+        <div
+            class="purchase-trade-panel mt-2"
+            :class="{ 'purchase-trade-panel--flash': unitFieldsFlash }"
+        >
+            <div class="purchase-trade-top">
+                <div class="purchase-trade-units">
+                    <div class="purchase-trade-label">{{ t('purchases.buy_unit') }}</div>
                     <div class="purchase-unit-chips" role="group" :aria-label="t('purchases.buy_unit')">
                         <button
                             v-for="u in line.unit_options"
@@ -77,16 +80,16 @@
                             {{ unitLabel(u.sell_unit) }}
                         </button>
                     </div>
-                    <p class="purchase-unit-panel__hint purchase-unit-panel__hint--active mb-0">
-                        {{ t('purchases.enter_in_buy_unit', { unit: unitLabel(line.sell_unit) }) }}
-                    </p>
-                    <p class="purchase-unit-panel__hint mb-0">
-                        {{ t('purchases.stock_tracked_as', { unit: unitLabel(line.base_unit) }) }}
+                    <p class="purchase-trade-hint mb-0">
+                        {{ t('purchases.buy_unit_compact_hint', {
+                            buy: unitLabel(line.sell_unit),
+                            stock: unitLabel(line.base_unit),
+                        }) }}
                     </p>
                 </div>
 
-                <div v-if="needsPackSize" class="purchase-unit-pack">
-                    <label class="purchase-unit-pack__label" :for="packInputId">{{ packSizeLabel }}</label>
+                <div v-if="needsPackSize" class="purchase-trade-pack">
+                    <label class="purchase-trade-label" :for="packInputId">{{ packSizeLabel }}</label>
                     <input
                         v-if="usesStripsPerBox"
                         :id="packInputId"
@@ -146,29 +149,21 @@
                         :required="requireFields"
                         inputmode="decimal"
                     />
-                    <div v-if="quantityBase > 0" class="purchase-unit-pack__preview">
-                        <p v-if="usesPackSizeFriendlyInput && packSizeBreakdown" class="mb-1">{{ packSizeBreakdown }}</p>
-                        <p class="mb-0">
-                            {{ t('purchases.adds_to_stock') }}
-                            <strong>{{ formatQty(quantityBase) }}</strong>
-                            {{ unitLabel(line.base_unit) }}
-                            <span v-if="packSizeDiffersFromDefault" class="text-warning">
-                                ({{ packSizeDefaultHint }})
-                            </span>
-                        </p>
-                    </div>
+                    <p v-if="quantityBase > 0" class="purchase-trade-pack__meta mb-0">
+                        <span>
+                            {{ t('purchases.stock_add_short', {
+                                qty: formatQty(quantityBase),
+                                unit: unitLabel(line.base_unit),
+                            }) }}
+                        </span>
+                        <span v-if="packSizeDiffersFromDefault" class="text-warning"> · {{ packSizeDefaultHint }}</span>
+                    </p>
                 </div>
             </div>
-        </div>
 
-        <div
-            class="purchase-price-panel mt-3"
-            :class="{ 'purchase-price-panel--flash': unitFieldsFlash }"
-        >
-            <div class="purchase-price-panel__label">{{ t('purchases.qty_cost_mrp') }}</div>
-            <div class="row g-2 align-items-start purchase-price-row">
-                <div class="col-12 col-md-4">
-                    <label class="form-label small mb-1">{{ t('purchases.qty_in_unit', { unit: unitLabel(line.sell_unit) }) }}</label>
+            <div class="purchase-trade-prices">
+                <div class="purchase-trade-field">
+                    <label class="purchase-trade-label">{{ t('purchases.qty_in_unit', { unit: unitLabel(line.sell_unit) }) }}</label>
                     <div class="input-group input-group-sm">
                         <input
                             v-model.number="line.quantity"
@@ -181,8 +176,8 @@
                         <span class="input-group-text text-capitalize">{{ unitLabel(line.sell_unit) }}</span>
                     </div>
                 </div>
-                <div class="col-12 col-md-4">
-                    <label class="form-label small mb-1">{{ t('purchases.cost_per_unit', { unit: unitLabel(line.sell_unit) }) }}</label>
+                <div class="purchase-trade-field">
+                    <label class="purchase-trade-label">{{ t('purchases.cost_per_unit', { unit: unitLabel(line.sell_unit) }) }}</label>
                     <div class="input-group input-group-sm">
                         <span class="input-group-text">{{ currencySymbol() }}</span>
                         <input
@@ -195,33 +190,30 @@
                         />
                         <span class="input-group-text">/{{ unitLabel(line.sell_unit) }}</span>
                     </div>
-                    <div v-if="priceComparisonLabel" class="form-text" :class="priceComparisonClass">
+                    <div v-if="priceComparisonLabel" class="form-text py-0" :class="priceComparisonClass">
                         {{ priceComparisonLabel }}
                     </div>
-                    <div v-if="costPerBaseHint" class="form-text text-muted mb-0">
+                    <div v-else-if="costPerBaseHint" class="form-text text-muted py-0 mb-0">
                         {{ costPerBaseHint }}
                     </div>
                 </div>
-                <div class="col-12 col-md-4">
-                    <label class="form-label small mb-1">{{ t('purchases.sale_price_per_unit', { unit: unitLabel(line.sell_unit) }) }}</label>
+                <div class="purchase-trade-field">
+                    <label class="purchase-trade-label">{{ t('purchases.sale_price_per_unit', { unit: unitLabel(line.sell_unit) }) }}</label>
                     <div class="input-group input-group-sm">
                         <span class="input-group-text">{{ currencySymbol() }}</span>
                         <input v-model.number="line.sale_price" type="number" min="0" step="0.01" class="form-control" />
                         <span class="input-group-text">/{{ unitLabel(line.sell_unit) }}</span>
                     </div>
-                    <div v-if="salePerBaseHint" class="form-text text-muted mb-0">
+                    <div v-if="salePerBaseHint" class="form-text text-muted py-0 mb-0">
                         {{ salePerBaseHint }}
                     </div>
                 </div>
+                <div class="purchase-trade-total" :class="{ 'purchase-trade-total--empty': lineTotal <= 0 }">
+                    <span class="purchase-trade-label">{{ t('purchases.line_total') }}</span>
+                    <strong>{{ lineTotal > 0 ? formatMoney(lineTotal) : '—' }}</strong>
+                    <small v-if="lineTotal > 0">{{ lineTotalBreakdown }}</small>
+                </div>
             </div>
-        </div>
-
-        <div v-if="lineTotal > 0" class="purchase-line-total mt-2">
-            <div class="purchase-line-total__label">
-                <span>{{ t('purchases.line_total') }}</span>
-                <small>{{ lineTotalBreakdown }}</small>
-            </div>
-            <strong class="purchase-line-total__value">{{ formatMoney(lineTotal) }}</strong>
         </div>
     </div>
 </template>
@@ -600,35 +592,84 @@ const priceComparisonClass = computed(() => {
 </script>
 
 <style scoped>
-.purchase-unit-panel {
-    padding: 0.85rem 0.9rem;
+.purchase-batch-row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.15rem;
+}
+
+.purchase-batch-field {
+    min-width: 0;
+}
+
+.purchase-batch-field--grow {
+    flex: 1 1 8rem;
+    min-width: 8rem;
+}
+
+.purchase-batch-field--date {
+    flex: 0 0 8.5rem;
+    width: 8.5rem;
+}
+
+.purchase-batch-field--shelf {
+    flex: 1 1 9rem;
+    min-width: 9rem;
+}
+
+.purchase-trade-panel {
+    padding: 0.7rem 0.8rem;
     border: 1px solid #dbe7f0;
-    border-radius: 0.9rem;
+    border-radius: 0.85rem;
     background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
 }
 
-.purchase-unit-panel__label {
-    color: #475569;
-    font-size: 0.78rem;
+.purchase-trade-label {
+    display: block;
+    color: #64748b;
+    font-size: 0.72rem;
     font-weight: 700;
-    margin-bottom: 0.55rem;
+    margin-bottom: 0.3rem;
+    line-height: 1.2;
+}
+
+.purchase-trade-hint {
+    margin-top: 0.4rem;
+    color: #94a3b8;
+    font-size: 0.72rem;
+}
+
+.purchase-trade-top {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding-bottom: 0.7rem;
+    margin-bottom: 0.7rem;
+    border-bottom: 1px dashed #d7e3ee;
+}
+
+.purchase-trade-units {
+    min-width: 0;
 }
 
 .purchase-unit-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.45rem;
+    gap: 0.3rem;
 }
 
 .purchase-unit-chip {
-    flex: 1 1 calc(50% - 0.45rem);
-    min-width: 5.5rem;
-    padding: 0.7rem 0.75rem;
+    flex: 1 1 calc(25% - 0.3rem);
+    min-width: 4.25rem;
+    padding: 0.4rem 0.55rem;
     border: 1px solid #d7e3ee;
-    border-radius: 0.75rem;
+    border-radius: 0.55rem;
     background: #fff;
     color: #334155;
-    font-size: 0.92rem;
+    font-size: 0.8rem;
     font-weight: 700;
     text-transform: capitalize;
     transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
@@ -641,91 +682,72 @@ const priceComparisonClass = computed(() => {
     box-shadow: inset 0 0 0 1px rgba(var(--bs-primary-rgb), 0.2);
 }
 
-.purchase-unit-panel__hint {
-    margin-top: 0.55rem;
-    color: #94a3b8;
-    font-size: 0.72rem;
-}
-
-.purchase-unit-panel__hint--active {
-    margin-top: 0.65rem;
-    color: #0f766e;
-    font-size: 0.78rem;
-    font-weight: 600;
-}
-
-.purchase-unit-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 0.85rem;
-}
-
-.purchase-unit-layout__main {
+.purchase-trade-pack {
     min-width: 0;
-}
-
-.purchase-unit-pack {
-    min-width: 0;
-    padding: 0.75rem 0.85rem;
+    padding: 0.55rem 0.65rem;
     border: 1px solid #dcece6;
-    border-radius: 0.75rem;
+    border-radius: 0.65rem;
     background: #f7fffb;
 }
 
-.purchase-unit-pack__label {
-    display: block;
+.purchase-trade-pack .purchase-trade-label {
     color: #0f766e;
-    font-size: 0.78rem;
-    font-weight: 700;
-    margin-bottom: 0.4rem;
-    line-height: 1.25;
 }
 
-.purchase-unit-pack__preview {
-    margin-top: 0.5rem;
+.purchase-trade-pack__meta {
+    margin-top: 0.35rem;
     color: #64748b;
-    font-size: 0.74rem;
-    line-height: 1.35;
+    font-size: 0.7rem;
+    line-height: 1.3;
 }
 
-@media (min-width: 768px) {
-    .purchase-unit-layout--with-pack {
-        flex-direction: row;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-
-    .purchase-unit-layout__main {
-        flex: 1 1 auto;
-    }
-
-    .purchase-unit-pack {
-        flex: 0 0 15.5rem;
-        width: 15.5rem;
-    }
-
-    .purchase-unit-chip {
-        flex: 0 1 auto;
-        min-width: 6.5rem;
-    }
+.purchase-trade-prices {
+    display: grid;
+    gap: 0.55rem;
+    grid-template-columns: 1fr;
 }
 
-.purchase-price-panel {
-    padding: 0.85rem 0.9rem;
-    border: 1px solid #dbe7f0;
-    border-radius: 0.9rem;
-    background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+.purchase-trade-field {
+    min-width: 0;
 }
 
-.purchase-price-panel__label {
-    color: #475569;
-    font-size: 0.78rem;
+.purchase-trade-field .form-text {
+    font-size: 0.7rem;
+}
+
+.purchase-trade-total {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    padding: 0.55rem 0.7rem;
+    border-radius: 0.65rem;
+    background: linear-gradient(135deg, #f0f7ff 0%, #e8f1ff 100%);
+    border: 1px solid #d5e6fb;
+}
+
+.purchase-trade-total strong {
+    color: var(--bs-primary);
+    font-size: 1.05rem;
     font-weight: 700;
-    margin-bottom: 0.55rem;
+    line-height: 1.15;
 }
 
-.purchase-price-panel--flash .form-control,
-.purchase-price-panel--flash .input-group-text {
+.purchase-trade-total small {
+    color: #94a3b8;
+    font-size: 0.68rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.purchase-trade-total--empty strong {
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+.purchase-trade-panel--flash .form-control,
+.purchase-trade-panel--flash .input-group-text {
     animation: purchase-unit-flash 0.9s ease;
 }
 
@@ -739,42 +761,30 @@ const priceComparisonClass = computed(() => {
     }
 }
 
-.purchase-line-total {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding: 0.65rem 0.9rem;
-    border: 1px solid #dbe7f0;
-    border-radius: 0.8rem;
-    background: linear-gradient(135deg, #f8fbff 0%, #eef6ff 100%);
-}
+@media (min-width: 768px) {
+    .purchase-trade-top {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
 
-.purchase-line-total__label {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-}
+    .purchase-trade-units {
+        flex: 1 1 auto;
+    }
 
-.purchase-line-total__label span {
-    color: #475569;
-    font-size: 0.76rem;
-    font-weight: 700;
-}
+    .purchase-trade-pack {
+        flex: 0 0 12.5rem;
+        width: 12.5rem;
+    }
 
-.purchase-line-total__label small {
-    color: #94a3b8;
-    font-size: 0.7rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+    .purchase-unit-chip {
+        flex: 0 1 auto;
+        min-width: 4.75rem;
+    }
 
-.purchase-line-total__value {
-    color: var(--bs-primary);
-    font-size: 1.1rem;
-    font-weight: 700;
-    white-space: nowrap;
+    .purchase-trade-prices {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1.15fr) minmax(7.5rem, 0.9fr);
+        align-items: start;
+    }
 }
-
 </style>

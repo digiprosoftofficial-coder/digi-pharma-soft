@@ -1,11 +1,11 @@
 <template>
     <TenantShellLayout :page-title="t('employees.title')">
         <Head :title="t('employees.title')" />
-        <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
+
         <div v-if="formError" class="alert alert-danger small">{{ formError }}</div>
-        <div class="d-flex justify-content-between mb-3">
-            <h1 class="page-heading mb-0 d-lg-none">{{ t('employees.title') }}</h1>
-            <Link v-if="can('employees.manage')" href="/employees/create" class="btn btn-primary btn-sm">{{ t('employees.new') }}</Link>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1 class="page-heading mb-0 d-none d-lg-block me-auto">{{ t('employees.title') }}</h1>
+            <Link v-if="can('employees.manage')" href="/employees/create" class="btn btn-primary btn-sm ms-auto ms-lg-0">{{ t('employees.new') }}</Link>
         </div>
         <div class="card border-0 shadow-sm">
             <div class="table-responsive">

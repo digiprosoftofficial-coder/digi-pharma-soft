@@ -1,6 +1,7 @@
 <template>
     <PlatformShellLayout :page-title="t('platform.product_types_title')">
         <Head :title="t('platform.product_types_title')" />
+
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
                 <p class="text-muted small mb-0">{{ t('platform.product_types_sub') }}</p>

@@ -1,6 +1,7 @@
 <template>
     <TenantShellLayout :page-title="existing ? t('catalog.edit_product') : t('catalog.new_product')">
         <Head :title="existing ? t('catalog.edit_product') : t('catalog.new_product')" />
+
         <h1 class="page-heading mb-4 d-lg-none">{{ existing ? t('catalog.edit_product') : t('catalog.new_product') }}</h1>
         <form class="card border-0 shadow-sm card-body product-form-card" @submit.prevent="submit">
             <div class="product-form-hero">

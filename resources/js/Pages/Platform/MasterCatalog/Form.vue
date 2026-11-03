@@ -2,6 +2,7 @@
     <PlatformShellLayout :page-title="isEdit ? t('platform.master_edit') : t('platform.master_add_btn')">
         <Head :title="isEdit ? t('platform.master_edit') : t('platform.master_add_btn')" />
 
+
         <Link href="/platform/master-catalog" class="small text-decoration-none text-teal">← {{ t('platform.master_title') }}</Link>
         <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mt-2 mb-4">
             <div>

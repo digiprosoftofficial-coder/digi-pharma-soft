@@ -1,6 +1,7 @@
 <template>
     <PlatformShellLayout :page-title="t('platform.dashboard_title')">
         <Head :title="t('platform.nav_overview')" />
+
         <header class="platform-hero rounded-3 border bg-body-tertiary px-3 py-3 px-md-4 py-md-4 mb-4">
             <div class="row align-items-center g-3">
                 <div class="col-lg">

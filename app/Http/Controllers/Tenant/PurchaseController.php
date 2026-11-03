@@ -172,7 +172,7 @@ final class PurchaseController extends Controller
             $request->validated('notes'),
         );
 
-        return redirect()->route('tenant.purchases.index')->with('success', __('Purchase recorded.'));
+        return redirect()->route('tenant.purchases.index')->with('success', __('purchases.purchase_recorded'));
     }
 
     public function void(Purchase $purchase): RedirectResponse

@@ -1,6 +1,7 @@
 <template>
     <TenantShellLayout :page-title="category ? 'Edit category' : 'New category'">
         <Head :title="category ? 'Edit category' : 'New category'" />
+
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="mb-3">
                 <label class="form-label">Name</label>

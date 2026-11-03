@@ -134,6 +134,35 @@ final class BranchController extends Controller
 
         $request->session()->put('active_branch_id', $branch->getKey());
 
-        return back()->with('success', __('branches.switched', ['name' => $branch->name]));
+        return $this->redirectAfterBranchSwitch($request)
+            ->with('success', __('branches.switched', ['name' => $branch->name]));
+    }
+
+    /**
+     * Dashboard may carry ?branch_id=all (or a locked branch). After switching the
+     * active branch, drop that lock so the executive dashboard follows the new branch.
+     */
+    private function redirectAfterBranchSwitch(Request $request): RedirectResponse
+    {
+        $referer = $request->headers->get('Referer');
+        if (! is_string($referer) || $referer === '') {
+            return back();
+        }
+
+        $parts = parse_url($referer);
+        $path = $parts['path'] ?? '';
+        if (! is_string($path) || ! str_ends_with(rtrim($path, '/'), '/dashboard')) {
+            return back();
+        }
+
+        parse_str($parts['query'] ?? '', $query);
+        unset($query['branch_id']);
+
+        $target = $path;
+        if ($query !== []) {
+            $target .= '?'.http_build_query($query);
+        }
+
+        return redirect()->to($target);
     }
 }

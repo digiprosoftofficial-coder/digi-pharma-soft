@@ -2,11 +2,12 @@
     <TenantShellLayout :page-title="t('notes.title', 'Notes')">
         <Head :title="t('notes.title', 'Notes')" />
 
+
         <div class="notes-page" :class="{ 'notes-page--sheet': selectedNote && !isDesktop }">
             <!-- Header row: title + subtitle + search + new note -->
             <header class="notes-header">
                 <div class="notes-header__title">
-                    <h1 class="page-heading">{{ t('notes.title', 'Notes') }}</h1>
+                    <h1 class="page-heading d-none d-lg-block">{{ t('notes.title', 'Notes') }}</h1>
                     <p>{{ t('notes.subtitle', 'Organize buy lists, phone numbers & important reminders') }}</p>
                 </div>
                 <div class="notes-header__actions">

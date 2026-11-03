@@ -2,6 +2,7 @@
     <TenantShellLayout :page-title="t('reports.title')">
         <Head :title="t('reports.title')" />
 
+
         <section class="mb-4">
             <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-3">
                 <div>

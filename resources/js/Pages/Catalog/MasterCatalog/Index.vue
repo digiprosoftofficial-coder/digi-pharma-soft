@@ -2,9 +2,10 @@
     <TenantShellLayout :page-title="t('catalog.master_catalog_title')">
         <Head :title="t('catalog.master_catalog_title')" />
 
+
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
-                <h1 class="page-heading mb-1">{{ t('catalog.master_catalog_title') }}</h1>
+                <h1 class="page-heading d-none d-lg-block mb-1">{{ t('catalog.master_catalog_title') }}</h1>
                 <p class="text-muted small mb-0">{{ t('catalog.master_catalog_hint') }}</p>
             </div>
             <Link href="/products" class="btn btn-outline-secondary btn-sm">{{ t('tenant_nav.product_list', 'All Products') }}</Link>

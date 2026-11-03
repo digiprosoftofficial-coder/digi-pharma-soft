@@ -1,6 +1,7 @@
 <template>
     <PlatformShellLayout :page-title="t('platform.admins_title')">
         <Head :title="t('platform.admins_title')" />
+
         <div class="card border-0 shadow-sm table-responsive">
             <table class="table table-sm mb-0">
                 <thead class="table-light">

@@ -1,6 +1,7 @@
 <template>
     <TenantShellLayout :page-title="employee.name">
         <Head :title="employee.name" />
+
         <Link href="/employees" class="small text-decoration-none">← {{ t('employees.title') }}</Link>
         <div class="d-flex justify-content-between align-items-start mt-2 mb-3">
             <div>

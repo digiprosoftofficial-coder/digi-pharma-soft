@@ -1,28 +1,33 @@
 <template>
     <TenantShellLayout :page-title="headline">
         <Head :title="headline" />
-        <div v-if="$page.props.flash?.success" class="alert alert-success">{{ $page.props.flash.success }}</div>
-        <div v-if="$page.props.flash?.info" class="alert alert-info">{{ $page.props.flash.info }}</div>
 
         <div class="dashboard-toolbar mb-3">
-            <div class="dashboard-toolbar__title">
-                <h1 class="page-heading">{{ headline }}</h1>
-                <p v-if="branchScope.label" class="small text-muted mb-0">{{ branchScope.label }}</p>
+            <div class="dashboard-toolbar__top">
+                <div class="dashboard-toolbar__title">
+                    <h1 class="page-heading d-none d-lg-block">{{ headline }}</h1>
+                    <p v-if="branchScope.label" class="small text-muted mb-0">{{ branchScope.label }}</p>
+                </div>
+                <button
+                    v-if="showBranchScopeToggle"
+                    type="button"
+                    class="dashboard-branch-toggle"
+                    @click="toggleBranchScope"
+                >
+                    <span class="dashboard-branch-toggle__icon" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                            <circle cx="12" cy="10" r="3" />
+                        </svg>
+                    </span>
+                    <span class="dashboard-branch-toggle__text">
+                        {{ branchScope.all
+                            ? t('dashboard.view_active_branch', { name: activeBranchName })
+                            : t('dashboard.view_all_branches') }}
+                    </span>
+                </button>
             </div>
             <div class="dashboard-toolbar__filters">
-            <label v-if="showBranchFilter" class="dashboard-branch-filter">
-                <span class="dashboard-branch-filter__label">{{ t('dashboard.filter_by_branch') }}</span>
-                <select
-                    class="form-select form-select-sm dashboard-branch-filter__select"
-                    :value="branchScope.key"
-                    :aria-label="t('dashboard.filter_by_branch')"
-                    @change="selectBranch($event.target.value)"
-                >
-                    <option v-for="option in branchScope.options" :key="option.value" :value="option.value">
-                        {{ option.label }}
-                    </option>
-                </select>
-            </label>
             <div class="dropdown dashboard-toolbar__filter" ref="rangeDropdownEl">
                 <button
                     class="dashboard-range-trigger"
@@ -301,7 +306,7 @@ import { useMoney } from '@/composables/useMoney';
 import { useQuantity } from '@/composables/useQuantity';
 import { formatHumanDate, formatHumanDateTime as formatDate } from '@/utils/dates';
 import { usePermissions } from '@/composables/usePermissions';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 const props = defineProps({
@@ -324,9 +329,9 @@ const props = defineProps({
     branchScope: {
         type: Object,
         default: () => ({
-            key: 'all',
+            key: 'current',
             branch_id: null,
-            all: true,
+            all: false,
             can_view_all: false,
             label: '',
             options: [],
@@ -376,9 +381,17 @@ const rangeSummaryShort = computed(() => {
 });
 
 const isTodayRange = computed(() => props.dateRange.key === 'today');
-const showBranchFilter = computed(() =>
+const showBranchScopeToggle = computed(() =>
     Boolean(props.branchScope?.can_view_all && (props.branchScope?.options?.length || 0) > 1),
 );
+const page = usePage();
+const activeBranchName = computed(
+    () => page.props.branch?.name || t('dashboard.current_branch'),
+);
+const activeBranchId = computed(() => {
+    const id = page.props.branch?.id;
+    return id != null ? String(id) : null;
+});
 
 const kpiIcons = {
     sales: ['M12 1v22', 'M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'],
@@ -423,8 +436,19 @@ function dashboardParams(extra = {}) {
         params.date_from = params.date_from || customFrom.value || props.dateRange.date_from;
         params.date_to = params.date_to || customTo.value || props.dateRange.date_to;
     }
-    if (props.branchScope?.can_view_all) {
-        params.branch_id = extra.branch_id ?? props.branchScope.key ?? 'all';
+
+    // Only lock "all branches" in the URL. Single-branch view follows Active branch.
+    // When leaving "all", callers pass branch_id: null explicitly so we don't re-apply all.
+    if (Object.prototype.hasOwnProperty.call(extra, 'branch_id')) {
+        if (extra.branch_id === 'all') {
+            params.branch_id = 'all';
+        } else {
+            delete params.branch_id;
+        }
+    } else if (props.branchScope?.all) {
+        params.branch_id = 'all';
+    } else {
+        delete params.branch_id;
     }
 
     return params;
@@ -438,8 +462,8 @@ function withRange(path, extra = {}) {
     if (props.dateRange.date_to) {
         params.set('date_to', props.dateRange.date_to);
     }
-    if (props.branchScope?.can_view_all) {
-        params.set('branch_id', props.branchScope.key || 'all');
+    if (props.branchScope?.all) {
+        params.set('branch_id', 'all');
     }
     Object.entries(extra).forEach(([key, value]) => {
         if (value !== null && value !== undefined && value !== '') {
@@ -600,11 +624,18 @@ function selectRange(key) {
 }
 
 function selectBranch(branchId) {
-    router.get(
-        '/dashboard',
-        dashboardParams({ branch_id: branchId }),
-        { preserveState: true, preserveScroll: true },
+    const params = dashboardParams(
+        branchId === 'all' ? { branch_id: 'all' } : { branch_id: null },
     );
+    router.get('/dashboard', params, { preserveState: true, preserveScroll: true });
+}
+
+function toggleBranchScope() {
+    if (props.branchScope.all) {
+        selectBranch(activeBranchId.value);
+        return;
+    }
+    selectBranch('all');
 }
 
 function applyCustomRange() {
@@ -790,6 +821,15 @@ function formatNumber(value) {
     gap: 0.85rem;
 }
 
+.dashboard-toolbar__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.65rem;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
 .dashboard-toolbar__title {
     min-width: 0;
     flex: 1 1 auto;
@@ -800,40 +840,51 @@ function formatNumber(value) {
     flex-wrap: wrap;
     align-items: stretch;
     gap: 0.65rem;
+    flex: 0 1 auto;
 }
 
 .dashboard-toolbar__filter {
     flex: 0 0 auto;
 }
 
-.dashboard-branch-filter {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 0.1rem;
-    min-width: 11.5rem;
-    padding: 0.4rem 0.75rem 0.5rem;
+.dashboard-branch-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex: 0 1 auto;
+    max-width: min(100%, 12.5rem);
+    margin-top: 0.15rem;
+    padding: 0.45rem 0.7rem;
     border: 1px solid #dbe7f0;
     border-radius: 0.85rem;
     background: #ffffff;
     box-shadow: 0 0.2rem 0.55rem rgba(15, 23, 42, 0.04);
+    color: #0f766e;
+    font-size: 0.78rem;
+    font-weight: 650;
+    line-height: 1.2;
+    text-align: start;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
-.dashboard-branch-filter__label {
-    color: #64748b;
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+.dashboard-branch-toggle:hover {
+    border-color: rgba(15, 118, 110, 0.35);
+    background: #f0fdfa;
+    box-shadow: 0 0.25rem 0.7rem rgba(15, 118, 110, 0.08);
 }
 
-.dashboard-branch-filter__select {
-    padding-left: 0;
-    border: 0;
-    box-shadow: none;
-    background-position: right 0 center;
-    font-size: 0.92rem;
-    font-weight: 600;
+.dashboard-branch-toggle__icon {
+    display: inline-flex;
+    flex: 0 0 auto;
+    color: #0f766e;
+    opacity: 0.9;
+}
+
+.dashboard-branch-toggle__text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .dashboard-range-trigger {
@@ -925,6 +976,27 @@ function formatNumber(value) {
         flex-direction: column;
         align-items: stretch;
         gap: 0.7rem;
+    }
+
+    .dashboard-toolbar__top {
+        width: 100%;
+        align-items: center;
+    }
+
+    .dashboard-toolbar__title .page-heading {
+        margin-bottom: 0.1rem;
+        font-size: 1.35rem;
+    }
+
+    .dashboard-branch-toggle {
+        max-width: 48%;
+        margin-top: 0;
+        padding: 0.4rem 0.55rem;
+        font-size: 0.72rem;
+    }
+
+    .dashboard-toolbar__filters {
+        width: 100%;
     }
 
     .dashboard-toolbar__filter {
