@@ -17,6 +17,7 @@ use App\Http\Resources\Catalog\ProductResource;
 use App\Support\Catalog\ProductCatalogOptions;
 use App\Support\Catalog\ProductCatalogStats;
 use App\Support\Catalog\ProductListPagination;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -51,7 +52,7 @@ final class ProductController extends Controller
             'categories' => $this->categoryOptions(),
             'storageLocations' => $this->storageLocationOptions(),
             'perPageOptions' => ProductListPagination::options(),
-            'productStats' => ProductCatalogStats::forTenant(),
+            'productStats' => ProductCatalogStats::forTenant(tenant_id(), branch_id()),
         ]);
     }
 
@@ -68,9 +69,19 @@ final class ProductController extends Controller
         ]);
     }
 
-    public function store(StoreProductRequest $request): RedirectResponse
+    public function store(StoreProductRequest $request): RedirectResponse|JsonResponse
     {
-        $this->productService->createProduct($request->validated(), $request->file('image'));
+        $product = $this->productService->createProduct($request->validated(), $request->file('image'));
+
+        if ($request->wantsJson()) {
+            $product->load(['units', 'batches']);
+
+            return response()->json([
+                'ok' => true,
+                'product' => (new ProductResource($product))->resolve(),
+                'suggested_to_master' => $product->master_product_id === null,
+            ]);
+        }
 
         return redirect()->route('tenant.products.index')->with('success', __('Product created.'));
     }

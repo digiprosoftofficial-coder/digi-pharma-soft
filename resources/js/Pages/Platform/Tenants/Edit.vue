@@ -2,7 +2,7 @@
     <PlatformShellLayout :page-title="tenant.name">
         <Head :title="tenant.name" />
         <Link href="/platform/tenants" class="small text-decoration-none">← {{ t('platform.nav_pharmacies') }}</Link>
-        <h1 class="h4 mt-2 mb-3">{{ t('common.edit') }}: {{ tenant.name }}</h1>
+        <h1 class="page-heading mt-2 mb-3">{{ t('common.edit') }}: {{ tenant.name }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div v-if="Object.keys(form.errors).length" class="alert alert-danger small" role="alert">
                 {{ t('platform.form_has_errors') }}

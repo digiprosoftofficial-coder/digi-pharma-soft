@@ -8,7 +8,7 @@
                 <Link href="/purchases/supplier-bills" class="small text-decoration-none d-block mb-1">
                     ← {{ t('purchases.back_to_supplier_bills') }}
                 </Link>
-                <h1 class="h4 mb-1">{{ supplier.name }}</h1>
+                <h1 class="page-heading mb-1">{{ supplier.name }}</h1>
                 <p v-if="supplier.phone" class="text-muted small mb-0">{{ supplier.phone }}</p>
             </div>
             <div class="card border-0 shadow-sm supplier-bill-due-card">

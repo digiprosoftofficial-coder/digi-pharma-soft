@@ -3,7 +3,7 @@
         <Head :title="t('employees.payroll_title')" />
         <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
         <div v-if="formError" class="alert alert-danger small">{{ formError }}</div>
-        <h1 class="h4 mb-3">{{ t('employees.payroll_title') }}</h1>
+        <h1 class="page-heading mb-3">{{ t('employees.payroll_title') }}</h1>
         <div class="row g-3 mb-3">
             <div class="col-md-4">
                 <div class="card border-0 shadow-sm card-body">

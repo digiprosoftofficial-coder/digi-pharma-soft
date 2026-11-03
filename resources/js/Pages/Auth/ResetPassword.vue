@@ -2,7 +2,7 @@
     <GuestLayout>
         <Head :title="pageTitle" />
         <div class="text-center mb-4">
-            <h1 class="h4 mb-1">{{ pageTitle }}</h1>
+            <h1 class="page-heading mb-1">{{ pageTitle }}</h1>
             <p v-if="invite" class="text-muted small mb-0">{{ t('platform.owner_invite_set_password_subtitle') }}</p>
         </div>
         <form @submit.prevent="submit">

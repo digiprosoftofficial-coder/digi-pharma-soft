@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Purchasing;
 
+use App\Domain\Catalog\Models\MasterProduct;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Purchasing\Models\Supplier;
 use App\Models\User;
@@ -45,6 +46,29 @@ class PurchaseCreateTest extends TestCase
                     ],
                 ],
             ]);
+    }
+
+    public function test_master_search_available_during_purchase_flow(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+
+        MasterProduct::query()->create([
+            'name' => 'Purchase Master Only',
+            'generic_name' => 'MasterOnly',
+            'strength' => '10 mg',
+            'product_type' => 'tablet',
+            'base_unit' => 'strip',
+            'sku' => 'MSTR-PURCHASE-ONLY',
+            'mrp' => 50,
+            'default_purchase_price' => 40,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/catalog/master/search?q=MasterOnly')
+            ->assertOk()
+            ->assertJsonFragment(['sku' => 'MSTR-PURCHASE-ONLY', 'is_activated' => false]);
     }
 
     public function test_purchase_can_be_recorded_via_product_id_from_catalog(): void

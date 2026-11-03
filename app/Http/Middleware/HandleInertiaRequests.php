@@ -124,10 +124,17 @@ class HandleInertiaRequests extends Middleware
             return [];
         }
 
-        return Branch::query()
+        $query = Branch::query()
             ->where('is_active', true)
             ->orderByDesc('is_default')
-            ->orderBy('name')
+            ->orderBy('name');
+
+        $user = request()->user();
+        if ($user instanceof \App\Models\User && $user->isLockedToAssignedBranch()) {
+            $query->whereKey($user->assignedBranchId());
+        }
+
+        return $query
             ->get(['id', 'name', 'code', 'is_default'])
             ->map(fn (Branch $b) => [
                 'id' => $b->getKey(),

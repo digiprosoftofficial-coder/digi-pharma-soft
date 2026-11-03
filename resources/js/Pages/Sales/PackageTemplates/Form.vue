@@ -3,7 +3,7 @@
         <Head :title="isEdit ? 'Edit package template' : 'New package template'" />
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
-                <h1 class="h4 mb-1">{{ isEdit ? 'Edit package template' : 'New package template' }}</h1>
+                <h1 class="page-heading mb-1">{{ isEdit ? 'Edit package template' : 'New package template' }}</h1>
                 <p class="text-muted small mb-0">Choose products, units, and quantities that should be added together during package sale.</p>
             </div>
             <Link href="/sales/packages" class="btn btn-sm btn-outline-secondary">Back to packages</Link>

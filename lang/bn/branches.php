@@ -24,6 +24,10 @@ return [
     'cannot_deactivate_default' => 'ডিফল্ট শাখা নিষ্ক্রিয় করা যাবে না।',
     'usage' => ':count / :max শাখা ব্যবহৃত',
     'switch_branch' => 'সক্রিয় শাখা',
+    'assigned_branch' => 'নির্ধারিত শাখা',
+    'assigned_branch_help' => 'এই ইউজার শুধু নির্ধারিত শাখায় কাজ করতে পারবে (POS, স্টক ও ড্যাশবোর্ড)।',
+    'assigned_branch_required' => 'মাল্টি-ব্রাঞ্চ চালু থাকলে ম্যানেজারকে একটি শাখা নির্ধারণ করতে হবে।',
+    'switch_locked' => 'আপনি শুধু আপনার নির্ধারিত শাখা ব্যবহার করতে পারবেন।',
     'transfer_from_branch' => 'উৎস শাখা',
     'transfer_to_branch' => 'গন্তব্য শাখা',
 ];

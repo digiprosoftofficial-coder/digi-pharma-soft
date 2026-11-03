@@ -1,7 +1,7 @@
 <template>
     <TenantShellLayout page-title="Supplier bills">
         <Head title="Supplier bills" />
-        <h1 class="h4 mb-3">{{ t('purchases.supplier_bills') }}</h1>
+        <h1 class="page-heading mb-3">{{ t('purchases.supplier_bills') }}</h1>
         <p class="text-muted small">{{ t('purchases.supplier_bills_hint') }}</p>
 
         <form

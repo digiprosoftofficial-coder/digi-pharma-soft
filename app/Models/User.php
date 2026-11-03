@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Tenant\Models\Branch;
 use App\Domain\Tenant\Models\Tenant;
 use App\Support\Permission\PlatformTeam;
 use Database\Factories\UserFactory;
@@ -28,6 +29,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'tenant_id',
+        'assigned_branch_id',
     ];
 
     protected $hidden = [
@@ -64,6 +66,32 @@ class User extends Authenticatable implements MustVerifyEmail
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function assignedBranch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class, 'assigned_branch_id');
+    }
+
+    public function assignedBranchId(): ?int
+    {
+        return $this->assigned_branch_id !== null ? (int) $this->assigned_branch_id : null;
+    }
+
+    /**
+     * Staff assigned to one branch cannot open All-branch views or switch away.
+     */
+    public function isLockedToAssignedBranch(): bool
+    {
+        if ($this->assignedBranchId() === null) {
+            return false;
+        }
+
+        if ($this->hasRole('pharmacy owner')) {
+            return false;
+        }
+
+        return ! ($this->can('reports.view_all_branches') || $this->can('purchases.view_all_branches'));
     }
 
     public function shouldUsePlatformDashboard(): bool

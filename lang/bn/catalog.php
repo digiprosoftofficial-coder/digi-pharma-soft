@@ -203,7 +203,7 @@ return [
     'products_stat_in_stock' => 'স্টকে আছে',
     'products_stat_out_of_stock' => 'স্টক শূন্য',
     'products_stat_branch' => ':name: স্টকে :countটি',
-    'products_stat_help' => 'ক্যাটালগ সব শাখায় একই। স্টক কাউন্টে সব শাখা ধরা হয়; তালিকার স্টক শুধু এই শাখার।'
+    'products_stat_help' => 'ক্যাটালগ সব শাখায় একই। স্টক কার্ড, ফিল্টার ও তালিকার স্টক সক্রিয় শাখার।',
     'product_type_icon' => 'আইকন ছবি',
     'product_type_icon_hint' => 'ঐচ্ছিক। শুধু এই ফার্মেসির জন্য প্ল্যাটফর্ম ডিফল্ট বদলাবে।',
     'product_type_using_platform_default' => 'প্ল্যাটফর্ম ডিফল্ট আইকন ব্যবহার হচ্ছে।',

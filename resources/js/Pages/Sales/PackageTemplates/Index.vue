@@ -5,7 +5,7 @@
 
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
-                <h1 class="h4 mb-1">Package templates</h1>
+                <h1 class="page-heading mb-1">Package templates</h1>
                 <p class="text-muted small mb-0">Prepare common product bundles for faster package sale checkout.</p>
             </div>
             <div class="d-flex flex-wrap gap-2">

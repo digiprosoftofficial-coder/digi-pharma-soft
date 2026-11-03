@@ -8,7 +8,7 @@
                 <Link href="/sales/customer-bills" class="small text-decoration-none d-block mb-1">
                     ← {{ t('sales.back_to_customer_bills') }}
                 </Link>
-                <h1 class="h4 mb-1">{{ customer.name }}</h1>
+                <h1 class="page-heading mb-1">{{ customer.name }}</h1>
                 <p v-if="customer.phone" class="text-muted small mb-0">{{ customer.phone }}</p>
             </div>
             <div class="card border-0 shadow-sm">

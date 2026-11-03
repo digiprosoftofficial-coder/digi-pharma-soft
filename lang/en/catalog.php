@@ -203,7 +203,7 @@ return [
     'products_stat_in_stock' => 'In stock',
     'products_stat_out_of_stock' => 'Out of stock',
     'products_stat_branch' => ':name: :count in stock',
-    'products_stat_help' => 'The catalog is shared across every branch. In-stock counts include every branch; the stock column is this branch only.',
+    'products_stat_help' => 'The catalog is shared across every branch. Stock cards, filters, and the stock column use the active branch.',
     'product_type_icon' => 'Icon image',
     'product_type_icon_hint' => 'Optional. Overrides the platform default for this pharmacy only.',
     'product_type_using_platform_default' => 'Using platform default icon.',

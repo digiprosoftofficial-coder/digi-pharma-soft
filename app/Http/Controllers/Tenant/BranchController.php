@@ -116,6 +116,22 @@ final class BranchController extends Controller
         ]);
 
         $branch = Branch::query()->whereKey($validated['branch_id'])->where('is_active', true)->firstOrFail();
+        $user = $request->user();
+
+        if ($user?->isLockedToAssignedBranch()
+            && (int) $branch->getKey() !== (int) $user->assignedBranchId()
+        ) {
+            return back()->withErrors(['branch_id' => __('branches.switch_locked')])
+                ->with('app_dialog', [
+                    'type' => 'forbidden',
+                    'title' => __('errors.forbidden_title'),
+                    'message' => __('branches.switch_locked'),
+                    'action_label' => __('errors.got_it'),
+                    'action_href' => null,
+                    'action_method' => null,
+                ]);
+        }
+
         $request->session()->put('active_branch_id', $branch->getKey());
 
         return back()->with('success', __('branches.switched', ['name' => $branch->name]));

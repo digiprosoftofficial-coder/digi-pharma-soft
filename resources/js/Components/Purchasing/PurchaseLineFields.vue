@@ -21,7 +21,7 @@
                     type="text"
                     class="form-control form-control-sm"
                     :required="requireFields"
-                    placeholder="e.g. LOT-2026-01"
+                    placeholder="e.g. LOT-20261103"
                 />
             </div>
             <div v-else class="col-12 col-md-3">
@@ -63,74 +63,155 @@
 
         <div class="purchase-unit-panel mt-3">
             <div class="purchase-unit-panel__label">{{ t('purchases.buy_unit') }}</div>
-            <div class="purchase-unit-chips" role="group" :aria-label="t('purchases.buy_unit')">
-                <button
-                    v-for="u in line.unit_options"
-                    :key="u.sell_unit"
-                    type="button"
-                    class="purchase-unit-chip"
-                    :class="{ 'purchase-unit-chip--active': line.sell_unit === u.sell_unit }"
-                    @click="selectUnit(u.sell_unit)"
-                >
-                    {{ unitLabel(u.sell_unit) }}
-                </button>
+            <div class="purchase-unit-layout" :class="{ 'purchase-unit-layout--with-pack': needsPackSize }">
+                <div class="purchase-unit-layout__main">
+                    <div class="purchase-unit-chips" role="group" :aria-label="t('purchases.buy_unit')">
+                        <button
+                            v-for="u in line.unit_options"
+                            :key="u.sell_unit"
+                            type="button"
+                            class="purchase-unit-chip"
+                            :class="{ 'purchase-unit-chip--active': line.sell_unit === u.sell_unit }"
+                            @click="selectUnit(u.sell_unit)"
+                        >
+                            {{ unitLabel(u.sell_unit) }}
+                        </button>
+                    </div>
+                    <p class="purchase-unit-panel__hint purchase-unit-panel__hint--active mb-0">
+                        {{ t('purchases.enter_in_buy_unit', { unit: unitLabel(line.sell_unit) }) }}
+                    </p>
+                    <p class="purchase-unit-panel__hint mb-0">
+                        {{ t('purchases.stock_tracked_as', { unit: unitLabel(line.base_unit) }) }}
+                    </p>
+                </div>
+
+                <div v-if="needsPackSize" class="purchase-unit-pack">
+                    <label class="purchase-unit-pack__label" :for="packInputId">{{ packSizeLabel }}</label>
+                    <input
+                        v-if="usesStripsPerBox"
+                        :id="packInputId"
+                        v-model.number="line.pack_strips_per_box"
+                        type="number"
+                        min="0.0001"
+                        step="any"
+                        class="form-control form-control-sm"
+                        :required="requireFields"
+                        inputmode="decimal"
+                        @input="syncPackInput"
+                    />
+                    <input
+                        v-else-if="usesPiecesPerBox"
+                        :id="packInputId"
+                        v-model.number="line.pack_pieces_per_box"
+                        type="number"
+                        min="0.0001"
+                        step="any"
+                        class="form-control form-control-sm"
+                        :required="requireFields"
+                        inputmode="decimal"
+                        @input="syncPackInput"
+                    />
+                    <input
+                        v-else-if="usesPiecesPerStrip"
+                        :id="packInputId"
+                        v-model.number="line.pack_pieces_per_strip"
+                        type="number"
+                        min="0.0001"
+                        step="any"
+                        class="form-control form-control-sm"
+                        :required="requireFields"
+                        inputmode="decimal"
+                        @input="syncPackInput"
+                    />
+                    <input
+                        v-else-if="usesBoxesPerCarton"
+                        :id="packInputId"
+                        v-model.number="line.pack_boxes_per_carton"
+                        type="number"
+                        min="0.0001"
+                        step="any"
+                        class="form-control form-control-sm"
+                        :required="requireFields"
+                        inputmode="decimal"
+                        @input="syncPackInput"
+                    />
+                    <input
+                        v-else
+                        :id="packInputId"
+                        v-model.number="line.conversion_factor"
+                        type="number"
+                        min="0.0001"
+                        step="any"
+                        class="form-control form-control-sm"
+                        :required="requireFields"
+                        inputmode="decimal"
+                    />
+                    <div v-if="quantityBase > 0" class="purchase-unit-pack__preview">
+                        <p v-if="usesPackSizeFriendlyInput && packSizeBreakdown" class="mb-1">{{ packSizeBreakdown }}</p>
+                        <p class="mb-0">
+                            {{ t('purchases.adds_to_stock') }}
+                            <strong>{{ formatQty(quantityBase) }}</strong>
+                            {{ unitLabel(line.base_unit) }}
+                            <span v-if="packSizeDiffersFromDefault" class="text-warning">
+                                ({{ packSizeDefaultHint }})
+                            </span>
+                        </p>
+                    </div>
+                </div>
             </div>
-            <p class="purchase-unit-panel__hint purchase-unit-panel__hint--active mb-0">
-                {{ t('purchases.enter_in_buy_unit', { unit: unitLabel(line.sell_unit) }) }}
-            </p>
-            <p class="purchase-unit-panel__hint mb-0">
-                {{ t('purchases.stock_tracked_as', { unit: unitLabel(line.base_unit) }) }}
-            </p>
         </div>
 
         <div
-            class="row g-2 align-items-end mt-2 purchase-price-row"
-            :class="{ 'purchase-price-row--flash': unitFieldsFlash }"
+            class="purchase-price-panel mt-3"
+            :class="{ 'purchase-price-panel--flash': unitFieldsFlash }"
         >
-            <div class="col-6 col-md-3">
-                <label class="form-label small">{{ t('purchases.qty_in_unit', { unit: unitLabel(line.sell_unit) }) }}</label>
-                <div class="input-group input-group-sm">
-                    <input
-                        v-model.number="line.quantity"
-                        type="number"
-                        min="0.0001"
-                        step="0.0001"
-                        class="form-control"
-                        :required="requireFields"
-                    />
-                    <span class="input-group-text text-capitalize">{{ unitLabel(line.sell_unit) }}</span>
+            <div class="purchase-price-panel__label">{{ t('purchases.qty_cost_mrp') }}</div>
+            <div class="row g-2 align-items-start purchase-price-row">
+                <div class="col-12 col-md-4">
+                    <label class="form-label small mb-1">{{ t('purchases.qty_in_unit', { unit: unitLabel(line.sell_unit) }) }}</label>
+                    <div class="input-group input-group-sm">
+                        <input
+                            v-model.number="line.quantity"
+                            type="number"
+                            min="0.0001"
+                            step="0.0001"
+                            class="form-control"
+                            :required="requireFields"
+                        />
+                        <span class="input-group-text text-capitalize">{{ unitLabel(line.sell_unit) }}</span>
+                    </div>
                 </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <label class="form-label small">{{ t('purchases.cost_per_unit', { unit: unitLabel(line.sell_unit) }) }}</label>
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text">{{ currencySymbol() }}</span>
-                    <input
-                        v-model.number="line.unit_cost"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        class="form-control"
-                        :required="requireFields"
-                    />
-                    <span class="input-group-text">/{{ unitLabel(line.sell_unit) }}</span>
+                <div class="col-12 col-md-4">
+                    <label class="form-label small mb-1">{{ t('purchases.cost_per_unit', { unit: unitLabel(line.sell_unit) }) }}</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">{{ currencySymbol() }}</span>
+                        <input
+                            v-model.number="line.unit_cost"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            class="form-control"
+                            :required="requireFields"
+                        />
+                        <span class="input-group-text">/{{ unitLabel(line.sell_unit) }}</span>
+                    </div>
+                    <div v-if="priceComparisonLabel" class="form-text" :class="priceComparisonClass">
+                        {{ priceComparisonLabel }}
+                    </div>
+                    <div v-if="costPerBaseHint" class="form-text text-muted mb-0">
+                        {{ costPerBaseHint }}
+                    </div>
                 </div>
-                <div v-if="priceComparisonLabel" class="form-text" :class="priceComparisonClass">
-                    {{ priceComparisonLabel }}
-                </div>
-                <div v-if="costPerBaseHint" class="form-text text-muted mb-0">
-                    {{ costPerBaseHint }}
-                </div>
-            </div>
-            <div class="col-12 col-md-3">
-                <label class="form-label small">{{ t('purchases.sale_price_per_unit', { unit: unitLabel(line.sell_unit) }) }}</label>
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text">{{ currencySymbol() }}</span>
-                    <input v-model.number="line.sale_price" type="number" min="0" step="0.01" class="form-control" />
-                    <span class="input-group-text">/{{ unitLabel(line.sell_unit) }}</span>
-                </div>
-                <div v-if="salePerBaseHint" class="form-text text-muted mb-0">
-                    {{ salePerBaseHint }}
+                <div class="col-12 col-md-4">
+                    <label class="form-label small mb-1">{{ t('purchases.sale_price_per_unit', { unit: unitLabel(line.sell_unit) }) }}</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">{{ currencySymbol() }}</span>
+                        <input v-model.number="line.sale_price" type="number" min="0" step="0.01" class="form-control" />
+                        <span class="input-group-text">/{{ unitLabel(line.sell_unit) }}</span>
+                    </div>
+                    <div v-if="salePerBaseHint" class="form-text text-muted mb-0">
+                        {{ salePerBaseHint }}
+                    </div>
                 </div>
             </div>
         </div>
@@ -141,75 +222,6 @@
                 <small>{{ lineTotalBreakdown }}</small>
             </div>
             <strong class="purchase-line-total__value">{{ formatMoney(lineTotal) }}</strong>
-        </div>
-
-        <div v-if="needsPackSize" class="purchase-pack-card mt-3">
-            <div class="purchase-pack-card__title">{{ packSizeLabel }}</div>
-            <input
-                v-if="usesStripsPerBox"
-                v-model.number="line.pack_strips_per_box"
-                type="number"
-                min="0.0001"
-                step="any"
-                class="form-control form-control-sm"
-                :required="requireFields"
-                inputmode="decimal"
-                @input="syncPackInput"
-            />
-            <input
-                v-else-if="usesPiecesPerBox"
-                v-model.number="line.pack_pieces_per_box"
-                type="number"
-                min="0.0001"
-                step="any"
-                class="form-control form-control-sm"
-                :required="requireFields"
-                inputmode="decimal"
-                @input="syncPackInput"
-            />
-            <input
-                v-else-if="usesPiecesPerStrip"
-                v-model.number="line.pack_pieces_per_strip"
-                type="number"
-                min="0.0001"
-                step="any"
-                class="form-control form-control-sm"
-                :required="requireFields"
-                inputmode="decimal"
-                @input="syncPackInput"
-            />
-            <input
-                v-else-if="usesBoxesPerCarton"
-                v-model.number="line.pack_boxes_per_carton"
-                type="number"
-                min="0.0001"
-                step="any"
-                class="form-control form-control-sm"
-                :required="requireFields"
-                inputmode="decimal"
-                @input="syncPackInput"
-            />
-            <input
-                v-else
-                v-model.number="line.conversion_factor"
-                type="number"
-                min="0.0001"
-                step="any"
-                class="form-control form-control-sm"
-                :required="requireFields"
-                inputmode="decimal"
-            />
-            <div v-if="quantityBase > 0" class="purchase-pack-card__preview">
-                <p v-if="usesPackSizeFriendlyInput && packSizeBreakdown" class="mb-1">{{ packSizeBreakdown }}</p>
-                <p class="mb-0">
-                    {{ t('purchases.adds_to_stock') }}
-                    <strong>{{ formatQty(quantityBase) }}</strong>
-                    {{ unitLabel(line.base_unit) }}
-                    <span v-if="packSizeDiffersFromDefault" class="text-warning">
-                        ({{ packSizeDefaultHint }})
-                    </span>
-                </p>
-            </div>
         </div>
     </div>
 </template>
@@ -226,7 +238,7 @@ import {
     catalogStripsPerBox,
     unitLabel,
 } from '@/composables/useProductUnits';
-import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, useId } from 'vue';
 
 const props = defineProps({
     line: { type: Object, required: true },
@@ -239,6 +251,7 @@ const emit = defineEmits(['batch-change', 'unit-change']);
 const { t } = useLocale();
 const { formatMoney, currencySymbol } = useMoney();
 const { formatQty } = useQuantity();
+const packInputId = useId();
 
 const unitFieldsFlash = ref(false);
 let unitFlashTimer = null;
@@ -364,11 +377,36 @@ function defaultBoxesPerCarton() {
         : defaultConversion() / Math.max(0.0001, boxFactor);
 }
 
+function roundLineMoney(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) {
+        return 0;
+    }
+    return Math.round(n * 10000) / 10000;
+}
+
+function applyPricesFromBasePack() {
+    if (!needsPackSize.value || props.line.sell_unit === props.line.base_unit) {
+        return;
+    }
+    const baseRow = props.line.unit_options?.find((u) => u.sell_unit === props.line.base_unit)
+        ?? props.line.unit_options?.[0];
+    const basePurchase = Number(baseRow?.purchase_price ?? 0);
+    const baseSale = Number(baseRow?.sale_price ?? 0);
+    const factor = Number(props.line.conversion_factor);
+    if (!Number.isFinite(factor) || factor <= 0) {
+        return;
+    }
+    props.line.unit_cost = roundLineMoney(basePurchase * factor);
+    props.line.sale_price = roundLineMoney(baseSale * factor);
+}
+
 function syncPackInput() {
     if (usesStripsPerBox.value) {
         const strips = Number(props.line.pack_strips_per_box);
         if (!Number.isNaN(strips) && strips > 0) {
             props.line.conversion_factor = formatConversionFactor(strips);
+            applyPricesFromBasePack();
         }
         return;
     }
@@ -376,6 +414,7 @@ function syncPackInput() {
         const pieces = Number(props.line.pack_pieces_per_box);
         if (!Number.isNaN(pieces) && pieces > 0) {
             props.line.conversion_factor = formatConversionFactor(pieces);
+            applyPricesFromBasePack();
         }
         return;
     }
@@ -383,6 +422,7 @@ function syncPackInput() {
         const pieces = Number(props.line.pack_pieces_per_strip);
         if (!Number.isNaN(pieces) && pieces > 0) {
             props.line.conversion_factor = formatConversionFactor(1 / pieces);
+            applyPricesFromBasePack();
         }
         return;
     }
@@ -395,6 +435,7 @@ function syncPackInput() {
         return;
     }
     props.line.conversion_factor = formatConversionFactor(boxes * boxFactor);
+    applyPricesFromBasePack();
 }
 
 const packSizeLabel = computed(() => {
@@ -613,8 +654,78 @@ const priceComparisonClass = computed(() => {
     font-weight: 600;
 }
 
-.purchase-price-row--flash .form-control,
-.purchase-price-row--flash .input-group-text {
+.purchase-unit-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.purchase-unit-layout__main {
+    min-width: 0;
+}
+
+.purchase-unit-pack {
+    min-width: 0;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid #dcece6;
+    border-radius: 0.75rem;
+    background: #f7fffb;
+}
+
+.purchase-unit-pack__label {
+    display: block;
+    color: #0f766e;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+    line-height: 1.25;
+}
+
+.purchase-unit-pack__preview {
+    margin-top: 0.5rem;
+    color: #64748b;
+    font-size: 0.74rem;
+    line-height: 1.35;
+}
+
+@media (min-width: 768px) {
+    .purchase-unit-layout--with-pack {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .purchase-unit-layout__main {
+        flex: 1 1 auto;
+    }
+
+    .purchase-unit-pack {
+        flex: 0 0 15.5rem;
+        width: 15.5rem;
+    }
+
+    .purchase-unit-chip {
+        flex: 0 1 auto;
+        min-width: 6.5rem;
+    }
+}
+
+.purchase-price-panel {
+    padding: 0.85rem 0.9rem;
+    border: 1px solid #dbe7f0;
+    border-radius: 0.9rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+}
+
+.purchase-price-panel__label {
+    color: #475569;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-bottom: 0.55rem;
+}
+
+.purchase-price-panel--flash .form-control,
+.purchase-price-panel--flash .input-group-text {
     animation: purchase-unit-flash 0.9s ease;
 }
 
@@ -666,31 +777,4 @@ const priceComparisonClass = computed(() => {
     white-space: nowrap;
 }
 
-.purchase-pack-card {
-    padding: 0.85rem 0.9rem;
-    border: 1px solid #dcece6;
-    border-radius: 0.9rem;
-    background: #f7fffb;
-}
-
-.purchase-pack-card__title {
-    color: #0f766e;
-    font-size: 0.8rem;
-    font-weight: 700;
-    margin-bottom: 0.45rem;
-}
-
-.purchase-pack-card__preview {
-    margin-top: 0.65rem;
-    color: #64748b;
-    font-size: 0.78rem;
-    line-height: 1.35;
-}
-
-@media (min-width: 768px) {
-    .purchase-unit-chip {
-        flex: 0 1 auto;
-        min-width: 6.5rem;
-    }
-}
 </style>

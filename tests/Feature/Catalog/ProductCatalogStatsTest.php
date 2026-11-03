@@ -111,5 +111,27 @@ class ProductCatalogStatsTest extends TestCase
         $this->assertSame(5, $stats['in_stock']);
         $this->assertSame(5, $byBranch[$defaultBranch->getKey()]['in_stock']);
         $this->assertSame(1, $byBranch[$secondBranch->getKey()]['in_stock']);
+        $this->assertSame(
+            1,
+            ProductCatalogStats::forTenant((int) $tenant->getKey(), (int) $secondBranch->getKey())['in_stock'],
+        );
+
+        $this->actingAs($owner)
+            ->post('/branches/switch', ['branch_id' => $secondBranch->getKey()])
+            ->assertRedirect();
+
+        $this->get(route('tenant.products.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Catalog/Products/Index')
+                ->where('productStats.in_stock', 1));
+
+        $this->get(route('tenant.products.index', ['stock' => 'in_stock']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Catalog/Products/Index')
+                ->where('productStats.in_stock', 1)
+                ->has('products.data', 1)
+                ->where('products.data.0.sku', 'SHARED-STK-1'));
     }
 }

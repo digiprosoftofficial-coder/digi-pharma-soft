@@ -2,7 +2,7 @@
     <GuestLayout>
         <Head :title="t('auth.verify_title')" />
         <div class="text-center mb-4">
-            <h1 class="h4 mb-1">{{ t('auth.verify_title') }}</h1>
+            <h1 class="page-heading mb-1">{{ t('auth.verify_title') }}</h1>
             <p class="text-muted small mb-0">{{ t('auth.verify_subtitle') }}</p>
         </div>
         <form @submit.prevent="submit">

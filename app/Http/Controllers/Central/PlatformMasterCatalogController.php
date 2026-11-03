@@ -32,11 +32,13 @@ final class PlatformMasterCatalogController extends Controller
             'q' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', 'in:all,active,inactive'],
             'product_type' => ['nullable', 'string', 'max:64'],
+            'manufacturer' => ['nullable', 'string', 'max:255'],
         ]);
 
         $q = trim((string) ($validated['q'] ?? ''));
         $status = $validated['status'] ?? 'all';
         $type = $validated['product_type'] ?? null;
+        $manufacturer = trim((string) ($validated['manufacturer'] ?? ''));
 
         $query = MasterProduct::query()->orderBy('name');
 
@@ -62,6 +64,10 @@ final class PlatformMasterCatalogController extends Controller
             $query->where('product_type', $type);
         }
 
+        if ($manufacturer !== '') {
+            $query->where('manufacturer_name', $manufacturer);
+        }
+
         $products = $query->paginate(25)->withQueryString()->through(fn (MasterProduct $p) => $this->toRow($p));
 
         return Inertia::render('Platform/MasterCatalog/Index', [
@@ -70,6 +76,7 @@ final class PlatformMasterCatalogController extends Controller
                 'q' => $q,
                 'status' => $status,
                 'product_type' => $type,
+                'manufacturer' => $manufacturer !== '' ? $manufacturer : null,
             ],
             'stats' => [
                 'total' => MasterProduct::query()->count(),
@@ -85,6 +92,43 @@ final class PlatformMasterCatalogController extends Controller
             'pendingSuggestions' => MasterProductSuggestion::query()
                 ->where('status', MasterProductSuggestion::STATUS_PENDING)
                 ->count(),
+        ]);
+    }
+
+    public function manufacturers(Request $request): Response
+    {
+        $this->authorize('viewAny', MasterProduct::class);
+
+        $validated = $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $q = trim((string) ($validated['q'] ?? ''));
+
+        $query = MasterProduct::query()
+            ->selectRaw('manufacturer_name, COUNT(*) as medicines_count')
+            ->whereNotNull('manufacturer_name')
+            ->where('manufacturer_name', '!=', '')
+            ->groupBy('manufacturer_name')
+            ->orderBy('manufacturer_name');
+
+        if ($q !== '') {
+            $query->where('manufacturer_name', 'like', '%'.$q.'%');
+        }
+
+        $manufacturers = $query->paginate(40)->withQueryString()->through(fn ($row) => [
+            'name' => (string) $row->manufacturer_name,
+            'medicines_count' => (int) $row->medicines_count,
+        ]);
+
+        return Inertia::render('Platform/MasterCatalog/Manufacturers', [
+            'manufacturers' => $manufacturers,
+            'filters' => ['q' => $q],
+            'totalManufacturers' => (int) MasterProduct::query()
+                ->whereNotNull('manufacturer_name')
+                ->where('manufacturer_name', '!=', '')
+                ->distinct()
+                ->count('manufacturer_name'),
         ]);
     }
 

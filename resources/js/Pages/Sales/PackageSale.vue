@@ -18,7 +18,7 @@
 
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
             <div>
-                <h1 class="h4 mb-1 d-lg-none">Package sale</h1>
+                <h1 class="page-heading mb-1 d-lg-none">Package sale</h1>
                 <p class="text-muted small mb-0">Select a prepared package or add products manually. Checkout stays on this page.</p>
             </div>
             <Link href="/sales/packages" class="btn btn-sm btn-outline-primary">Manage packages</Link>

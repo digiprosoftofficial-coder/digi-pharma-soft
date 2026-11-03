@@ -6,8 +6,23 @@
 
         <div class="dashboard-toolbar mb-3">
             <div class="dashboard-toolbar__title">
-                <h1 class="h3 mb-0">{{ headline }}</h1>
+                <h1 class="page-heading">{{ headline }}</h1>
+                <p v-if="branchScope.label" class="small text-muted mb-0">{{ branchScope.label }}</p>
             </div>
+            <div class="dashboard-toolbar__filters">
+            <label v-if="showBranchFilter" class="dashboard-branch-filter">
+                <span class="dashboard-branch-filter__label">{{ t('dashboard.filter_by_branch') }}</span>
+                <select
+                    class="form-select form-select-sm dashboard-branch-filter__select"
+                    :value="branchScope.key"
+                    :aria-label="t('dashboard.filter_by_branch')"
+                    @change="selectBranch($event.target.value)"
+                >
+                    <option v-for="option in branchScope.options" :key="option.value" :value="option.value">
+                        {{ option.label }}
+                    </option>
+                </select>
+            </label>
             <div class="dropdown dashboard-toolbar__filter" ref="rangeDropdownEl">
                 <button
                     class="dashboard-range-trigger"
@@ -49,6 +64,7 @@
                         </button>
                     </li>
                 </ul>
+            </div>
             </div>
         </div>
 
@@ -92,7 +108,7 @@
                             <div class="kpi-card__value" :class="`kpi-card__value--${card.tone}`">
                                 {{ card.money ? formatMoney(card.value) : formatNumber(card.value) }}
                             </div>
-                            <div class="kpi-card__help">{{ card.help }}</div>
+                            <div v-if="card.help" class="kpi-card__help">{{ card.help }}</div>
                         </div>
                     </div>
                 </component>
@@ -283,7 +299,7 @@ import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { useQuantity } from '@/composables/useQuantity';
-import { formatHumanDateTime as formatDate } from '@/utils/dates';
+import { formatHumanDate, formatHumanDateTime as formatDate } from '@/utils/dates';
 import { usePermissions } from '@/composables/usePermissions';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
@@ -305,6 +321,17 @@ const props = defineProps({
         }),
     },
     rangeOptions: { type: Array, default: () => [] },
+    branchScope: {
+        type: Object,
+        default: () => ({
+            key: 'all',
+            branch_id: null,
+            all: true,
+            can_view_all: false,
+            label: '',
+            options: [],
+        }),
+    },
 });
 
 const { t } = useLocale();
@@ -325,8 +352,8 @@ const selectedRangeLabel = computed(() => {
 
 const rangeSummary = computed(() =>
     t('dashboard.showing_range', {
-        from: props.dateRange.date_from,
-        to: props.dateRange.date_to,
+        from: formatHumanDate(props.dateRange.date_from, props.dateRange.date_from || ''),
+        to: formatHumanDate(props.dateRange.date_to, props.dateRange.date_to || ''),
     }),
 );
 
@@ -338,14 +365,20 @@ const rangeSummaryShort = computed(() => {
         return '';
     }
 
+    const fromLabel = formatHumanDate(from, from);
+    const toLabel = formatHumanDate(to, to);
+
     if (from === to) {
-        return from;
+        return fromLabel;
     }
 
-    return `${from} → ${to}`;
+    return `${fromLabel} → ${toLabel}`;
 });
 
 const isTodayRange = computed(() => props.dateRange.key === 'today');
+const showBranchFilter = computed(() =>
+    Boolean(props.branchScope?.can_view_all && (props.branchScope?.options?.length || 0) > 1),
+);
 
 const kpiIcons = {
     sales: ['M12 1v22', 'M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'],
@@ -381,6 +414,22 @@ const kpiIcons = {
     ],
 };
 
+function dashboardParams(extra = {}) {
+    const params = { ...extra };
+    if (!params.range) {
+        params.range = props.dateRange.key;
+    }
+    if (params.range === 'custom') {
+        params.date_from = params.date_from || customFrom.value || props.dateRange.date_from;
+        params.date_to = params.date_to || customTo.value || props.dateRange.date_to;
+    }
+    if (props.branchScope?.can_view_all) {
+        params.branch_id = extra.branch_id ?? props.branchScope.key ?? 'all';
+    }
+
+    return params;
+}
+
 function withRange(path, extra = {}) {
     const params = new URLSearchParams();
     if (props.dateRange.date_from) {
@@ -388,6 +437,9 @@ function withRange(path, extra = {}) {
     }
     if (props.dateRange.date_to) {
         params.set('date_to', props.dateRange.date_to);
+    }
+    if (props.branchScope?.can_view_all) {
+        params.set('branch_id', props.branchScope.key || 'all');
     }
     Object.entries(extra).forEach(([key, value]) => {
         if (value !== null && value !== undefined && value !== '') {
@@ -467,14 +519,14 @@ const kpiCards = computed(() => [
         ),
     },
     {
-        label: t('dashboard.total_medicines'),
-        value: props.kpis.productCount ?? 0,
+        label: t('dashboard.medicines_in_stock'),
+        value: props.kpis.inStockProductCount ?? 0,
         money: false,
         help: t('dashboard.medicines_help', {
             active: formatNumber(props.kpis.activeProductCount),
-            in_stock: formatNumber(props.kpis.inStockProductCount),
+            total: formatNumber(props.kpis.productCount),
         }),
-        tone: 'secondary',
+        tone: 'success',
         iconPaths: kpiIcons.medicines,
         href: permittedHref({ permission: 'products.view', href: '/products' }),
     },
@@ -534,17 +586,25 @@ function selectRange(key) {
     if (key === 'custom') {
         router.get(
             '/dashboard',
-            {
+            dashboardParams({
                 range: 'custom',
                 date_from: customFrom.value || props.dateRange.date_from,
                 date_to: customTo.value || props.dateRange.date_to,
-            },
+            }),
             { preserveState: true, preserveScroll: true },
         );
         return;
     }
 
-    router.get('/dashboard', { range: key }, { preserveState: true, preserveScroll: true });
+    router.get('/dashboard', dashboardParams({ range: key }), { preserveState: true, preserveScroll: true });
+}
+
+function selectBranch(branchId) {
+    router.get(
+        '/dashboard',
+        dashboardParams({ branch_id: branchId }),
+        { preserveState: true, preserveScroll: true },
+    );
 }
 
 function applyCustomRange() {
@@ -554,11 +614,11 @@ function applyCustomRange() {
 
     router.get(
         '/dashboard',
-        {
+        dashboardParams({
             range: 'custom',
             date_from: customFrom.value,
             date_to: customTo.value,
-        },
+        }),
         { preserveState: true, preserveScroll: true },
     );
 }
@@ -735,8 +795,45 @@ function formatNumber(value) {
     flex: 1 1 auto;
 }
 
+.dashboard-toolbar__filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.65rem;
+}
+
 .dashboard-toolbar__filter {
     flex: 0 0 auto;
+}
+
+.dashboard-branch-filter {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.1rem;
+    min-width: 11.5rem;
+    padding: 0.4rem 0.75rem 0.5rem;
+    border: 1px solid #dbe7f0;
+    border-radius: 0.85rem;
+    background: #ffffff;
+    box-shadow: 0 0.2rem 0.55rem rgba(15, 23, 42, 0.04);
+}
+
+.dashboard-branch-filter__label {
+    color: #64748b;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.dashboard-branch-filter__select {
+    padding-left: 0;
+    border: 0;
+    box-shadow: none;
+    background-position: right 0 center;
+    font-size: 0.92rem;
+    font-weight: 600;
 }
 
 .dashboard-range-trigger {
@@ -828,10 +925,6 @@ function formatNumber(value) {
         flex-direction: column;
         align-items: stretch;
         gap: 0.7rem;
-    }
-
-    .dashboard-toolbar__title .h3 {
-        font-size: 1.35rem;
     }
 
     .dashboard-toolbar__filter {

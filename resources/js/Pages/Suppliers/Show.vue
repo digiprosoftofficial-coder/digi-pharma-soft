@@ -6,7 +6,7 @@
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
             <div>
                 <Link href="/suppliers" class="small text-decoration-none d-block mb-1">← Suppliers</Link>
-                <h1 class="h4 mb-1">{{ supplier.name }}</h1>
+                <h1 class="page-heading mb-1">{{ supplier.name }}</h1>
                 <p v-if="supplier.phone" class="text-muted small mb-0">{{ supplier.phone }}</p>
                 <p v-if="supplier.email" class="text-muted small mb-0">{{ supplier.email }}</p>
             </div>

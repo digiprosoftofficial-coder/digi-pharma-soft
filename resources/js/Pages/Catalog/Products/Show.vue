@@ -7,7 +7,7 @@
             <div>
                 <Link href="/products" class="small text-decoration-none">← Products</Link>
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
-                    <h1 class="h4 mb-0">{{ product.name }}</h1>
+                    <h1 class="page-heading mb-0">{{ product.name }}</h1>
                     <span
                         class="badge"
                         :class="product.is_active ? 'text-bg-success' : 'text-bg-secondary'"

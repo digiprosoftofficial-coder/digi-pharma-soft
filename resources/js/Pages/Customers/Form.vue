@@ -2,7 +2,7 @@
     <TenantShellLayout :page-title="t('sales.customer')">
         <Head :title="customer ? t('customers.edit_customer') : t('customers.new_customer')" />
         <div v-if="formError" class="alert alert-danger small">{{ formError }}</div>
-        <h1 class="h4 mb-3">{{ customer ? t('customers.edit_customer') : t('customers.new_customer') }}</h1>
+        <h1 class="page-heading mb-3">{{ customer ? t('customers.edit_customer') : t('customers.new_customer') }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="mb-2">
                 <label class="form-label">{{ t('common.name') }}</label>

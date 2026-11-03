@@ -6,7 +6,7 @@
             <div>
                 <Link href="/platform/tenants" class="small text-decoration-none">← {{ t('platform.nav_pharmacies') }}</Link>
                 <div class="d-flex align-items-center gap-2 mt-1">
-                    <h1 class="h4 mb-0">{{ tenant.name }}</h1>
+                    <h1 class="page-heading mb-0">{{ tenant.name }}</h1>
                     <TenantStatusBadge :status="tenant.status" />
                 </div>
                 <code class="small">{{ tenant.slug }}</code>

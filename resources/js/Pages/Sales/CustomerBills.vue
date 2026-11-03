@@ -1,7 +1,7 @@
 <template>
     <TenantShellLayout page-title="Customer dues">
         <Head :title="t('sales.customer_bills')" />
-        <h1 class="h4 mb-3">{{ t('sales.customer_bills') }}</h1>
+        <h1 class="page-heading mb-3">{{ t('sales.customer_bills') }}</h1>
         <p class="text-muted small">{{ t('sales.customer_bills_hint') }}</p>
 
         <div class="card border-0 shadow-sm">

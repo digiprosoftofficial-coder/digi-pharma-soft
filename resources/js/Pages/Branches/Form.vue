@@ -1,7 +1,7 @@
 <template>
     <TenantShellLayout :page-title="branch ? t('branches.edit_branch') : t('branches.new_branch')">
         <Head :title="branch ? t('branches.edit_branch') : t('branches.new_branch')" />
-        <h1 class="h4 mb-3">{{ branch ? t('branches.edit_branch') : t('branches.new_branch') }}</h1>
+        <h1 class="page-heading mb-3">{{ branch ? t('branches.edit_branch') : t('branches.new_branch') }}</h1>
         <div v-if="form.errors.name" class="alert alert-danger small">{{ form.errors.name }}</div>
         <form class="card border-0 shadow-sm card-body" style="max-width: 32rem" @submit.prevent="submit">
             <div class="mb-2">

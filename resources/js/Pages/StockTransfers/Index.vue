@@ -2,7 +2,7 @@
     <TenantShellLayout :page-title="t('tenant_nav.stock_transfer')">
         <Head :title="t('tenant_nav.stock_transfer')" />
         <div class="d-flex justify-content-between mb-3">
-            <h1 class="h4 mb-0">{{ t('tenant_nav.stock_transfer') }}</h1>
+            <h1 class="page-heading mb-0">{{ t('tenant_nav.stock_transfer') }}</h1>
             <Link href="/stock-transfers/create" class="btn btn-primary btn-sm">{{ t('common.create') }}</Link>
         </div>
         <div class="card border-0 shadow-sm table-responsive">

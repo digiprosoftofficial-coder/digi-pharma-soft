@@ -1,7 +1,7 @@
 <template>
     <TenantShellLayout :page-title="t('common.account')">
         <Head :title="account ? t('common.edit_account') : t('common.new_account')" />
-        <h1 class="h4 mb-3">{{ account ? t('common.edit_account') : t('common.new_account') }}</h1>
+        <h1 class="page-heading mb-3">{{ account ? t('common.edit_account') : t('common.new_account') }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="mb-2">
                 <label class="form-label">{{ t('common.code') }}</label>

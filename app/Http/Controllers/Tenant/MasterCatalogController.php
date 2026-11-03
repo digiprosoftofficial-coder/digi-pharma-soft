@@ -7,6 +7,7 @@ use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Services\MasterProductActivationService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Catalog\MasterProductResource;
+use App\Http\Resources\Catalog\ProductResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -71,11 +72,13 @@ final class MasterCatalogController extends Controller
         abort_if($tenantId === null, 403);
 
         $product = $this->activation->activate($masterProduct, $tenantId);
+        $product->load(['units', 'batches']);
 
         return response()->json([
             'ok' => true,
             'product_id' => $product->getKey(),
             'name' => $product->name,
+            'product' => (new ProductResource($product))->resolve(),
         ]);
     }
 

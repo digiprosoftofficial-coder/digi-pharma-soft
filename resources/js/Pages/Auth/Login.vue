@@ -9,7 +9,7 @@
                     <path d="M12 11v4M12 8h.01" />
                 </svg>
             </div>
-            <h1 class="h4 mb-1">{{ title }}</h1>
+            <h1 class="page-heading mb-1">{{ title }}</h1>
             <p class="text-muted small mb-0">{{ subtitle }}</p>
         </div>
 

@@ -7,6 +7,7 @@ use App\Domain\Sales\Models\Customer;
 use App\Domain\Sales\Models\Sale;
 use App\Http\Controllers\Controller;
 use App\Support\Catalog\ProductCatalogStats;
+use App\Support\Dashboard\DashboardBranchScope;
 use App\Support\Dashboard\DashboardDateRange;
 use App\Support\Tenant\TenantImpersonation;
 use Carbon\CarbonImmutable;
@@ -27,97 +28,117 @@ final class DashboardController extends Controller
         }
 
         $range = DashboardDateRange::fromRequest($request);
+        $scope = DashboardBranchScope::fromRequest($request);
         $tenantId = tenant_id();
         $today = today()->toDateString();
         $nearExpiryDate = today()->addDays(30)->toDateString();
         $from = $range->from;
         $to = $range->to;
 
-        $revenue = (float) Sale::query()
-            ->withoutGlobalScope('branch')
-            ->where('status', 'posted')
-            ->whereBetween('sold_at', [$from, $to])
-            ->sum(DB::raw('COALESCE(rounded_total, total)'));
+        $revenue = (float) $scope->constrain(
+            Sale::query()
+                ->withoutGlobalScope('branch')
+                ->where('status', 'posted')
+                ->whereBetween('sold_at', [$from, $to]),
+        )->sum(DB::raw('COALESCE(rounded_total, total)'));
 
-        $revenueYesterday = (float) Sale::query()
-            ->withoutGlobalScope('branch')
-            ->where('status', 'posted')
-            ->whereDate('sold_at', today()->subDay())
-            ->sum(DB::raw('COALESCE(rounded_total, total)'));
+        $revenueYesterday = (float) $scope->constrain(
+            Sale::query()
+                ->withoutGlobalScope('branch')
+                ->where('status', 'posted')
+                ->whereDate('sold_at', today()->subDay()),
+        )->sum(DB::raw('COALESCE(rounded_total, total)'));
 
-        $profit = (float) DB::table('sale_lines')
-            ->join('sales', 'sales.id', '=', 'sale_lines.sale_id')
-            ->where('sale_lines.tenant_id', $tenantId)
-            ->where('sales.tenant_id', $tenantId)
-            ->where('sales.status', 'posted')
-            ->whereBetween('sales.sold_at', [$from, $to])
-            ->sum(DB::raw('sale_lines.line_total - (sale_lines.quantity * COALESCE(sale_lines.unit_cost_at_sale, 0))'));
+        $profit = (float) $scope->constrain(
+            DB::table('sale_lines')
+                ->join('sales', 'sales.id', '=', 'sale_lines.sale_id')
+                ->where('sale_lines.tenant_id', $tenantId)
+                ->where('sales.tenant_id', $tenantId)
+                ->where('sales.status', 'posted')
+                ->whereBetween('sales.sold_at', [$from, $to]),
+            'sales.branch_id',
+        )->sum(DB::raw('sale_lines.line_total - (sale_lines.quantity * COALESCE(sale_lines.unit_cost_at_sale, 0))'));
 
-        $purchase = (float) DB::table('purchases')
-            ->where('tenant_id', $tenantId)
-            ->where('status', 'posted')
-            ->whereBetween('purchased_at', [$from->toDateString(), $to->toDateString()])
-            ->sum('total');
+        $purchase = (float) $scope->constrain(
+            DB::table('purchases')
+                ->where('tenant_id', $tenantId)
+                ->where('status', 'posted')
+                ->whereBetween('purchased_at', [$from->toDateString(), $to->toDateString()]),
+        )->sum('total');
 
-        $stockValue = (float) DB::table('product_batches')
-            ->where('tenant_id', $tenantId)
-            ->sum(DB::raw('quantity_on_hand * purchase_unit_cost'));
-        $customerDue = (float) DB::table('customers')
-            ->where('tenant_id', $tenantId)
-            ->sum('balance_due');
-        $supplierDue = max(0, (float) DB::table('purchases')
-            ->where('tenant_id', $tenantId)
-            ->where('status', 'posted')
-            ->sum('due') - (float) DB::table('purchase_returns')
-            ->where('tenant_id', $tenantId)
-            ->where('status', 'posted')
-            ->sum('total_credit'));
-        $expiredProducts = (int) DB::table('product_batches')
-            ->where('tenant_id', $tenantId)
-            ->where('quantity_on_hand', '>', 0)
-            ->whereNotNull('expiry_date')
-            ->whereDate('expiry_date', '<', $today)
-            ->count();
-        $nearExpiryProducts = (int) DB::table('product_batches')
-            ->where('tenant_id', $tenantId)
-            ->where('quantity_on_hand', '>', 0)
-            ->whereNotNull('expiry_date')
-            ->whereDate('expiry_date', '>=', $today)
-            ->whereDate('expiry_date', '<=', $nearExpiryDate)
-            ->count();
-        $pendingOrders = Sale::query()
-            ->withoutGlobalScope('branch')
-            ->where('status', 'posted')
-            ->where('due', '>', 0)
-            ->count();
-        $lowStockCount = ProductBatch::query()
-            ->withoutGlobalScope('branch')
-            ->join('products', 'products.id', '=', 'product_batches.product_id')
-            ->whereRaw('product_batches.quantity_on_hand < products.min_stock')
-            ->where('products.is_active', true)
-            ->count();
+        $stockValue = (float) $scope->constrain(
+            DB::table('product_batches')->where('tenant_id', $tenantId),
+        )->sum(DB::raw('quantity_on_hand * purchase_unit_cost'));
+        $customerDue = $scope->all
+            ? (float) DB::table('customers')->where('tenant_id', $tenantId)->sum('balance_due')
+            : (float) $scope->constrain(
+                DB::table('sales')->where('tenant_id', $tenantId)->where('status', 'posted'),
+            )->sum('due');
+        $supplierDue = max(0, (float) $scope->constrain(
+            DB::table('purchases')
+                ->where('tenant_id', $tenantId)
+                ->where('status', 'posted'),
+        )->sum('due') - (float) $scope->constrain(
+            DB::table('purchase_returns')
+                ->where('tenant_id', $tenantId)
+                ->where('status', 'posted'),
+        )->sum('total_credit'));
+        $expiredProducts = (int) $scope->constrain(
+            DB::table('product_batches')
+                ->where('tenant_id', $tenantId)
+                ->where('quantity_on_hand', '>', 0)
+                ->whereNotNull('expiry_date')
+                ->whereDate('expiry_date', '<', $today),
+        )->count();
+        $nearExpiryProducts = (int) $scope->constrain(
+            DB::table('product_batches')
+                ->where('tenant_id', $tenantId)
+                ->where('quantity_on_hand', '>', 0)
+                ->whereNotNull('expiry_date')
+                ->whereDate('expiry_date', '>=', $today)
+                ->whereDate('expiry_date', '<=', $nearExpiryDate),
+        )->count();
+        $pendingOrders = $scope->constrain(
+            Sale::query()
+                ->withoutGlobalScope('branch')
+                ->where('status', 'posted')
+                ->where('due', '>', 0),
+        )->count();
+        $lowStockCount = $scope->constrain(
+            ProductBatch::query()
+                ->withoutGlobalScope('branch')
+                ->join('products', 'products.id', '=', 'product_batches.product_id')
+                ->whereRaw('product_batches.quantity_on_hand < products.min_stock')
+                ->where('products.is_active', true),
+            'product_batches.branch_id',
+        )->count();
         $customerCount = Customer::query()->count();
-        $productStats = ProductCatalogStats::forTenant($tenantId);
+        $productStats = ProductCatalogStats::forTenant($tenantId, $scope->branchId);
 
-        $chartDays = $this->chartDays();
+        $chartDays = $this->chartDays($scope);
 
-        $criticalStock = ProductBatch::query()
-            ->withoutGlobalScope('branch')
-            ->join('products', 'products.id', '=', 'product_batches.product_id')
-            ->whereRaw('product_batches.quantity_on_hand < products.min_stock')
-            ->where('products.is_active', true)
-            ->with('product')
-            ->orderBy('product_batches.quantity_on_hand')
-            ->limit(8)
-            ->get(['product_batches.*']);
+        $criticalStock = $scope->constrain(
+            ProductBatch::query()
+                ->withoutGlobalScope('branch')
+                ->join('products', 'products.id', '=', 'product_batches.product_id')
+                ->whereRaw('product_batches.quantity_on_hand < products.min_stock')
+                ->where('products.is_active', true)
+                ->with('product')
+                ->orderBy('product_batches.quantity_on_hand')
+                ->limit(8),
+            'product_batches.branch_id',
+        )->get(['product_batches.*']);
 
-        $topMedicines = DB::table('sale_lines')
-            ->join('sales', 'sales.id', '=', 'sale_lines.sale_id')
-            ->leftJoin('products', 'products.id', '=', 'sale_lines.product_id')
-            ->where('sale_lines.tenant_id', $tenantId)
-            ->where('sales.tenant_id', $tenantId)
-            ->where('sales.status', 'posted')
-            ->whereBetween('sales.sold_at', [$from, $to])
+        $topMedicines = $scope->constrain(
+            DB::table('sale_lines')
+                ->join('sales', 'sales.id', '=', 'sale_lines.sale_id')
+                ->leftJoin('products', 'products.id', '=', 'sale_lines.product_id')
+                ->where('sale_lines.tenant_id', $tenantId)
+                ->where('sales.tenant_id', $tenantId)
+                ->where('sales.status', 'posted')
+                ->whereBetween('sales.sold_at', [$from, $to]),
+            'sales.branch_id',
+        )
             ->select(
                 'sale_lines.product_id',
                 DB::raw("COALESCE(products.name, CONCAT('Product #', sale_lines.product_id)) as product_name"),
@@ -164,6 +185,7 @@ final class DashboardController extends Controller
             ->leftJoinSub($stockValueByBranch, 'stock_value_by_branch', 'stock_value_by_branch.branch_id', '=', 'branches.id')
             ->where('branches.tenant_id', $tenantId)
             ->where('branches.is_active', true)
+            ->when($scope->branchId !== null, fn ($query) => $query->where('branches.id', $scope->branchId))
             ->select(
                 'branches.id',
                 'branches.name',
@@ -196,6 +218,7 @@ final class DashboardController extends Controller
         return Inertia::render('Tenant/Dashboard', [
             'headline' => __('dashboard.executive_dashboard'),
             'dateRange' => $range->toArray(),
+            'branchScope' => $scope->toArray(),
             'rangeOptions' => collect(DashboardDateRange::PRESETS)->map(fn (string $key) => [
                 'value' => $key,
                 'label' => __('dashboard.range_'.$key),
@@ -234,17 +257,19 @@ final class DashboardController extends Controller
      *
      * @return list<array{label: string, date: string, total: float}>
      */
-    private function chartDays(): array
+    private function chartDays(DashboardBranchScope $scope): array
     {
         $chartTo = CarbonImmutable::today();
         $chartFrom = $chartTo->subDays(6);
 
-        $totals = Sale::query()
-            ->withoutGlobalScope('branch')
-            ->where('status', 'posted')
-            ->whereBetween('sold_at', [$chartFrom->startOfDay(), $chartTo->endOfDay()])
-            ->selectRaw('DATE(sold_at) as day, SUM(COALESCE(rounded_total, total)) as total')
-            ->groupByRaw('DATE(sold_at)')
+        $totals = $scope->constrain(
+            Sale::query()
+                ->withoutGlobalScope('branch')
+                ->where('status', 'posted')
+                ->whereBetween('sold_at', [$chartFrom->startOfDay(), $chartTo->endOfDay()])
+                ->selectRaw('DATE(sold_at) as day, SUM(COALESCE(rounded_total, total)) as total')
+                ->groupByRaw('DATE(sold_at)'),
+        )
             ->get()
             ->mapWithKeys(fn ($row) => [(string) $row->day => (float) $row->total]);
 

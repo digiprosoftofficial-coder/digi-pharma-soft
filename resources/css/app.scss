@@ -102,6 +102,42 @@ body {
     -webkit-overflow-scrolling: touch;
 }
 
+/* Shared page titles across tenant / platform screens */
+.page-heading {
+    margin: 0;
+    color: inherit;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+}
+
+.page-heading.mb-1 {
+    margin-bottom: 0.25rem !important;
+}
+
+.page-heading.mb-2 {
+    margin-bottom: 0.5rem !important;
+}
+
+.page-heading.mb-3 {
+    margin-bottom: 1rem !important;
+}
+
+.page-heading.mb-4 {
+    margin-bottom: 1.5rem !important;
+}
+
+.page-heading.mt-2 {
+    margin-top: 0.5rem !important;
+}
+
+@media (max-width: 767.98px) {
+    .page-heading {
+        font-size: 1.35rem;
+    }
+}
+
 @media (max-width: 575.98px) {
     body {
         font-size: 0.95rem;

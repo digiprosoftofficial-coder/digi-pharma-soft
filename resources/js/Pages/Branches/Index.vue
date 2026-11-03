@@ -5,7 +5,7 @@
         <div v-if="$page.props.errors?.branch" class="alert alert-danger small">{{ $page.props.errors.branch }}</div>
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
-                <h1 class="h4 mb-0">{{ t('branches.title') }}</h1>
+                <h1 class="page-heading mb-0">{{ t('branches.title') }}</h1>
                 <p v-if="maxBranches" class="text-muted small mb-0">
                     {{ t('branches.usage', { count: branchCount, max: maxBranches }) }}
                 </p>

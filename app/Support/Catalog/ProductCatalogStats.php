@@ -16,7 +16,7 @@ final class ProductCatalogStats
      *     by_branch:list<array{id:int,name:string,code:string,in_stock:int}>
      * }
      */
-    public static function forTenant(?int $tenantId = null): array
+    public static function forTenant(?int $tenantId = null, ?int $branchId = null): array
     {
         $tenantId = $tenantId ?? tenant_id();
         if ($tenantId === null) {
@@ -31,11 +31,13 @@ final class ProductCatalogStats
 
         $total = (int) Product::query()->count();
         $active = (int) Product::query()->where('is_active', true)->count();
-        $inStock = (int) DB::table('product_batches')
+        $inStockQuery = DB::table('product_batches')
             ->where('tenant_id', $tenantId)
-            ->where('quantity_on_hand', '>', 0)
-            ->distinct()
-            ->count('product_id');
+            ->where('quantity_on_hand', '>', 0);
+        if ($branchId !== null) {
+            $inStockQuery->where('branch_id', $branchId);
+        }
+        $inStock = (int) $inStockQuery->distinct()->count('product_id');
 
         $byBranch = DB::table('branches')
             ->leftJoinSub(

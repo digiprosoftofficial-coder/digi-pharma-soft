@@ -1,7 +1,7 @@
 <template>
     <TenantShellLayout :page-title="t('sales.pos_title')">
         <Head title="POS" />
-        <h1 class="h4 mb-3 d-lg-none">{{ t('sales.pos_title') }}</h1>
+        <h1 class="page-heading mb-3 d-lg-none">{{ t('sales.pos_title') }}</h1>
         <div v-if="checkoutError" class="alert alert-danger">{{ checkoutError }}</div>
         <div v-if="showSaleSuccessAlert" class="alert alert-success pos-sale-alert">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">

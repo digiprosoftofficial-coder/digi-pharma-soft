@@ -1,7 +1,7 @@
 <template>
     <TenantShellLayout page-title="New purchase">
         <Head title="New purchase" />
-        <h1 class="h4 mb-3">Record purchase</h1>
+        <h1 class="page-heading mb-3">Record purchase</h1>
         <form class="card border-0 shadow-sm card-body purchase-form" @submit.prevent="submit">
             <div class="row g-2 mb-3">
                 <div class="col-md-4">
@@ -71,6 +71,7 @@
 
             <div class="card purchase-add-product mb-3">
                 <div class="card-body py-3">
+                    <div v-if="newMedicineFlash" class="alert alert-success py-2 small mb-2">{{ newMedicineFlash }}</div>
                     <div class="purchase-add-product__eyebrow">{{ t('purchases.add_product_eyebrow') }}</div>
                     <label class="form-label fw-semibold mb-1" for="purchase-product-search">{{ t('purchases.add_product') }}</label>
                     <p class="small text-muted mb-2">{{ t('purchases.add_product_hint') }}</p>
@@ -91,27 +92,145 @@
                             @input="debouncedSearch"
                         />
                     </div>
-                    <ul v-if="searchResults.length" class="list-group list-group-flush mt-2 border rounded overflow-hidden">
-                        <li
-                            v-for="item in searchResults"
-                            :key="item.id"
-                            class="list-group-item list-group-item-action py-2"
-                            role="button"
-                            @click="addProductLine(item)"
-                        >
-                            <div class="d-flex justify-content-between align-items-start gap-2">
-                                <div>
-                                    <span class="fw-medium">{{ item.name }}</span>
-                                    <span class="text-muted small ms-2">{{ item.sku }}</span>
+                    <div v-if="searchResults.length" class="mt-2">
+                        <div class="small text-muted fw-semibold mb-1">{{ t('purchases.your_catalog') }}</div>
+                        <ul class="list-group list-group-flush border rounded overflow-hidden">
+                            <li
+                                v-for="item in searchResults"
+                                :key="item.id"
+                                class="list-group-item list-group-item-action py-2"
+                                role="button"
+                                @click="addProductLine(item)"
+                            >
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <span class="fw-medium">{{ item.name }}</span>
+                                        <span class="text-muted small ms-2">{{ item.sku }}</span>
+                                    </div>
+                                    <span class="badge text-bg-secondary text-capitalize">{{ item.base_unit || item.unit }}</span>
                                 </div>
-                                <span class="badge text-bg-secondary text-capitalize">{{ item.base_unit || item.unit }}</span>
+                                <div v-if="item.batches?.length" class="small text-muted mt-1">
+                                    {{ item.batches.length }} batch(es) in stock
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div v-if="masterResults.length && canManageProducts" class="mt-2">
+                        <div class="small text-muted fw-semibold mb-1">{{ t('purchases.master_catalog_matches') }}</div>
+                        <ul class="list-group list-group-flush border rounded overflow-hidden">
+                            <li
+                                v-for="item in masterResults"
+                                :key="'m-'+item.id"
+                                class="list-group-item py-2"
+                            >
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div class="min-w-0">
+                                        <span class="fw-medium">{{ item.name }}</span>
+                                        <span v-if="item.strength" class="text-muted small ms-1">{{ item.strength }}</span>
+                                        <div class="small text-muted text-truncate">
+                                            <span v-if="item.generic_name">{{ item.generic_name }}</span>
+                                            <span v-if="item.manufacturer_name"> · {{ item.manufacturer_name }}</span>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-outline-primary flex-shrink-0"
+                                        :disabled="activatingMasterId === item.id"
+                                        @click.stop="activateMasterProduct(item)"
+                                    >
+                                        {{ activatingMasterId === item.id ? t('purchases.master_adding') : t('purchases.master_add_to_shop') }}
+                                    </button>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div
+                        v-if="searchQuery.length >= 2 && !searching && !searchResults.length && !masterResults.length && canManageProducts"
+                        class="border rounded p-3 bg-light mt-2"
+                    >
+                        <div class="fw-semibold mb-1">{{ t('purchases.create_new_medicine') }}</div>
+                        <p class="small text-muted mb-2">{{ t('purchases.create_new_medicine_hint') }}</p>
+                        <div v-if="newMedicineError" class="alert alert-danger py-2 small mb-2">{{ newMedicineError }}</div>
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <input
+                                    v-model="newMedicine.name"
+                                    type="text"
+                                    class="form-control form-control-sm"
+                                    :placeholder="t('purchases.new_medicine_name')"
+                                />
                             </div>
-                            <div v-if="item.batches?.length" class="small text-muted mt-1">
-                                {{ item.batches.length }} batch(es) in stock
+                            <div class="col-md-6">
+                                <input
+                                    v-model="newMedicine.generic_name"
+                                    type="text"
+                                    class="form-control form-control-sm"
+                                    :placeholder="t('purchases.new_medicine_generic')"
+                                />
                             </div>
-                        </li>
-                    </ul>
-                    <p v-else-if="searchQuery.length >= 2 && !searching" class="small text-muted mb-0 mt-2">{{ t('purchases.no_products_found') }}</p>
+                            <div class="col-md-6">
+                                <input
+                                    v-model="newMedicine.strength"
+                                    type="text"
+                                    class="form-control form-control-sm"
+                                    :placeholder="t('purchases.new_medicine_strength')"
+                                />
+                            </div>
+                            <div class="col-md-4">
+                                <select v-model="newMedicine.product_type" class="form-select form-select-sm">
+                                    <option v-for="pt in quickProductTypes" :key="pt" :value="pt">
+                                        {{ t(`catalog.types.${pt}`) }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <select v-model="newMedicine.base_unit" class="form-select form-select-sm">
+                                    <option v-for="u in quickBaseUnits" :key="u" :value="u">
+                                        {{ t(`catalog.units.${u}`) }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <input
+                                    v-model="newMedicine.purchase_price"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    class="form-control form-control-sm"
+                                    :placeholder="t('purchases.new_medicine_purchase_price')"
+                                />
+                            </div>
+                            <div class="col-md-2">
+                                <input
+                                    v-model="newMedicine.sale_price"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    class="form-control form-control-sm"
+                                    :placeholder="t('purchases.new_medicine_sale_price')"
+                                />
+                            </div>
+                            <div class="col-12">
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-primary"
+                                    :disabled="creatingMedicine || !newMedicine.name.trim()"
+                                    @click="createNewMedicine"
+                                >
+                                    {{ creatingMedicine ? t('purchases.creating_medicine') : t('purchases.create_and_add_line') }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p
+                        v-else-if="searchQuery.length >= 2 && !searching && !searchResults.length && !masterResults.length && !canManageProducts"
+                        class="small text-muted mb-0 mt-2"
+                    >
+                        {{ t('purchases.no_products_found') }}
+                    </p>
                 </div>
             </div>
 
@@ -400,6 +519,7 @@ import PurchaseLineFields from '@/Components/Purchasing/PurchaseLineFields.vue';
 import TenantShellLayout from '@/Layouts/TenantShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
+import { usePermissions } from '@/composables/usePermissions';
 import { useQuantity } from '@/composables/useQuantity';
 import {
     boxConversionFactor,
@@ -414,7 +534,7 @@ import {
     unitSalePrice,
 } from '@/composables/useProductUnits';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 
 const props = defineProps({
     paymentMethods: { type: Array, default: () => [] },
@@ -432,9 +552,13 @@ function locationLabel(loc) {
 
 const { t } = useLocale();
 const { formatMoney, currencyCode, currencySymbol } = useMoney();
+const { can } = usePermissions();
 const { formatQty } = useQuantity();
 const page = usePage();
+const canManageProducts = computed(() => can('products.manage'));
 const stripProductTypes = computed(() => page.props.catalogOptions?.stripProductTypes ?? ['tablet', 'capsule']);
+const quickProductTypes = ['tablet', 'capsule', 'syrup', 'injection', 'cream', 'drops', 'bottle', 'other'];
+const quickBaseUnits = ['piece', 'strip', 'box', 'carton'];
 
 const purchaseBatchTip = computed(() => t('catalog.purchase_batch_pack_tip'));
 const editingLineIndex = ref(null);
@@ -517,7 +641,21 @@ onBeforeUnmount(() => {
 
 const searchQuery = ref('');
 const searchResults = ref([]);
+const masterResults = ref([]);
 const searching = ref(false);
+const activatingMasterId = ref(null);
+const creatingMedicine = ref(false);
+const newMedicineFlash = ref('');
+const newMedicineError = ref('');
+const newMedicine = reactive({
+    name: '',
+    generic_name: '',
+    strength: '',
+    product_type: 'tablet',
+    base_unit: 'strip',
+    purchase_price: '',
+    sale_price: '',
+});
 let searchTimer;
 
 const supplierQuery = ref('');
@@ -611,17 +749,143 @@ function debouncedSearch() {
     searchTimer = setTimeout(runSearch, 250);
 }
 
+function defaultBatchNo(dateStr = null) {
+    const raw = String(dateStr ?? form.purchased_at ?? '').trim();
+    const digits = raw.replace(/-/g, '');
+    if (/^\d{8}$/.test(digits)) {
+        return `LOT-${digits}`;
+    }
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `LOT-${y}${m}${d}`;
+}
+
+function resetNewMedicineForm(name = '') {
+    newMedicine.name = name;
+    newMedicine.generic_name = '';
+    newMedicine.strength = '';
+    newMedicine.product_type = 'tablet';
+    newMedicine.base_unit = 'strip';
+    newMedicine.purchase_price = '';
+    newMedicine.sale_price = '';
+    newMedicineError.value = '';
+}
+
 async function runSearch() {
     if (searchQuery.value.length < 2) {
         searchResults.value = [];
+        masterResults.value = [];
         return;
     }
     searching.value = true;
+    newMedicineFlash.value = '';
+    newMedicineError.value = '';
     try {
-        const { data } = await window.axios.get('/catalog/product-search', { params: { q: searchQuery.value } });
-        searchResults.value = data.data ?? [];
+        const q = searchQuery.value;
+        const requests = [window.axios.get('/catalog/product-search', { params: { q } })];
+        if (canManageProducts.value) {
+            requests.push(window.axios.get('/catalog/master/search', { params: { q } }));
+        }
+        const [localRes, masterRes] = await Promise.all(requests);
+        searchResults.value = localRes.data?.data ?? [];
+        const localIds = new Set(
+            (searchResults.value || [])
+                .map((p) => Number(p.id))
+                .filter((id) => id > 0),
+        );
+        const masterRows = masterRes?.data?.data ?? [];
+        masterResults.value = masterRows.filter((item) => {
+            if (item.is_activated) {
+                return false;
+            }
+            const tenantId = Number(item.tenant_product_id || 0);
+            return !(tenantId > 0 && localIds.has(tenantId));
+        });
+        if (!searchResults.value.length && !masterResults.value.length && canManageProducts.value) {
+            resetNewMedicineForm(q);
+        }
+    } catch {
+        searchResults.value = [];
+        masterResults.value = [];
     } finally {
         searching.value = false;
+    }
+}
+
+async function activateMasterProduct(item) {
+    if (!canManageProducts.value || activatingMasterId.value) {
+        return;
+    }
+    activatingMasterId.value = item.id;
+    try {
+        const { data } = await window.axios.post(`/catalog/master/${item.id}/activate`);
+        if (data?.product) {
+            addProductLine(data.product);
+            masterResults.value = masterResults.value.filter((m) => m.id !== item.id);
+        } else if (data?.product_id) {
+            const { data: searchData } = await window.axios.get('/catalog/product-search', {
+                params: { q: data.name || item.name },
+            });
+            const product = (searchData.data ?? []).find((p) => Number(p.id) === Number(data.product_id));
+            if (product) {
+                addProductLine(product);
+                masterResults.value = masterResults.value.filter((m) => m.id !== item.id);
+            }
+        }
+    } finally {
+        activatingMasterId.value = null;
+    }
+}
+
+async function createNewMedicine() {
+    if (!canManageProducts.value || creatingMedicine.value) {
+        return;
+    }
+    const name = newMedicine.name.trim();
+    if (!name) {
+        return;
+    }
+    creatingMedicine.value = true;
+    newMedicineError.value = '';
+    newMedicineFlash.value = '';
+    const purchasePrice = Number(newMedicine.purchase_price || 0);
+    const salePrice = Number(newMedicine.sale_price || 0);
+    const baseUnit = newMedicine.base_unit || 'strip';
+    try {
+        const { data } = await window.axios.post('/products', {
+            name,
+            generic_name: newMedicine.generic_name.trim() || null,
+            strength: newMedicine.strength.trim() || null,
+            product_type: newMedicine.product_type || 'tablet',
+            base_unit: baseUnit,
+            units: [{
+                sell_unit: baseUnit,
+                conversion_factor: 1,
+                purchase_price: Number.isFinite(purchasePrice) ? purchasePrice : 0,
+                sale_price: Number.isFinite(salePrice) ? salePrice : 0,
+                is_default: true,
+            }],
+            is_active: true,
+        });
+        if (data?.product) {
+            addProductLine(data.product);
+            if (data.suggested_to_master) {
+                newMedicineFlash.value = t('purchases.new_medicine_created');
+            }
+            resetNewMedicineForm('');
+            masterResults.value = [];
+        }
+    } catch (error) {
+        const errors = error?.response?.data?.errors;
+        if (errors && typeof errors === 'object') {
+            newMedicineError.value = Object.values(errors).flat().join(' ') || t('purchases.create_medicine_failed');
+        } else {
+            newMedicineError.value = error?.response?.data?.message || t('purchases.create_medicine_failed');
+        }
+    } finally {
+        creatingMedicine.value = false;
     }
 }
 
@@ -863,7 +1127,7 @@ function addProductLine(product) {
         product_sku: product.sku,
         base_unit: baseUnit,
         batch_pick: '__new__',
-        batch_no: '',
+        batch_no: defaultBatchNo(),
         expiry_date: '',
         manufactured_at: '',
         sell_unit: sellUnit,
@@ -891,9 +1155,11 @@ function addProductLine(product) {
     if (!usesPackSizeFriendlyInput(line)) {
         line.conversion_factor = defaultConversion(line);
     }
+    applyLineCatalogPrices(line);
     form.lines.push(line);
     searchQuery.value = '';
     searchResults.value = [];
+    masterResults.value = [];
 
     if (isMobilePurchaseUi()) {
         openLineEditor(form.lines.length - 1);
@@ -925,7 +1191,7 @@ onMounted(() => {
 
 function applyBatchPick(line) {
     if (line.batch_pick === '__new__') {
-        line.batch_no = '';
+        line.batch_no = defaultBatchNo();
         line.expiry_date = '';
         line.manufactured_at = '';
         return;
@@ -955,16 +1221,54 @@ function applyBatchPick(line) {
     }
 }
 
-async function onUnitChange(line) {
-    const product = {
-        units: line.unit_options,
-        purchase_price: line.unit_options.find((u) => u.sell_unit === line.base_unit)?.purchase_price
-            ?? line.unit_options[0]?.purchase_price,
-        sale_price: line.unit_options.find((u) => u.sell_unit === line.base_unit)?.sale_price
-            ?? line.unit_options[0]?.sale_price,
+function lineBaseCatalogPrices(line) {
+    const baseRow = line.unit_options?.find((u) => u.sell_unit === line.base_unit)
+        ?? line.unit_options?.[0];
+    return {
+        purchase: Number(baseRow?.purchase_price ?? 0),
+        sale: Number(baseRow?.sale_price ?? 0),
     };
-    line.unit_cost = unitPurchasePrice(product, line.sell_unit);
-    line.sale_price = unitSalePrice(product, line.sell_unit);
+}
+
+function roundLineMoney(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) {
+        return 0;
+    }
+    return Math.round(n * 10000) / 10000;
+}
+
+/**
+ * Fill cost/MRP from catalog base-unit prices × current pack conversion.
+ * Fields stay editable afterward; next unit/pack change refreshes from catalog again.
+ */
+function applyLineCatalogPrices(line) {
+    const { purchase: basePurchase, sale: baseSale } = lineBaseCatalogPrices(line);
+
+    if (line.sell_unit === line.base_unit || !needsPackSize(line)) {
+        const product = {
+            units: line.unit_options,
+            purchase_price: basePurchase,
+            sale_price: baseSale,
+        };
+        line.unit_cost = roundLineMoney(unitPurchasePrice(product, line.sell_unit));
+        line.sale_price = roundLineMoney(unitSalePrice(product, line.sell_unit));
+        return;
+    }
+
+    if (usesPackSizeFriendlyInput(line)) {
+        syncLineConversionFromPackInput(line);
+    } else if (!(Number(line.conversion_factor) > 0)) {
+        line.conversion_factor = defaultConversion(line);
+    }
+
+    const factor = Number(line.conversion_factor);
+    const safeFactor = Number.isFinite(factor) && factor > 0 ? factor : 1;
+    line.unit_cost = roundLineMoney(basePurchase * safeFactor);
+    line.sale_price = roundLineMoney(baseSale * safeFactor);
+}
+
+async function onUnitChange(line) {
     line.pack_strips_per_box = null;
     line.pack_pieces_per_box = null;
     line.pack_pieces_per_strip = null;
@@ -973,6 +1277,7 @@ async function onUnitChange(line) {
     if (!usesPackSizeFriendlyInput(line)) {
         line.conversion_factor = defaultConversion(line);
     }
+    applyLineCatalogPrices(line);
     await refreshLastPurchase(line);
 }
 

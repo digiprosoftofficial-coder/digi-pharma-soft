@@ -59,9 +59,12 @@ class MasterCatalogActivationTest extends TestCase
 
         $first = $this->actingAs($user)->postJson("/catalog/master/{$master->getKey()}/activate");
         $first->assertOk()->assertJson(['ok' => true]);
+        $first->assertJsonPath('product.name', 'Seclo 20mg');
+        $first->assertJsonStructure(['product' => ['id', 'name', 'sku', 'units']]);
 
         $productId = $first->json('product_id');
         $this->assertNotNull($productId);
+        $this->assertSame($productId, $first->json('product.id'));
 
         $product = Product::query()->findOrFail($productId);
         $this->assertSame($master->getKey(), (int) $product->master_product_id);

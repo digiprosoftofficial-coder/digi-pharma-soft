@@ -44,11 +44,19 @@
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="stat-tile h-100">
+                <Link href="/platform/master-catalog/manufacturers" class="stat-tile stat-tile--link h-100 text-decoration-none d-block">
                     <div class="stat-tile__label">{{ t('platform.master_stat_makers') }}</div>
                     <div class="stat-tile__value">{{ stats.manufacturers }}</div>
-                </div>
+                    <div class="stat-tile__hint">{{ t('platform.master_makers_title') }} →</div>
+                </Link>
             </div>
+        </div>
+
+        <div v-if="filters.manufacturer" class="alert alert-info py-2 small d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <span>{{ t('platform.master_makers_filtered', { name: filters.manufacturer }) }}</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" @click="clearManufacturerFilter">
+                {{ t('platform.master_makers_clear_filter') }}
+            </button>
         </div>
 
         <form class="master-filters card border-0 shadow-sm mb-3" @submit.prevent="applyFilters">
@@ -98,6 +106,7 @@
                             <th>{{ t('catalog.product_name') }}</th>
                             <th class="d-none d-md-table-cell">{{ t('platform.master_generic') }}</th>
                             <th class="d-none d-lg-table-cell">{{ t('platform.master_manufacturer') }}</th>
+                            <th class="d-none d-md-table-cell">{{ t('platform.master_packaging') }}</th>
                             <th class="text-end">{{ t('platform.master_mrp') }}</th>
                             <th>{{ t('catalog.status') }}</th>
                             <th class="text-end">{{ t('common.actions') }}</th>
@@ -119,6 +128,12 @@
                                 <div v-if="item.drug_class" class="small text-muted">{{ item.drug_class }}</div>
                             </td>
                             <td class="d-none d-lg-table-cell">{{ item.manufacturer_name || '—' }}</td>
+                            <td class="d-none d-md-table-cell">
+                                <div class="fw-medium text-capitalize">{{ unitLabel(item.base_unit) }}</div>
+                                <div v-if="packagingDetails(item).length" class="small text-muted">
+                                    {{ packagingDetails(item).join(' · ') }}
+                                </div>
+                            </td>
                             <td class="text-end fw-medium">{{ formatMoney(item.mrp) }}</td>
                             <td>
                                 <button
@@ -134,17 +149,37 @@
                                     {{ item.is_active ? t('common.active') : t('common.inactive') }}
                                 </button>
                             </td>
-                            <td class="text-end text-nowrap">
-                                <Link :href="`/platform/master-catalog/${item.id}/edit`" class="btn btn-sm btn-outline-primary me-1">
-                                    {{ t('common.edit') }}
-                                </Link>
-                                <button type="button" class="btn btn-sm btn-outline-danger" @click="remove(item)">
-                                    {{ t('common.delete') }}
-                                </button>
+                            <td class="text-end">
+                                <div class="master-row-actions">
+                                    <Link
+                                        :href="`/platform/master-catalog/${item.id}/edit`"
+                                        class="btn btn-sm btn-outline-primary master-action-btn"
+                                        :title="t('common.edit')"
+                                        :aria-label="t('common.edit')"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M12 20h9" />
+                                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                                        </svg>
+                                    </Link>
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-outline-danger master-action-btn"
+                                        :title="t('common.delete')"
+                                        :aria-label="t('common.delete')"
+                                        @click="remove(item)"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M3 6h18" />
+                                            <path d="M8 6V4h8v2" />
+                                            <path d="M19 6l-1 14H6L5 6" />
+                                        </svg>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         <tr v-if="!products.data?.length">
-                            <td colspan="6" class="text-center py-5">
+                            <td colspan="7" class="text-center py-5">
                                 <div class="empty-state mx-auto">
                                     <div class="empty-state__icon mb-3">℞</div>
                                     <h2 class="h6 mb-1">{{ t('platform.master_empty_title') }}</h2>
@@ -158,28 +193,32 @@
                     </tbody>
                 </table>
             </div>
-            <div v-if="products.last_page > 1" class="card-footer bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div
+                v-if="products.total > 0"
+                class="card-footer bg-white d-flex flex-column flex-lg-row flex-wrap justify-content-between align-items-lg-center gap-3"
+            >
                 <span class="small text-muted">
                     {{ t('platform.master_showing', { from: String(products.from ?? 0), to: String(products.to ?? 0), total: String(products.total ?? 0) }) }}
                 </span>
-                <div class="d-flex gap-1">
-                    <Link
-                        v-if="products.prev_page_url"
-                        :href="products.prev_page_url"
-                        class="btn btn-sm btn-outline-secondary"
-                        preserve-scroll
-                    >
-                        ←
-                    </Link>
-                    <Link
-                        v-if="products.next_page_url"
-                        :href="products.next_page_url"
-                        class="btn btn-sm btn-outline-secondary"
-                        preserve-scroll
-                    >
-                        →
-                    </Link>
-                </div>
+                <nav v-if="products.links?.length > 3" class="master-pagination" aria-label="Pagination">
+                    <ul class="pagination pagination-sm mb-0 flex-wrap justify-content-lg-end">
+                        <li
+                            v-for="(link, index) in products.links"
+                            :key="`${index}-${link.label}`"
+                            class="page-item"
+                            :class="{ active: link.active, disabled: !link.url }"
+                        >
+                            <Link
+                                v-if="link.url"
+                                class="page-link"
+                                :href="link.url"
+                                preserve-scroll
+                                v-html="link.label"
+                            />
+                            <span v-else class="page-link" v-html="link.label" />
+                        </li>
+                    </ul>
+                </nav>
             </div>
         </div>
     </PlatformShellLayout>
@@ -216,6 +255,38 @@ function typeLabel(type) {
     return t(`catalog.types.${type}`, type);
 }
 
+function unitLabel(unit) {
+    if (!unit) {
+        return '—';
+    }
+    return t(`catalog.units.${unit}`, unit);
+}
+
+function formatPackQty(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) {
+        return null;
+    }
+    return Number.isInteger(n) ? String(n) : String(Math.round(n * 10000) / 10000);
+}
+
+function packagingDetails(item) {
+    const parts = [];
+    const pcs = formatPackQty(item.pieces_per_strip);
+    const strips = formatPackQty(item.strips_per_box);
+    const boxes = formatPackQty(item.boxes_per_carton);
+    if (pcs) {
+        parts.push(t('platform.master_pack_pcs_strip', { n: pcs }));
+    }
+    if (strips) {
+        parts.push(t('platform.master_pack_strips_box', { n: strips }));
+    }
+    if (boxes) {
+        parts.push(t('platform.master_pack_boxes_carton', { n: boxes }));
+    }
+    return parts;
+}
+
 function debouncedApplyFilters() {
     clearTimeout(filterTimer);
     filterTimer = setTimeout(() => applyFilters(), 350);
@@ -227,6 +298,7 @@ function applyFilters() {
         q: local.q || undefined,
         status: local.status !== 'all' ? local.status : undefined,
         product_type: local.product_type || undefined,
+        manufacturer: props.filters.manufacturer || undefined,
     }, {
         preserveState: true,
         preserveScroll: true,
@@ -245,7 +317,25 @@ function clearFilters() {
     local.q = '';
     local.status = 'all';
     local.product_type = '';
-    applyFilters();
+    router.get('/platform/master-catalog', {}, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+        only: ['products', 'filters'],
+    });
+}
+
+function clearManufacturerFilter() {
+    router.get('/platform/master-catalog', {
+        q: local.q || undefined,
+        status: local.status !== 'all' ? local.status : undefined,
+        product_type: local.product_type || undefined,
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+        only: ['products', 'filters'],
+    });
 }
 
 onUnmounted(() => {
@@ -298,6 +388,15 @@ function remove(item) {
     border: 1px solid rgba(15, 23, 42, 0.04);
 }
 
+.stat-tile--link {
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stat-tile--link:hover {
+    border-color: rgba(13, 110, 253, 0.35);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 28px rgba(13, 110, 253, 0.08);
+}
+
 .stat-tile__label {
     font-size: 0.78rem;
     color: #64748b;
@@ -309,6 +408,30 @@ function remove(item) {
     font-weight: 700;
     line-height: 1.1;
     color: #0f172a;
+}
+
+.stat-tile__hint {
+    margin-top: 0.35rem;
+    font-size: 0.72rem;
+    color: #0d6efd;
+    font-weight: 600;
+}
+
+.master-row-actions {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    gap: 0.25rem;
+    justify-content: flex-end;
+}
+
+.master-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    line-height: 1;
 }
 
 .master-table thead th {

@@ -4,7 +4,7 @@
         <Link href="/employees" class="small text-decoration-none">← {{ t('employees.title') }}</Link>
         <div class="d-flex justify-content-between align-items-start mt-2 mb-3">
             <div>
-                <h1 class="h4 mb-1">{{ employee.name }}</h1>
+                <h1 class="page-heading mb-1">{{ employee.name }}</h1>
                 <div class="text-muted small">{{ employee.employee_code }}</div>
             </div>
             <Link v-if="can('employees.manage')" :href="`/employees/${employee.id}/edit`" class="btn btn-sm btn-outline-secondary">

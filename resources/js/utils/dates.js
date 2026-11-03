@@ -73,7 +73,7 @@ export function formatHumanDate(value, fallback = '—') {
     return new Intl.DateTimeFormat(displayLocale(), {
         year: 'numeric',
         month: 'short',
-        day: 'numeric',
+        day: '2-digit',
     }).format(date);
 }
 

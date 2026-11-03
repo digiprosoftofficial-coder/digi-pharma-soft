@@ -6,7 +6,7 @@
             <!-- Header row: title + subtitle + search + new note -->
             <header class="notes-header">
                 <div class="notes-header__title">
-                    <h1>{{ t('notes.title', 'Notes') }}</h1>
+                    <h1 class="page-heading">{{ t('notes.title', 'Notes') }}</h1>
                     <p>{{ t('notes.subtitle', 'Organize buy lists, phone numbers & important reminders') }}</p>
                 </div>
                 <div class="notes-header__actions">
@@ -816,8 +816,9 @@ function formatDateFull(iso) {
 }
 
 .notes-page {
-    max-width: 1280px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
     color: var(--n-text);
 }
 @media (max-width: 991.98px) {
@@ -830,9 +831,6 @@ function formatDateFull(iso) {
 .notes-header {
     display: flex; flex-direction: column; gap: 0.85rem;
     margin-bottom: 1rem;
-}
-.notes-header__title h1 {
-    font-size: 1.4rem; font-weight: 700; margin: 0; letter-spacing: -0.01em;
 }
 .notes-header__title p {
     margin: 0.15rem 0 0; color: var(--n-text-muted); font-size: 0.85rem;
@@ -880,7 +878,6 @@ function formatDateFull(iso) {
 
 @media (max-width: 991.98px) {
     .notes-header { margin-bottom: 0.65rem; gap: 0.55rem; }
-    .notes-header__title h1 { font-size: 1.2rem; }
     .notes-header__title p { display: none; }
     .notes-newbtn { display: none; }
 }
@@ -889,12 +886,8 @@ function formatDateFull(iso) {
     .notes-header {
         flex-direction: row; align-items: center; justify-content: space-between; gap: 1.25rem;
     }
-    .notes-header__title h1 { font-size: 1.6rem; }
     .notes-header__actions { flex: 0 1 auto; width: auto; }
     .notes-search { flex: 0 1 22rem; }
-}
-@media (min-width: 768px) and (max-width: 991.98px) {
-    .notes-header__title h1 { font-size: 1.3rem; }
 }
 
 /* ==========================================================================

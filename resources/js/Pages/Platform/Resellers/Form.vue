@@ -2,7 +2,7 @@
     <PlatformShellLayout :page-title="reseller ? t('common.edit') : t('platform.new_reseller')">
         <Head :title="reseller ? t('common.edit') : t('platform.new_reseller')" />
         <Link href="/platform/resellers" class="small text-decoration-none">← {{ t('platform.nav_resellers') }}</Link>
-        <h1 class="h4 mt-2 mb-3">{{ reseller ? t('common.edit') : t('platform.new_reseller') }}</h1>
+        <h1 class="page-heading mt-2 mb-3">{{ reseller ? t('common.edit') : t('platform.new_reseller') }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="mb-2">
                 <label class="form-label">{{ t('platform.reseller_name') }}</label>

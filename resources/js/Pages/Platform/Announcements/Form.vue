@@ -2,7 +2,7 @@
     <PlatformShellLayout :page-title="announcement ? t('common.edit') : t('platform.new_announcement')">
         <Head :title="announcement ? t('common.edit') : t('platform.new_announcement')" />
         <Link href="/platform/announcements" class="small text-decoration-none">← {{ t('platform.nav_announcements') }}</Link>
-        <h1 class="h4 mt-2 mb-3">{{ announcement ? t('common.edit') : t('platform.new_announcement') }}</h1>
+        <h1 class="page-heading mt-2 mb-3">{{ announcement ? t('common.edit') : t('platform.new_announcement') }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="mb-2">
                 <label class="form-label">{{ t('platform.announcement_title') }}</label>

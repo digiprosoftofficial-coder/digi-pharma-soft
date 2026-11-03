@@ -3,7 +3,7 @@
         <Head :title="t('tenant_nav.products')" />
         <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-            <h1 class="h4 mb-0 d-lg-none">{{ t('tenant_nav.products') }}</h1>
+            <h1 class="page-heading mb-0 d-lg-none">{{ t('tenant_nav.products') }}</h1>
             <div class="d-flex flex-wrap gap-2">
                 <Link v-if="can('products.view')" href="/catalog/master" class="btn btn-outline-primary">{{ t('catalog.master_catalog_add_from') }}</Link>
                 <Link v-if="can('products.manage')" href="/products/create" class="btn btn-primary">{{ t('catalog.add_product') }}</Link>
@@ -67,14 +67,14 @@
                 </div>
                 <div class="product-filter-field">
                     <label class="form-label small mb-0">{{ t('catalog.product_type') }}</label>
-                    <select v-model="filterForm.product_type" class="form-select form-select-sm">
+                    <select v-model="filterForm.product_type" class="form-select form-select-sm" @change="applyFilters">
                         <option value="">{{ t('catalog.all_product_types') }}</option>
                         <option v-for="pt in productTypes" :key="pt" :value="pt">{{ labelForType(pt) }}</option>
                     </select>
                 </div>
                 <div class="product-filter-field">
                     <label class="form-label small mb-0">{{ t('catalog.storage_location_shelf') }}</label>
-                    <select v-model="filterForm.storage_location_id" class="form-select form-select-sm">
+                    <select v-model="filterForm.storage_location_id" class="form-select form-select-sm" @change="applyFilters">
                         <option value="">{{ t('catalog.storage_location_all') }}</option>
                         <option v-for="loc in storageLocations" :key="loc.id" :value="String(loc.id)">
                             {{ loc.code ? `${loc.name} (${loc.code})` : loc.name }}
@@ -83,7 +83,7 @@
                 </div>
                 <div class="product-filter-field">
                     <label class="form-label small mb-0">{{ t('catalog.status') }}</label>
-                    <select v-model="filterForm.is_active" class="form-select form-select-sm">
+                    <select v-model="filterForm.is_active" class="form-select form-select-sm" @change="applyFilters">
                         <option value="">{{ t('reports.all') }}</option>
                         <option value="1">{{ t('common.active') }}</option>
                         <option value="0">{{ t('common.inactive') }}</option>
@@ -98,10 +98,19 @@
                     </select>
                 </div>
                 <div class="product-filter-actions">
-                    <button type="submit" class="btn btn-sm btn-primary" :disabled="filterLoading">
-                        {{ filterLoading ? t('common.searching') : t('purchases.filter') }}
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary product-filter-reset"
+                        :disabled="filterLoading"
+                        :title="t('purchases.reset')"
+                        :aria-label="t('purchases.reset')"
+                        @click="clearFilters"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 12a9 9 0 1 0 3-6.7" />
+                            <polyline points="3 4 3 9 8 9" />
+                        </svg>
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" :disabled="filterLoading" @click="clearFilters">{{ t('purchases.reset') }}</button>
                 </div>
             </div>
         </form>
@@ -303,10 +312,10 @@
             </div>
 
             <div class="table-responsive card border-0 shadow-sm d-none d-md-block">
-                <table class="table table-striped mb-0">
-                <thead>
+                <table class="table table-sm table-hover mb-0 align-middle products-data-table">
+                <thead class="table-light">
                     <tr>
-                        <th style="width: 2.25rem">
+                        <th class="products-data-table__check">
                             <input
                                 class="form-check-input"
                                 type="checkbox"
@@ -317,18 +326,18 @@
                             />
                         </th>
                         <th>{{ t('catalog.product_name') }}</th>
-                        <th>{{ t('catalog.generic_name') }}</th>
-                        <th>{{ t('catalog.strength') }}</th>
+                        <th class="d-none d-xl-table-cell">{{ t('catalog.generic_name') }}</th>
+                        <th class="d-none d-xl-table-cell">{{ t('catalog.strength') }}</th>
                         <th>{{ t('catalog.product_type') }}</th>
-                        <th>{{ t('catalog.category') }}</th>
-                        <th>{{ t('catalog.storage_location_shelf') }}</th>
-                        <th>SKU</th>
-                        <th>{{ t('catalog.sell_unit') }}</th>
-                        <th class="text-end">{{ t('catalog.sale_price') }} ({{ currencyCode() }})</th>
-                        <th class="text-end">{{ t('catalog.current_stock_this_branch') }}</th>
-                        <th class="text-end">{{ t('reports.purchases') }}</th>
+                        <th class="d-none d-lg-table-cell">{{ t('catalog.category') }}</th>
+                        <th class="d-none d-lg-table-cell">{{ t('catalog.storage_location_shelf') }}</th>
+                        <th class="d-none d-xl-table-cell">SKU</th>
+                        <th class="d-none d-lg-table-cell">{{ t('catalog.sell_unit') }}</th>
+                        <th class="text-end">{{ t('catalog.sale_price') }}</th>
+                        <th class="text-end" :title="t('catalog.current_stock_this_branch')">{{ t('catalog.stock_filter') }}</th>
+                        <th class="text-end d-none d-xl-table-cell">{{ t('reports.purchases') }}</th>
                         <th>{{ t('catalog.status') }}</th>
-                        <th></th>
+                        <th class="text-end products-data-table__actions">{{ t('common.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -343,10 +352,15 @@
                             />
                         </td>
                         <td>
-                            <Link :href="`/products/${p.id}`" class="text-decoration-none fw-medium">{{ p.name }}</Link>
+                            <Link :href="`/products/${p.id}`" class="text-decoration-none fw-medium text-body">{{ p.name }}</Link>
+                            <div class="small text-muted d-xl-none text-truncate" style="max-width: 16rem">
+                                <span v-if="p.generic_name">{{ p.generic_name }}</span>
+                                <span v-if="p.generic_name && p.sku"> · </span>
+                                <span>{{ p.sku }}</span>
+                            </div>
                         </td>
-                        <td class="text-muted small">{{ p.generic_name || '—' }}</td>
-                        <td class="small">{{ p.strength || '—' }}</td>
+                        <td class="text-muted small d-none d-xl-table-cell">{{ p.generic_name || '—' }}</td>
+                        <td class="small d-none d-xl-table-cell">{{ p.strength || '—' }}</td>
                         <td>
                             <ProductTypeLabel
                                 v-if="p.product_type"
@@ -356,17 +370,16 @@
                             />
                             <span v-else class="text-muted">—</span>
                         </td>
-                        <td>{{ p.category?.name || '—' }}</td>
-                        <td class="small">{{ shelfLabel(p) }}</td>
-                        <td>{{ p.sku }}</td>
-                        <td class="text-capitalize">{{ p.unit || p.base_unit }}</td>
-                        <td class="text-end">{{ formatMoney(p.sale_price) }}</td>
-                        <td class="text-end">
+                        <td class="d-none d-lg-table-cell">{{ p.category?.name || '—' }}</td>
+                        <td class="small d-none d-lg-table-cell">{{ shelfLabel(p) }}</td>
+                        <td class="small font-monospace d-none d-xl-table-cell">{{ p.sku }}</td>
+                        <td class="text-capitalize small d-none d-lg-table-cell">{{ p.unit || p.base_unit }}</td>
+                        <td class="text-end text-nowrap">{{ formatMoney(p.sale_price) }}</td>
+                        <td class="text-end text-nowrap">
                             <span class="fw-semibold">{{ formatQty(p.stock_on_hand) }}</span>
                             <span class="text-muted small ms-1">{{ unitLabel(p.base_unit || p.unit) }}</span>
-                            <div v-if="p.stock_pieces" class="small text-muted">{{ formatQty(p.stock_pieces) }} pcs</div>
                         </td>
-                        <td class="text-end">
+                        <td class="text-end text-nowrap d-none d-xl-table-cell">
                             <span>{{ formatQty(p.purchased_quantity) }}</span>
                             <span class="text-muted small ms-1">{{ unitLabel(p.base_unit || p.unit) }}</span>
                         </td>
@@ -375,7 +388,7 @@
                                 {{ p.is_active ? t('common.active') : t('common.inactive') }}
                             </span>
                         </td>
-                        <td class="text-end text-nowrap">
+                        <td class="text-end">
                             <ProductRowActions
                                 :product="p"
                                 :can-manage="can('products.manage')"
@@ -446,17 +459,15 @@
                                     {{ unitLabel(p.base_unit || p.unit) }} {{ t('catalog.on_hand') }}
                                     <span v-if="p.stock_pieces"> · {{ formatQty(p.stock_pieces) }} pcs</span>
                                 </div>
-                                <div class="d-flex flex-wrap gap-1 position-relative" style="z-index: 2">
-                                    <button
-                                        v-if="can('pos.access')"
-                                        type="button"
-                                        class="btn btn-sm btn-outline-success"
-                                        @click="requestSell(p)"
-                                    >
-                                        {{ t('tenant_nav.new_sale') }}
-                                    </button>
-                                    <Link :href="`/products/${p.id}`" class="btn btn-sm btn-outline-primary">{{ t('common.view') }}</Link>
-                                    <Link v-if="can('products.manage')" :href="`/products/${p.id}/edit`" class="btn btn-sm btn-outline-secondary">{{ t('common.edit') }}</Link>
+                                <div class="position-relative" style="z-index: 2">
+                                    <ProductRowActions
+                                        :product="p"
+                                        :can-manage="can('products.manage')"
+                                        :can-sell="can('pos.access')"
+                                        compact
+                                        @sell="requestSell"
+                                        @delete="confirmDelete"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -771,6 +782,25 @@ const stockAlertTitleId = useId();
 let filterTimer;
 let copyFeedbackTimer;
 
+function actionIcon(children) {
+    return h(
+        'svg',
+        {
+            xmlns: 'http://www.w3.org/2000/svg',
+            width: 15,
+            height: 15,
+            viewBox: '0 0 24 24',
+            fill: 'none',
+            stroke: 'currentColor',
+            'stroke-width': '2.1',
+            'stroke-linecap': 'round',
+            'stroke-linejoin': 'round',
+            'aria-hidden': 'true',
+        },
+        children,
+    );
+}
+
 const ProductRowActions = defineComponent({
     name: 'ProductRowActions',
     props: {
@@ -782,21 +812,35 @@ const ProductRowActions = defineComponent({
     emits: ['sell', 'delete'],
     setup(props, { emit }) {
         return () =>
-            h('div', { class: 'd-inline-flex flex-wrap gap-1' }, [
+            h('div', { class: 'product-row-actions' }, [
                 h(
                     Link,
-                    { href: `/products/${props.product.id}`, class: `btn btn-sm btn-outline-primary${props.compact ? '' : ' me-1'}` },
-                    () => t('common.view'),
+                    {
+                        href: `/products/${props.product.id}`,
+                        class: 'btn btn-sm btn-outline-primary product-action-btn',
+                        title: t('common.view'),
+                        'aria-label': t('common.view'),
+                    },
+                    () => actionIcon([
+                        h('path', { d: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z' }),
+                        h('circle', { cx: '12', cy: '12', r: '3' }),
+                    ]),
                 ),
                 props.canSell
                     ? h(
                           'button',
                           {
                               type: 'button',
-                              class: `btn btn-sm btn-outline-success${props.compact ? '' : ' me-1'}`,
+                              class: 'btn btn-sm btn-outline-success product-action-btn',
+                              title: t('tenant_nav.new_sale'),
+                              'aria-label': t('tenant_nav.new_sale'),
                               onClick: () => emit('sell', props.product),
                           },
-                          t('tenant_nav.new_sale'),
+                          actionIcon([
+                              h('circle', { cx: '9', cy: '21', r: '1' }),
+                              h('circle', { cx: '20', cy: '21', r: '1' }),
+                              h('path', { d: 'M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6' }),
+                          ]),
                       )
                     : null,
                 props.canManage
@@ -804,9 +848,14 @@ const ProductRowActions = defineComponent({
                           Link,
                           {
                               href: `/products/${props.product.id}/edit`,
-                              class: `btn btn-sm btn-outline-secondary${props.compact ? '' : ' me-1'}`,
+                              class: 'btn btn-sm btn-outline-secondary product-action-btn',
+                              title: t('common.edit'),
+                              'aria-label': t('common.edit'),
                           },
-                          () => t('common.edit'),
+                          () => actionIcon([
+                              h('path', { d: 'M12 20h9' }),
+                              h('path', { d: 'M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z' }),
+                          ]),
                       )
                     : null,
                 props.canManage
@@ -814,10 +863,16 @@ const ProductRowActions = defineComponent({
                           'button',
                           {
                               type: 'button',
-                              class: 'btn btn-sm btn-outline-danger',
+                              class: 'btn btn-sm btn-outline-danger product-action-btn',
+                              title: t('common.delete'),
+                              'aria-label': t('common.delete'),
                               onClick: () => emit('delete', props.product),
                           },
-                          t('common.delete'),
+                          actionIcon([
+                              h('path', { d: 'M3 6h18' }),
+                              h('path', { d: 'M8 6V4h8v2' }),
+                              h('path', { d: 'M19 6l-1 14H6L5 6' }),
+                          ]),
                       )
                     : null,
             ]);
@@ -1239,15 +1294,61 @@ onBeforeUnmount(() => {
     border-radius: 0.4rem;
 }
 
-.product-mobile-card :deep(.btn),
-.product-compact-mobile-card :deep(.btn) {
-    min-height: 2rem;
-    padding: 0.22rem 0.45rem;
-    font-size: 0.75rem;
+.product-mobile-card :deep(.product-action-btn),
+.product-compact-mobile-card :deep(.product-action-btn) {
+    width: 2rem;
+    height: 2rem;
 }
 
 .table-responsive table {
-    min-width: 860px;
+    min-width: 640px;
+}
+
+.products-data-table {
+    --bs-table-bg: transparent;
+}
+
+.products-data-table thead th {
+    white-space: nowrap;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    color: var(--bs-secondary-color);
+    border-bottom-width: 1px;
+    vertical-align: middle;
+}
+
+.products-data-table tbody td {
+    vertical-align: middle;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+}
+
+.products-data-table__check {
+    width: 2.25rem;
+}
+
+.products-data-table__actions {
+    width: 1%;
+}
+
+.product-row-actions {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.25rem;
+}
+
+.product-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    line-height: 1;
 }
 
 .product-stat-card {
@@ -1258,8 +1359,8 @@ onBeforeUnmount(() => {
     display: grid;
     gap: 0.5rem;
     align-items: end;
-    /* Responsive: 2 lines — search on top, filters + actions below */
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    /* Responsive: 2 lines — search on top, filters + reset below */
+    grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
 }
 
 .product-filter-field--search {
@@ -1268,24 +1369,28 @@ onBeforeUnmount(() => {
 
 .product-filter-actions {
     display: flex;
-    gap: 0.35rem;
-    grid-column: 4 / 5;
+    align-items: end;
+    justify-content: flex-end;
 }
 
-.product-filter-actions .btn {
-    flex: 1 1 0;
-    min-width: 0;
-    padding-right: 0.4rem;
-    padding-left: 0.4rem;
+.product-filter-reset {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.15rem;
+    height: 2.15rem;
+    padding: 0;
+    flex: 0 0 auto;
 }
 
 @media (max-width: 575.98px) {
     .product-filters {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
     }
 
     .product-filter-actions {
-        grid-column: 1 / -1;
+        grid-column: auto;
+        grid-row: 2;
     }
 }
 
@@ -1297,19 +1402,13 @@ onBeforeUnmount(() => {
             minmax(8rem, 0.85fr)
             minmax(8rem, 0.85fr)
             minmax(7rem, 0.7fr)
+            minmax(7.5rem, 0.85fr)
             auto;
     }
 
     .product-filter-field--search,
     .product-filter-actions {
         grid-column: auto;
-    }
-
-    .product-filter-actions .btn {
-        flex: 0 0 auto;
-        white-space: nowrap;
-        padding-right: 0.65rem;
-        padding-left: 0.65rem;
     }
 }
 
@@ -1327,15 +1426,9 @@ onBeforeUnmount(() => {
     }
 
     .product-filter-field .form-control,
-    .product-filter-field .form-select,
-    .product-filter-actions .btn {
+    .product-filter-field .form-select {
         min-height: 2.15rem;
         font-size: 0.8rem;
-    }
-
-    .product-filter-actions .btn {
-        padding-right: 0.35rem;
-        padding-left: 0.35rem;
     }
 
     .product-toolbar,

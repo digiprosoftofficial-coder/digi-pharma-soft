@@ -4,7 +4,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
                 <Link href="/accounts" class="small text-decoration-none">← Accounts</Link>
-                <h1 class="h4 mb-0">{{ account.name }} <span class="text-muted small">({{ account.code }})</span></h1>
+                <h1 class="page-heading mb-0">{{ account.name }} <span class="text-muted small">({{ account.code }})</span></h1>
             </div>
         </div>
         <div class="row g-3">

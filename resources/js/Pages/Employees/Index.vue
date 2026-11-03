@@ -4,7 +4,7 @@
         <div v-if="$page.props.flash?.success" class="alert alert-success small">{{ $page.props.flash.success }}</div>
         <div v-if="formError" class="alert alert-danger small">{{ formError }}</div>
         <div class="d-flex justify-content-between mb-3">
-            <h1 class="h4 mb-0 d-lg-none">{{ t('employees.title') }}</h1>
+            <h1 class="page-heading mb-0 d-lg-none">{{ t('employees.title') }}</h1>
             <Link v-if="can('employees.manage')" href="/employees/create" class="btn btn-primary btn-sm">{{ t('employees.new') }}</Link>
         </div>
         <div class="card border-0 shadow-sm">

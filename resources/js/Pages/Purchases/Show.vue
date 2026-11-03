@@ -6,7 +6,7 @@
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3 purchase-detail-header">
             <div>
                 <Link href="/purchases" class="small text-decoration-none d-block mb-1">← {{ t('purchases.back_to_purchases') }}</Link>
-                <h1 class="h4 mb-1">
+                <h1 class="page-heading mb-1">
                     {{ purchase.invoice_no }}
                     <span v-if="purchase.status === 'voided'" class="badge text-bg-secondary ms-1">{{ t('purchases.status_voided') }}</span>
                 </h1>

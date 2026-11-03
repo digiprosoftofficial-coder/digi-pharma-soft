@@ -42,6 +42,38 @@ class PlatformMasterSuggestionTest extends TestCase
         ]);
     }
 
+    public function test_json_product_create_returns_product_and_flags_master_suggestion(): void
+    {
+        $this->seed();
+        $owner = User::query()->where('email', 'owner@example.com')->firstOrFail();
+
+        $response = $this->actingAs($owner)->postJson('/products', [
+            'name' => 'Purchase Quick Med',
+            'product_type' => 'tablet',
+            'base_unit' => 'strip',
+            'generic_name' => 'Quickamol',
+            'strength' => '500 mg',
+            'units' => [
+                ['sell_unit' => 'strip', 'conversion_factor' => 1, 'purchase_price' => 15, 'sale_price' => 22, 'is_default' => true],
+            ],
+            'is_active' => true,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('suggested_to_master', true)
+            ->assertJsonPath('product.name', 'Purchase Quick Med')
+            ->assertJsonStructure(['product' => ['id', 'name', 'sku', 'units']]);
+
+        $productId = $response->json('product.id');
+        $this->assertDatabaseHas('master_product_suggestions', [
+            'product_id' => $productId,
+            'tenant_id' => $owner->tenant_id,
+            'name' => 'Purchase Quick Med',
+            'status' => MasterProductSuggestion::STATUS_PENDING,
+        ]);
+    }
+
     public function test_super_admin_can_approve_suggestion_into_master_catalog(): void
     {
         $this->seed();

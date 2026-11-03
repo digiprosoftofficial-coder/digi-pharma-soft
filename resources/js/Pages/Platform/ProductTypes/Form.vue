@@ -2,7 +2,7 @@
     <PlatformShellLayout :page-title="productType ? t('common.edit') : t('platform.product_type_new')">
         <Head :title="productType ? t('common.edit') : t('platform.product_type_new')" />
         <Link href="/platform/product-types" class="small text-decoration-none">← {{ t('platform.product_types_title') }}</Link>
-        <h1 class="h4 mt-2 mb-3">{{ productType ? t('common.edit') : t('platform.product_type_new') }}</h1>
+        <h1 class="page-heading mt-2 mb-3">{{ productType ? t('common.edit') : t('platform.product_type_new') }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="mb-3">
                 <label class="form-label">{{ t('platform.product_type_name') }}</label>

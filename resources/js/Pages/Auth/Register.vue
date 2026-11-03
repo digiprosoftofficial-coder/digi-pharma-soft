@@ -2,7 +2,7 @@
     <GuestLayout>
         <Head :title="t('auth.register')" />
         <div class="text-center mb-4">
-            <h1 class="h4 mb-1">{{ t('auth.register_title') }}</h1>
+            <h1 class="page-heading mb-1">{{ t('auth.register_title') }}</h1>
             <p class="text-muted small mb-0">{{ t('auth.register_subtitle') }}</p>
         </div>
         <form @submit.prevent="submit">

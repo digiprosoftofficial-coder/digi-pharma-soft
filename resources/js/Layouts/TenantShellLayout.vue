@@ -33,37 +33,67 @@
             :aria-hidden="mobileNavOpen ? 'false' : 'true'"
             aria-label="Mobile navigation"
         >
-            <div class="tenant-sidebar-brand p-3 border-bottom d-flex align-items-center justify-content-between gap-2">
-                <Link href="/dashboard" class="text-decoration-none text-dark d-flex align-items-center gap-2" @click="closeMobileNav">
-                    <span class="tenant-sidebar-brand__icon text-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-                            <path d="M12 3 4 7v6c0 4.4 3.6 8 8 8s8-3.6 8-8V7z" />
-                            <path d="M12 11v4M12 8h.01" />
-                        </svg>
-                    </span>
-                    <span>
-                        <div class="fw-bold lh-sm">{{ tenantName }}</div>
-                        <div class="small text-muted">{{ t('tenant_nav.pharmacy_mgmt') }}</div>
-                    </span>
-                </Link>
-                <button type="button" class="btn btn-sm btn-outline-secondary" :aria-label="t('common.close', 'Close')" @click="closeMobileNav">
-                    &times;
-                </button>
-            </div>
-            <TenantSidebarNav @navigate="closeMobileNav" />
-        </aside>
-        <div class="d-flex flex-grow-1 min-h-0 min-w-0">
-            <aside class="tenant-sidebar tenant-sidebar--desktop border-end bg-white d-none d-lg-flex flex-column flex-shrink-0">
-                <div class="tenant-sidebar-brand p-3 border-bottom">
-                    <Link href="/dashboard" class="text-decoration-none text-dark d-flex align-items-center gap-2">
+            <div class="tenant-sidebar-brand p-3 border-bottom">
+                <div class="d-flex align-items-center justify-content-between gap-2">
+                    <Link href="/dashboard" class="text-decoration-none text-dark d-flex align-items-center gap-2 min-w-0" @click="closeMobileNav">
                         <span class="tenant-sidebar-brand__icon text-primary">
                             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
                                 <path d="M12 3 4 7v6c0 4.4 3.6 8 8 8s8-3.6 8-8V7z" />
                                 <path d="M12 11v4M12 8h.01" />
                             </svg>
                         </span>
-                        <span>
-                            <div class="fw-bold lh-sm">{{ tenantName }}</div>
+                        <span class="min-w-0">
+                            <div class="fw-bold lh-sm text-truncate">{{ tenantName }}</div>
+                            <div class="small text-muted">{{ t('tenant_nav.pharmacy_mgmt') }}</div>
+                        </span>
+                    </Link>
+                    <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0" :aria-label="t('common.close', 'Close')" @click="closeMobileNav">
+                        &times;
+                    </button>
+                </div>
+                <form
+                    v-if="showBranchSwitcher"
+                    class="tenant-sidebar-branch mt-2"
+                    @submit.prevent="switchBranch"
+                >
+                    <label class="tenant-sidebar-branch__label" :for="mobileBranchSelectId">{{ t('branches.switch_branch') }}</label>
+                    <div class="tenant-sidebar-branch__control">
+                        <span class="tenant-sidebar-branch__pin" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                                <circle cx="12" cy="10" r="3" />
+                            </svg>
+                        </span>
+                        <select
+                            :id="mobileBranchSelectId"
+                            v-model="activeBranchId"
+                            class="tenant-sidebar-branch__select"
+                            @change="switchBranch"
+                        >
+                            <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
+                        </select>
+                        <span class="tenant-sidebar-branch__caret" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </span>
+                    </div>
+                </form>
+            </div>
+            <TenantSidebarNav @navigate="closeMobileNav" />
+        </aside>
+        <div class="d-flex flex-grow-1 min-h-0 min-w-0">
+            <aside class="tenant-sidebar tenant-sidebar--desktop border-end bg-white d-none d-lg-flex flex-column flex-shrink-0">
+                <div class="tenant-sidebar-brand p-3 border-bottom">
+                    <Link href="/dashboard" class="text-decoration-none text-dark d-flex align-items-center gap-2 min-w-0">
+                        <span class="tenant-sidebar-brand__icon text-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                <path d="M12 3 4 7v6c0 4.4 3.6 8 8 8s8-3.6 8-8V7z" />
+                                <path d="M12 11v4M12 8h.01" />
+                            </svg>
+                        </span>
+                        <span class="min-w-0">
+                            <div class="fw-bold lh-sm text-truncate">{{ tenantName }}</div>
                             <div class="small text-muted">{{ t('tenant_nav.pharmacy_mgmt') }}</div>
                         </span>
                     </Link>
@@ -84,7 +114,48 @@
                             <span class="tenant-mobile-brand__page">{{ pageTitle }}</span>
                         </span>
                     </Link>
-                    <h1 class="h5 mb-0 text-primary me-auto d-none d-lg-block">{{ pageTitle }}</h1>
+                    <form
+                        v-if="showBranchSwitcher"
+                        class="tenant-topbar-branch me-auto d-none d-lg-flex"
+                        @submit.prevent="switchBranch"
+                    >
+                        <label class="tenant-sidebar-branch__label" :for="desktopBranchSelectId">{{ t('branches.switch_branch') }}</label>
+                        <div class="tenant-topbar-branch__row">
+                            <span
+                                class="tenant-topbar-branch__dot"
+                                :title="t('branches.active')"
+                                :aria-label="t('branches.active')"
+                            ></span>
+                            <div class="tenant-sidebar-branch__control">
+                                <span class="tenant-sidebar-branch__pin" aria-hidden="true">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                                        <circle cx="12" cy="10" r="3" />
+                                    </svg>
+                                </span>
+                                <select
+                                    :id="desktopBranchSelectId"
+                                    v-model="activeBranchId"
+                                    class="tenant-sidebar-branch__select"
+                                    @change="switchBranch"
+                                >
+                                    <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
+                                </select>
+                                <span class="tenant-sidebar-branch__caret" aria-hidden="true">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m6 9 6 6 6-6" />
+                                    </svg>
+                                </span>
+                            </div>
+                        </div>
+                    </form>
+                    <h1
+                        v-else
+                        class="h5 mb-0 text-primary me-auto d-none d-lg-block"
+                    >
+                        {{ pageTitle }}
+                    </h1>
+                    <h1 v-if="showBranchSwitcher" class="visually-hidden">{{ pageTitle }}</h1>
 
                     <!-- Desktop: inline product search -->
                     <form
@@ -173,20 +244,6 @@
                     >
                         <TenantNavIcon name="notes" />
                     </Link>
-                    <form
-                        v-if="multiBranch && branches.length > 1"
-                        class="tenant-branch-switcher d-flex align-items-center gap-1"
-                        @submit.prevent="switchBranch"
-                    >
-                        <label class="small text-muted mb-0 d-none d-lg-inline">{{ t('branches.switch_branch') }}</label>
-                        <select
-                            v-model="activeBranchId"
-                            class="form-select form-select-sm tenant-branch-select"
-                            @change="switchBranch"
-                        >
-                            <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
-                        </select>
-                    </form>
                     <div class="tenant-topbar-actions d-flex align-items-center gap-2">
                         <Link
                             v-if="can('products.view')"
@@ -248,6 +305,9 @@ const notesActive = computed(() => {
     return path === '/notes' || path.startsWith('/notes/');
 });
 const branches = computed(() => page.props.branches ?? []);
+const showBranchSwitcher = computed(() => multiBranch.value && branches.value.length > 1);
+const desktopBranchSelectId = 'tenant-desktop-branch-select';
+const mobileBranchSelectId = 'tenant-mobile-branch-select';
 const activeBranchId = ref(page.props.branch?.id ?? null);
 const mobileNavOpen = ref(false);
 const mobileSearchOpen = ref(false);
@@ -489,16 +549,187 @@ const announcementAlertClass = computed(() => {
     min-width: 0;
 }
 
-.tenant-branch-select {
+.tenant-sidebar-branch,
+.tenant-topbar-branch {
     min-width: 0;
-    width: 100%;
+}
+
+.tenant-topbar-branch {
+    flex: 0 1 15.5rem;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 15.5rem;
+}
+
+.tenant-topbar-branch__row {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 0;
+}
+
+.tenant-topbar-branch__row .tenant-sidebar-branch__control {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.tenant-topbar-branch__dot {
+    flex: 0 0 auto;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 999px;
+    background: #22c55e;
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.45);
+    animation: tenant-branch-dot-pulse 1.6s ease-out infinite;
+}
+
+@keyframes tenant-branch-dot-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.45);
+        transform: scale(1);
+    }
+
+    70% {
+        box-shadow: 0 0 0 0.45rem rgba(34, 197, 94, 0);
+        transform: scale(1.05);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+        transform: scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tenant-topbar-branch__dot {
+        animation: none;
+        box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+    }
+}
+
+.tenant-sidebar-branch__label {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: #94a3b8;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.1;
+}
+
+.tenant-topbar-branch .tenant-sidebar-branch__label {
+    margin-bottom: 0.15rem;
+}
+
+.tenant-topbar-branch .tenant-sidebar-branch__select {
+    min-height: 31px;
+    height: 31px;
+    padding: 0.2rem 1.75rem 0.2rem 1.85rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25;
+}
+
+.tenant-topbar-branch .tenant-sidebar-branch__pin {
+    left: 0.55rem;
+}
+
+.tenant-topbar-branch .tenant-sidebar-branch__pin svg,
+.tenant-topbar-branch .tenant-sidebar-branch__caret svg {
+    width: 12px;
+    height: 12px;
+}
+
+.tenant-topbar-branch .tenant-sidebar-branch__caret {
+    right: 0.5rem;
+}
+
+.tenant-topbar-branch__dot {
+    width: 0.45rem;
+    height: 0.45rem;
+}
+
+.tenant-topbar-actions .tenant-topbar-action,
+.topbar-search .input-group-sm > .form-control,
+.topbar-search .input-group-sm > .input-group-text,
+.topbar-search .input-group-sm > .btn {
+    min-height: 31px;
 }
 
 @media (min-width: 992px) {
-    .tenant-branch-select {
-        min-width: 10rem;
-        width: auto;
+    .tenant-sidebar--desktop .tenant-sidebar-brand,
+    .tenant-topbar {
+        box-sizing: border-box;
+        min-height: 4.75rem;
     }
+
+    .tenant-sidebar--desktop .tenant-sidebar-brand {
+        display: flex;
+        align-items: center;
+    }
+
+    .tenant-topbar {
+        padding-top: 0.65rem;
+        padding-bottom: 0.65rem;
+    }
+}
+
+.tenant-sidebar-branch__control {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.tenant-sidebar-branch__pin,
+.tenant-sidebar-branch__caret {
+    position: absolute;
+    top: 50%;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    pointer-events: none;
+    transform: translateY(-50%);
+}
+
+.tenant-sidebar-branch__pin {
+    left: 0.7rem;
+}
+
+.tenant-sidebar-branch__caret {
+    right: 0.65rem;
+}
+
+.tenant-sidebar-branch__select {
+    width: 100%;
+    min-width: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    margin: 0;
+    padding: 0.55rem 2rem 0.55rem 2.15rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.7rem;
+    background-color: #fff;
+    background-image: none;
+    box-shadow: none;
+    color: #0f172a;
+    font-size: 0.88rem;
+    font-weight: 500;
+    line-height: 1.2;
+    cursor: pointer;
+}
+
+.tenant-sidebar-branch__select:hover {
+    border-color: #cbd5e1;
+}
+
+.tenant-sidebar-branch__select:focus {
+    border-color: rgba(var(--bs-primary-rgb), 0.55);
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.12);
 }
 
 @media (max-width: 991.98px) {
@@ -517,15 +748,6 @@ const announcementAlertClass = computed(() => {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-    }
-
-    .tenant-branch-switcher {
-        order: 6;
-        flex-basis: 100%;
-    }
-
-    .tenant-branch-switcher .form-select {
-        width: 100%;
     }
 }
 

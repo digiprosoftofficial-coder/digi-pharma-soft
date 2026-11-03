@@ -8,7 +8,7 @@
             </div>
 
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 storage-locations-header">
-                <h1 class="h4 mb-0 storage-locations-title">{{ t('catalog.storage_locations_title') }}</h1>
+                <h1 class="page-heading mb-0 storage-locations-title">{{ t('catalog.storage_locations_title') }}</h1>
                 <button type="button" class="btn btn-primary btn-sm storage-locations-add" @click="openCreate">
                     {{ t('catalog.new_storage_location') }}
                 </button>

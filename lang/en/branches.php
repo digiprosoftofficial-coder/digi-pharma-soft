@@ -24,6 +24,10 @@ return [
     'cannot_deactivate_default' => 'Cannot deactivate the default branch.',
     'usage' => ':count / :max branches used',
     'switch_branch' => 'Active branch',
+    'assigned_branch' => 'Assigned branch',
+    'assigned_branch_help' => 'This user can only work in the assigned branch (POS, stock, and dashboard).',
+    'assigned_branch_required' => 'Managers need an assigned branch when multi-branch is enabled.',
+    'switch_locked' => 'You can only use your assigned branch.',
     'transfer_from_branch' => 'From branch',
     'transfer_to_branch' => 'To branch',
 ];

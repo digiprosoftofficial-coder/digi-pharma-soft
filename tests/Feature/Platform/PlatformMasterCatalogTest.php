@@ -24,6 +24,20 @@ class PlatformMasterCatalogTest extends TestCase
             ->assertInertia(fn ($page) => $page->component('Platform/MasterCatalog/Index'));
 
         $this->actingAs($admin)
+            ->get(route('platform.master-catalog.manufacturers'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Platform/MasterCatalog/Manufacturers')
+                ->has('manufacturers.data'));
+
+        $this->actingAs($admin)
+            ->get(route('platform.master-catalog.index', ['manufacturer' => 'Square Pharmaceuticals']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Platform/MasterCatalog/Index')
+                ->where('filters.manufacturer', 'Square Pharmaceuticals'));
+
+        $this->actingAs($admin)
             ->post(route('platform.master-catalog.store'), [
                 'name' => 'Napa Extra Test',
                 'generic_name' => 'Paracetamol + Caffeine',

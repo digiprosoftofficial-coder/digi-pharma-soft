@@ -1,7 +1,7 @@
 <template>
     <TenantShellLayout :page-title="employee ? t('employees.edit') : t('employees.new')">
         <Head :title="employee ? t('employees.edit') : t('employees.new')" />
-        <h1 class="h4 mb-3">{{ employee ? t('employees.edit') : t('employees.new') }}</h1>
+        <h1 class="page-heading mb-3">{{ employee ? t('employees.edit') : t('employees.new') }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="row g-2">
                 <div class="col-md-6 mb-2">

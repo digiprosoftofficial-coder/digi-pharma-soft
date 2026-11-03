@@ -2,7 +2,7 @@
     <PlatformShellLayout :page-title="template ? t('common.edit') : t('platform.new_catalog')">
         <Head :title="template ? t('common.edit') : t('platform.new_catalog')" />
         <Link href="/platform/catalog-templates" class="small text-decoration-none">← {{ t('platform.nav_catalog') }}</Link>
-        <h1 class="h4 mt-2 mb-3">{{ template ? t('common.edit') : t('platform.new_catalog') }}</h1>
+        <h1 class="page-heading mt-2 mb-3">{{ template ? t('common.edit') : t('platform.new_catalog') }}</h1>
         <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div class="mb-2">
                 <label class="form-label">{{ t('platform.catalog_name') }}</label>

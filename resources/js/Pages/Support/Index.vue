@@ -1,7 +1,7 @@
 <template>
     <TenantShellLayout page-title="Support">
         <Head title="Support" />
-        <h1 class="h4 mb-3">Help &amp; support</h1>
+        <h1 class="page-heading mb-3">Help &amp; support</h1>
         <div class="card border-0 shadow-sm card-body mb-3">
             <h2 class="h6">FAQ</h2>
             <ul class="small mb-0">

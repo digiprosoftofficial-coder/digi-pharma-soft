@@ -5,7 +5,7 @@
         <Link href="/platform/catalog-templates" class="small text-decoration-none">← {{ t('platform.nav_catalog') }}</Link>
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mt-1 mb-3">
             <div>
-                <h1 class="h4 mb-0">{{ template.name }}</h1>
+                <h1 class="page-heading mb-0">{{ template.name }}</h1>
                 <code class="small">{{ template.slug }}</code>
                 <span class="badge ms-2" :class="template.is_published ? 'text-bg-success' : 'text-bg-secondary'">
                     {{ template.is_published ? t('platform.catalog_published') : t('platform.catalog_draft') }}

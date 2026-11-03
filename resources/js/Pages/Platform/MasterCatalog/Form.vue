@@ -5,7 +5,7 @@
         <Link href="/platform/master-catalog" class="small text-decoration-none text-teal">← {{ t('platform.master_title') }}</Link>
         <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mt-2 mb-4">
             <div>
-                <h1 class="h3 mb-1">{{ isEdit ? t('platform.master_edit') : t('platform.master_add_btn') }}</h1>
+                <h1 class="page-heading mb-1">{{ isEdit ? t('platform.master_edit') : t('platform.master_add_btn') }}</h1>
                 <p class="text-muted small mb-0">{{ t('platform.master_form_hint') }}</p>
             </div>
             <span v-if="isEdit && activatedCount > 0" class="badge text-bg-info-subtle text-info border border-info-subtle rounded-pill px-3 py-2">
