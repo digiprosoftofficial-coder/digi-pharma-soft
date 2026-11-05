@@ -13,16 +13,29 @@
                 <input v-model="form.slug" class="form-control" required :disabled="!!plan" />
             </div>
             <div class="row g-2 mb-2">
-                <div class="col-md-6">
-                    <label class="form-label">{{ t('platform.plan_price_bdt') }}</label>
-                    <input v-model.number="priceTaka" type="number" min="0" step="0.01" class="form-control" required />
-                    <div class="form-text">
-                        {{ t('platform.plan_price_preview') }}: {{ formatMoney(priceTaka, { currency }) }}
-                    </div>
+                <div class="col-md-4">
+                    <label class="form-label">{{ t('platform.monthly_price') }}</label>
+                    <input v-model.number="monthlyTaka" type="number" min="0" step="0.01" class="form-control" required />
+                    <div class="form-text">{{ formatMoney(monthlyTaka, { currency }) }}</div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
+                    <label class="form-label">{{ t('platform.yearly_price') }}</label>
+                    <input v-model.number="yearlyTaka" type="number" min="0" step="0.01" class="form-control" required />
+                    <div class="form-text">{{ formatMoney(yearlyTaka, { currency }) }}</div>
+                </div>
+                <div class="col-md-4">
                     <label class="form-label">Trial days</label>
                     <input v-model.number="form.trial_days" type="number" min="0" class="form-control" required />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">{{ t('platform.sort_order') }}</label>
+                    <input v-model.number="form.sort_order" type="number" min="0" class="form-control" />
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <div class="form-check mb-2">
+                        <input id="plan_active" v-model="form.is_active" type="checkbox" class="form-check-input" />
+                        <label class="form-check-label" for="plan_active">{{ t('common.active') }}</label>
+                    </div>
                 </div>
             </div>
             <div class="mb-3">
@@ -195,13 +208,18 @@ function formatColumnName(col) {
 const { t } = useLocale();
 const { formatMoney } = useMoney({ currency: props.currency });
 
-const priceTaka = ref(Number(props.plan?.price_cents ?? 0) / 100);
+const monthlyTaka = ref(Number(props.plan?.monthly_price_cents ?? props.plan?.price_cents ?? 0) / 100);
+const yearlyTaka = ref(Number(props.plan?.yearly_price_cents ?? ((props.plan?.price_cents ?? 0) * 10) ?? 0) / 100);
 
 const form = useForm({
     name: props.plan?.name ?? '',
     slug: props.plan?.slug ?? '',
     price_cents: props.plan?.price_cents ?? 0,
+    monthly_price_cents: props.plan?.monthly_price_cents ?? props.plan?.price_cents ?? 0,
+    yearly_price_cents: props.plan?.yearly_price_cents ?? 0,
     trial_days: props.plan?.trial_days ?? 14,
+    is_active: props.plan?.is_active ?? true,
+    sort_order: props.plan?.sort_order ?? 100,
     features: {
         pos: props.plan?.features?.pos ?? true,
         reports: props.plan?.features?.reports ?? true,
@@ -226,11 +244,15 @@ const form = useForm({
         max_products: props.plan?.limits?.max_products ?? null,
         max_import_rows: props.plan?.limits?.max_import_rows ?? null,
         max_branches: props.plan?.limits?.max_branches ?? 1,
+        max_users: props.plan?.limits?.max_users ?? null,
+        storage_limit_mb: props.plan?.limits?.storage_limit_mb ?? null,
     },
 });
 
 function submit() {
-    form.price_cents = Math.round(Number(priceTaka.value || 0) * 100);
+    form.monthly_price_cents = Math.round(Number(monthlyTaka.value || 0) * 100);
+    form.yearly_price_cents = Math.round(Number(yearlyTaka.value || 0) * 100);
+    form.price_cents = form.monthly_price_cents;
 
     if (!form.features.theme_templates?.length) {
         form.features.theme_templates = ['classic_blue'];

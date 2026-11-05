@@ -113,6 +113,27 @@ class User extends Authenticatable implements MustVerifyEmail
         $registrar->setPermissionsTeamId(PlatformTeam::ID);
 
         try {
+            return $this->hasRole('super admin') || $this->hasRole('sales');
+        } finally {
+            $registrar->setPermissionsTeamId($previousTeam);
+        }
+    }
+
+    public function isPlatformSuperAdminRole(): bool
+    {
+        if ($this->is_platform_super_admin) {
+            return true;
+        }
+
+        if ($this->tenant_id !== null) {
+            return false;
+        }
+
+        $registrar = app(PermissionRegistrar::class);
+        $previousTeam = $registrar->getPermissionsTeamId();
+        $registrar->setPermissionsTeamId(PlatformTeam::ID);
+
+        try {
             return $this->hasRole('super admin');
         } finally {
             $registrar->setPermissionsTeamId($previousTeam);

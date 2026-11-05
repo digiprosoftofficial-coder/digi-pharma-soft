@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Central;
 use App\Domain\Tenant\Models\Tenant;
 use App\Http\Controllers\Controller;
 use App\Support\Platform\PlatformBillingMetrics;
+use App\Support\Platform\PlatformGrowthMetrics;
 use App\Support\Platform\PlatformNetworkAnalytics;
 use App\Support\Platform\PlatformSystemHealth;
 use App\Support\Tenant\TenantPresenter;
@@ -77,6 +78,7 @@ final class PlatformDashboardController extends Controller
         return Inertia::render('Platform/Dashboard', [
             'analytics' => PlatformNetworkAnalytics::snapshot(),
             'billing' => PlatformBillingMetrics::snapshot(),
+            'growth' => PlatformGrowthMetrics::snapshot(),
             'health' => PlatformSystemHealth::snapshot(),
             'tenantCount' => $total,
             'activeTenantCount' => $active,

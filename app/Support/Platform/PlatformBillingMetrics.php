@@ -22,7 +22,7 @@ final class PlatformBillingMetrics
     {
         $currency = PlatformSettings::defaultCurrency();
 
-        $mrrCents = (int) TenantSubscription::query()
+        $activeSubs = TenantSubscription::query()
             ->join('tenants', 'tenants.id', '=', 'tenant_subscriptions.tenant_id')
             ->join('subscription_plans', 'subscription_plans.id', '=', 'tenant_subscriptions.subscription_plan_id')
             ->where('tenant_subscriptions.status', 'active')
@@ -32,7 +32,23 @@ final class PlatformBillingMetrics
                 $q->whereNull('tenant_subscriptions.ends_at')
                     ->orWhere('tenant_subscriptions.ends_at', '>=', now());
             })
-            ->sum('subscription_plans.price_cents');
+            ->get([
+                'tenant_subscriptions.billing_interval',
+                'subscription_plans.price_cents',
+                'subscription_plans.monthly_price_cents',
+                'subscription_plans.yearly_price_cents',
+            ]);
+
+        $mrrCents = (int) $activeSubs->sum(function ($row) {
+            $interval = $row->billing_interval ?: 'monthly';
+            if ($interval === 'yearly') {
+                $yearly = (int) ($row->yearly_price_cents ?: $row->price_cents);
+
+                return (int) round($yearly / 12);
+            }
+
+            return (int) ($row->monthly_price_cents ?: $row->price_cents);
+        });
 
         $pastDue = Tenant::query()
             ->where('billing_status', 'past_due')

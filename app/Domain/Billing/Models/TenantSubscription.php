@@ -9,7 +9,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class TenantSubscription extends Model
 {
     protected $fillable = [
-        'tenant_id', 'subscription_plan_id', 'starts_at', 'ends_at', 'status',
+        'tenant_id',
+        'subscription_plan_id',
+        'starts_at',
+        'ends_at',
+        'status',
+        'billing_interval',
+        'cancelled_at',
+        'meta',
     ];
 
     protected function casts(): array
@@ -17,6 +24,8 @@ class TenantSubscription extends Model
         return [
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
+            'cancelled_at' => 'datetime',
+            'meta' => 'array',
         ];
     }
 

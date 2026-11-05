@@ -44,6 +44,7 @@ class RolePermissionSeeder extends Seeder
             'promotions.view', 'promotions.manage',
             'notes.view', 'notes.manage',
             'platform.tenants', 'platform.subscriptions', 'platform.analytics',
+            'platform.leads', 'platform.demos', 'platform.payments.view', 'platform.payments.manage',
         ];
 
         foreach ($permissionNames as $name) {
@@ -55,6 +56,16 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'super admin', 'guard_name' => 'web', 'tenant_id' => PlatformTeam::ID],
         );
         $superAdmin->syncPermissions(Permission::query()->get());
+
+        $sales = Role::query()->firstOrCreate(
+            ['name' => 'sales', 'guard_name' => 'web', 'tenant_id' => PlatformTeam::ID],
+        );
+        $sales->syncPermissions(Permission::query()->whereIn('name', [
+            'platform.leads',
+            'platform.demos',
+            'platform.payments.view',
+            'platform.analytics',
+        ])->get());
 
         foreach (Tenant::query()->cursor() as $tenant) {
             TenantRoleProvisioner::provision((int) $tenant->getKey());

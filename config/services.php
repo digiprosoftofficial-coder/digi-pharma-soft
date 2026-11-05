@@ -41,4 +41,10 @@ return [
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
+    'whatsapp' => [
+        'endpoint' => env('WHATSAPP_API_ENDPOINT'),
+        'api_key' => env('WHATSAPP_API_KEY'),
+    ],
+
 ];
+

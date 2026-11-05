@@ -62,6 +62,51 @@
             </div>
         </section>
 
+        <section v-if="growth" class="mb-4">
+            <h3 class="h6 text-uppercase text-muted fw-semibold mb-3">{{ t('platform.growth_title') }}</h3>
+            <div class="row g-3">
+                <div class="col-6 col-md-3">
+                    <article class="platform-stat-card h-100 p-3 border rounded-3 bg-body">
+                        <span class="text-muted small fw-semibold text-uppercase">{{ t('platform.nav_leads') }}</span>
+                        <p class="h5 fw-semibold mb-0 mt-1">{{ growth.leads?.total ?? 0 }}</p>
+                        <p class="small text-muted mb-0">{{ growth.lead_conversion_rate }}% {{ t('platform.conversion_rate') }}</p>
+                    </article>
+                </div>
+                <div class="col-6 col-md-3">
+                    <article class="platform-stat-card h-100 p-3 border rounded-3 bg-body">
+                        <span class="text-muted small fw-semibold text-uppercase">{{ t('platform.nav_demos') }}</span>
+                        <p class="h5 fw-semibold mb-0 mt-1">{{ growth.demos?.total ?? 0 }}</p>
+                        <p class="small text-muted mb-0">{{ growth.demos?.pending ?? 0 }} pending</p>
+                    </article>
+                </div>
+                <div class="col-6 col-md-3">
+                    <article class="platform-stat-card h-100 p-3 border rounded-3 bg-body">
+                        <span class="text-muted small fw-semibold text-uppercase">{{ t('platform.trial_customers') }}</span>
+                        <p class="h5 fw-semibold mb-0 mt-1">{{ growth.trial_customers }}</p>
+                    </article>
+                </div>
+                <div class="col-6 col-md-3">
+                    <article class="platform-stat-card h-100 p-3 border rounded-3 bg-body">
+                        <span class="text-muted small fw-semibold text-uppercase">{{ t('platform.pending_payments') }}</span>
+                        <p class="h5 fw-semibold mb-0 mt-1">{{ growth.pending_payments }}</p>
+                        <p class="small text-muted mb-0">{{ growth.upcoming_renewals }} {{ t('platform.upcoming_renewals') }}</p>
+                    </article>
+                </div>
+                <div class="col-6 col-md-3">
+                    <article class="platform-stat-card h-100 p-3 border rounded-3 bg-body">
+                        <span class="text-muted small fw-semibold text-uppercase">{{ t('platform.yearly_revenue') }}</span>
+                        <p class="h5 fw-semibold mb-0 mt-1">{{ formatBillingMoney(growth.yearly_revenue_cents || 0) }}</p>
+                    </article>
+                </div>
+                <div class="col-6 col-md-3">
+                    <article class="platform-stat-card h-100 p-3 border rounded-3 bg-body">
+                        <span class="text-muted small fw-semibold text-uppercase">{{ t('platform.expired_subscriptions') }}</span>
+                        <p class="h5 fw-semibold mb-0 mt-1">{{ growth.expired_subscriptions }}</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
         <section class="mb-4">
             <h3 class="h6 text-uppercase text-muted fw-semibold mb-3">{{ t('platform.analytics_title') }}</h3>
             <div class="row g-3">
@@ -222,6 +267,7 @@ const props = defineProps({
     expiredCount: Number,
     analytics: { type: Object, required: true },
     billing: { type: Object, required: true },
+    growth: { type: Object, default: null },
     health: { type: Object, required: true },
     expiringSoon: { type: Array, default: () => [] },
     recentTenants: { type: Array, default: () => [] },

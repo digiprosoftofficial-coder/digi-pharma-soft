@@ -45,7 +45,8 @@ class PlatformBillingTest extends TestCase
         $invoice = PlatformInvoice::query()->where('tenant_id', $tenant->getKey())->first();
         $this->assertNotNull($invoice);
         $this->assertSame(PlatformInvoice::STATUS_OPEN, $invoice->status);
-        $this->assertSame(4900, $invoice->amount_cents);
+        $expectedAmount = (int) $tenant->activeSubscription?->plan?->price_cents;
+        $this->assertSame($expectedAmount, $invoice->amount_cents);
 
         $this->actingAs($admin)
             ->post(route('platform.billing.invoices.store'), [

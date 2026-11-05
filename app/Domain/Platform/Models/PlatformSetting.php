@@ -24,6 +24,15 @@ class PlatformSetting extends Model
         'default_locale',
         'default_timezone',
         'default_country_code',
+        'self_service_enabled',
+        'self_service_requires_approval',
+        'payment_instructions',
+        'bkash_merchant_number',
+        'nagad_merchant_number',
+        'bank_transfer_details',
+        'whatsapp_provider',
+        'whatsapp_api_key',
+        'notification_preferences',
     ];
 
     protected function casts(): array
@@ -35,6 +44,9 @@ class PlatformSetting extends Model
             'compliance_export_retention_days' => 'integer',
             'billing_grace_days' => 'integer',
             'auto_suspend_on_payment_failure' => 'boolean',
+            'self_service_enabled' => 'boolean',
+            'self_service_requires_approval' => 'boolean',
+            'notification_preferences' => 'array',
         ];
     }
 
@@ -42,6 +54,33 @@ class PlatformSetting extends Model
      * @return Attribute<string|null, string|null>
      */
     protected function smsApiKey(): Attribute
+    {
+        return Attribute::make(
+            get: function (?string $value): ?string {
+                if ($value === null || $value === '') {
+                    return null;
+                }
+
+                try {
+                    return Crypt::decryptString($value);
+                } catch (Throwable) {
+                    return $value;
+                }
+            },
+            set: function (?string $value): ?string {
+                if ($value === null || $value === '') {
+                    return null;
+                }
+
+                return Crypt::encryptString($value);
+            },
+        );
+    }
+
+    /**
+     * @return Attribute<string|null, string|null>
+     */
+    protected function whatsappApiKey(): Attribute
     {
         return Attribute::make(
             get: function (?string $value): ?string {

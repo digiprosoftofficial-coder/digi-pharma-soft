@@ -21,6 +21,13 @@
             <span class="ms-1">{{ networkAnnouncement.body }}</span>
         </div>
         <div
+            v-if="onboarding && !onboarding.is_complete"
+            class="alert alert-primary border-0 rounded-0 mb-0 small py-2 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2"
+        >
+            <span>{{ t('platform.onboarding_title') }} — {{ onboarding.percent }}%</span>
+            <Link href="/onboarding" class="btn btn-sm btn-outline-primary">{{ t('common.continue') || 'Continue' }}</Link>
+        </div>
+        <div
             v-if="mobileNavOpen"
             class="tenant-mobile-backdrop d-lg-none"
             aria-hidden="true"
@@ -299,6 +306,7 @@ const tenantName = computed(() => page.props.tenant?.name ?? 'Pharmacy');
 const userName = computed(() => page.props.auth?.user?.name ?? 'User');
 const impersonation = computed(() => page.props.impersonation);
 const networkAnnouncement = computed(() => page.props.networkAnnouncement);
+const onboarding = computed(() => page.props.onboarding);
 const multiBranch = computed(() => page.props.features?.multi_branch ?? false);
 const smartSearchEnabled = computed(() => page.props.features?.smart_search ?? true);
 const pharmacyNotesEnabled = computed(() => page.props.features?.pharmacy_notes ?? false);

@@ -18,6 +18,7 @@ class Tenant extends Model
         'name',
         'slug',
         'reseller_id',
+        'lead_id',
         'is_active',
         'trial_ends_at',
         'subscription_ends_at',
@@ -81,6 +82,11 @@ class Tenant extends Model
     public function reseller(): BelongsTo
     {
         return $this->belongsTo(Reseller::class);
+    }
+
+    public function lead(): BelongsTo
+    {
+        return $this->belongsTo(\App\Domain\Crm\Models\Lead::class);
     }
 
     public function users(): HasMany

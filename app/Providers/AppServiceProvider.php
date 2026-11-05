@@ -4,7 +4,10 @@ namespace App\Providers;
 
 use App\Domain\Accounting\Models\LedgerAccount;
 use App\Domain\Billing\Models\PlatformInvoice;
+use App\Domain\Billing\Models\PlatformPayment;
 use App\Domain\Billing\Models\SubscriptionPlan;
+use App\Domain\Crm\Models\DemoRequest;
+use App\Domain\Crm\Models\Lead;
 use App\Domain\Platform\Models\CatalogTemplate;
 use App\Domain\Platform\Models\PlatformProductType;
 use App\Domain\Platform\Models\PlatformAnnouncement;
@@ -52,7 +55,10 @@ use App\Policies\Platform\MasterProductPolicy;
 use App\Policies\Platform\MasterProductSuggestionPolicy;
 use App\Policies\Platform\PlatformProductTypePolicy;
 use App\Policies\Platform\PlatformAnnouncementPolicy;
+use App\Policies\Platform\DemoRequestPolicy;
+use App\Policies\Platform\LeadPolicy;
 use App\Policies\Platform\PlatformInvoicePolicy;
+use App\Policies\Platform\PlatformPaymentPolicy;
 use App\Policies\Platform\PlatformSettingPolicy;
 use App\Policies\Platform\ResellerPolicy;
 use App\Policies\Platform\SubscriptionPlanPolicy;
@@ -131,6 +137,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(MasterProductSuggestion::class, MasterProductSuggestionPolicy::class);
         Gate::policy(PlatformProductType::class, PlatformProductTypePolicy::class);
         Gate::policy(PlatformAnnouncement::class, PlatformAnnouncementPolicy::class);
+        Gate::policy(Lead::class, LeadPolicy::class);
+        Gate::policy(DemoRequest::class, DemoRequestPolicy::class);
+        Gate::policy(PlatformPayment::class, PlatformPaymentPolicy::class);
 
         Event::listen(Login::class, function (Login $event): void {
             $user = $event->user;

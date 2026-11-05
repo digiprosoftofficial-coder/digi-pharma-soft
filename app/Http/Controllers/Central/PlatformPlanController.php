@@ -91,8 +91,12 @@ final class PlatformPlanController extends Controller
                 'required', 'string', 'max:64', 'alpha_dash',
                 Rule::unique('subscription_plans', 'slug')->ignore($plan?->getKey()),
             ],
-            'price_cents' => ['required', 'integer', 'min:0'],
+            'price_cents' => ['nullable', 'integer', 'min:0'],
+            'monthly_price_cents' => ['nullable', 'integer', 'min:0'],
+            'yearly_price_cents' => ['nullable', 'integer', 'min:0'],
             'trial_days' => ['required', 'integer', 'min:0', 'max:365'],
+            'is_active' => ['boolean'],
+            'sort_order' => ['nullable', 'integer', 'min:0', 'max:10000'],
             'features' => ['nullable', 'array'],
             'features.pos' => ['boolean'],
             'features.reports' => ['boolean'],
@@ -118,7 +122,20 @@ final class PlatformPlanController extends Controller
             'limits.max_products' => ['nullable', 'integer', 'min:0', 'max:1000000'],
             'limits.max_import_rows' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'limits.max_branches' => ['nullable', 'integer', 'min:1', 'max:1000'],
+            'limits.max_users' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'limits.storage_limit_mb' => ['nullable', 'integer', 'min:0', 'max:10000000'],
         ]);
+
+        $monthly = $validated['monthly_price_cents'] ?? $validated['price_cents'] ?? null;
+        if ($monthly === null) {
+            $request->validate(['monthly_price_cents' => ['required', 'integer', 'min:0']]);
+            $monthly = 0;
+        }
+        $validated['monthly_price_cents'] = (int) $monthly;
+        $validated['yearly_price_cents'] = (int) ($validated['yearly_price_cents'] ?? ($validated['monthly_price_cents'] * 10));
+        $validated['price_cents'] = $validated['monthly_price_cents'];
+        $validated['is_active'] = $request->boolean('is_active', true);
+        $validated['sort_order'] = (int) ($validated['sort_order'] ?? 100);
 
         $importPreset = $request->input('features.import_preset', ProductImportCsv::PRESET_PRO);
         $importColumns = $importPreset === ProductImportCsv::PRESET_CUSTOM
@@ -158,6 +175,8 @@ final class PlatformPlanController extends Controller
             'max_products' => self::nullableLimit($request->input('limits.max_products')),
             'max_import_rows' => self::nullableLimit($request->input('limits.max_import_rows')),
             'max_branches' => self::nullableLimit($request->input('limits.max_branches')) ?? 1,
+            'max_users' => self::nullableLimit($request->input('limits.max_users')),
+            'storage_limit_mb' => self::nullableLimit($request->input('limits.storage_limit_mb')),
         ];
 
         return $validated;

@@ -10,10 +10,14 @@ use App\Http\Controllers\Central\PlatformAuditController;
 use App\Http\Controllers\Central\PlatformBillingController;
 use App\Http\Controllers\Central\PlatformCatalogTemplateController;
 use App\Http\Controllers\Central\PlatformDashboardController;
+use App\Http\Controllers\Central\PlatformDemoController;
 use App\Http\Controllers\Central\PlatformHealthController;
+use App\Http\Controllers\Central\PlatformLeadController;
 use App\Http\Controllers\Central\PlatformLoginController;
 use App\Http\Controllers\Central\PlatformMasterCatalogController;
 use App\Http\Controllers\Central\PlatformMasterSuggestionController;
+use App\Http\Controllers\Central\PlatformNotificationController;
+use App\Http\Controllers\Central\PlatformPaymentController;
 use App\Http\Controllers\Central\PlatformPlanController;
 use App\Http\Controllers\Central\PlatformProductTypeController;
 use App\Http\Controllers\Central\PlatformResellerController;
@@ -23,6 +27,9 @@ use App\Http\Controllers\Central\PlatformTenantController;
 use App\Http\Controllers\Central\PlatformTenantImpersonationController;
 use App\Http\Controllers\Central\PlatformTwoFactorSetupController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\Marketing\MarketingController;
+use App\Http\Controllers\Marketing\RegisterController;
+use App\Http\Controllers\Tenant\OnboardingController;
 use App\Http\Controllers\Tenant\AttendanceController;
 use App\Http\Controllers\Tenant\BarcodePrintController;
 use App\Http\Controllers\Tenant\BranchController;
@@ -78,9 +85,24 @@ use App\Http\Controllers\Tenant\TeamUserController;
 use App\Http\Controllers\Tenant\TenantSettingsController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return redirect()->route('login');
-});
+Route::get('/', [MarketingController::class, 'home'])->name('marketing.home');
+Route::get('/pricing', [MarketingController::class, 'pricing'])->name('marketing.pricing');
+Route::get('/demo', [MarketingController::class, 'demoForm'])->name('marketing.demo');
+Route::post('/demo', [MarketingController::class, 'storeDemo'])
+    ->middleware('throttle:10,1')
+    ->name('marketing.demo.store');
+
+Route::get('/get-started', [RegisterController::class, 'create'])->name('marketing.register');
+Route::post('/get-started/otp', [RegisterController::class, 'sendOtp'])
+    ->middleware('throttle:5,1')
+    ->name('marketing.register.otp');
+Route::post('/get-started/otp/verify', [RegisterController::class, 'verifyOtp'])
+    ->middleware('throttle:10,1')
+    ->name('marketing.register.otp.verify');
+Route::post('/get-started', [RegisterController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('marketing.register.store');
+Route::get('/get-started/pending', [RegisterController::class, 'pending'])->name('marketing.register.pending');
 
 Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
 
@@ -96,6 +118,8 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
     Route::middleware(['tenant.staff'])->group(function () {
         Route::name('tenant.')->group(function () {
             Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+            Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboarding.show');
+            Route::post('/onboarding/{step}', [OnboardingController::class, 'completeStep'])->name('onboarding.complete');
 
             Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
             Route::get('/sales/customer-bills', [CustomerBillsController::class, 'index'])->name('sales.customer-bills');
@@ -259,11 +283,33 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
         });
     });
 
-    Route::middleware(['role:super admin', 'platform.2fa'])->prefix('platform')->name('platform.')->group(function () {
+    Route::middleware(['role:super admin|sales', 'platform.2fa'])->prefix('platform')->name('platform.')->group(function () {
         Route::get('/two-factor', [PlatformTwoFactorSetupController::class, 'show'])
             ->name('two-factor.setup');
         Route::get('/dashboard', [PlatformDashboardController::class, 'index'])->name('dashboard');
         Route::get('/health', [PlatformHealthController::class, 'index'])->name('health.index');
+
+        Route::get('/leads', [PlatformLeadController::class, 'index'])->name('leads.index');
+        Route::get('/leads/create', [PlatformLeadController::class, 'create'])->name('leads.create');
+        Route::post('/leads', [PlatformLeadController::class, 'store'])->name('leads.store');
+        Route::get('/leads/{lead}', [PlatformLeadController::class, 'show'])->name('leads.show');
+        Route::get('/leads/{lead}/edit', [PlatformLeadController::class, 'edit'])->name('leads.edit');
+        Route::put('/leads/{lead}', [PlatformLeadController::class, 'update'])->name('leads.update');
+        Route::post('/leads/{lead}/notes', [PlatformLeadController::class, 'addNote'])->name('leads.notes.store');
+        Route::post('/leads/{lead}/convert', [PlatformLeadController::class, 'convert'])->name('leads.convert');
+
+        Route::get('/demos', [PlatformDemoController::class, 'index'])->name('demos.index');
+        Route::get('/demos/{demo}', [PlatformDemoController::class, 'show'])->name('demos.show');
+        Route::put('/demos/{demo}', [PlatformDemoController::class, 'update'])->name('demos.update');
+
+        Route::get('/payments', [PlatformPaymentController::class, 'index'])->name('payments.index');
+        Route::post('/payments/{payment}/verify', [PlatformPaymentController::class, 'verify'])->name('payments.verify');
+        Route::post('/payments/{payment}/reject', [PlatformPaymentController::class, 'reject'])->name('payments.reject');
+
+        Route::get('/notifications', [PlatformNotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/{id}/read', [PlatformNotificationController::class, 'markRead'])->name('notifications.read');
+        Route::post('/notifications/read-all', [PlatformNotificationController::class, 'markAllRead'])->name('notifications.read-all');
+
         Route::get('/tenants', [PlatformTenantController::class, 'index'])->name('tenants.index');
         Route::get('/tenants/create', [PlatformTenantController::class, 'create'])->name('tenants.create');
         Route::post('/tenants', [PlatformTenantController::class, 'store'])->name('tenants.store');

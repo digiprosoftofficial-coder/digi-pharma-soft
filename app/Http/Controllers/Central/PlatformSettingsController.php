@@ -47,6 +47,15 @@ final class PlatformSettingsController extends Controller
             'default_locale' => ['required', Rule::in(['en', 'bn'])],
             'default_timezone' => ['required', 'string', 'max:64'],
             'default_country_code' => ['required', 'string', 'size:2'],
+            'self_service_enabled' => ['boolean'],
+            'self_service_requires_approval' => ['boolean'],
+            'payment_instructions' => ['nullable', 'string', 'max:5000'],
+            'bkash_merchant_number' => ['nullable', 'string', 'max:32'],
+            'nagad_merchant_number' => ['nullable', 'string', 'max:32'],
+            'bank_transfer_details' => ['nullable', 'string', 'max:5000'],
+            'whatsapp_provider' => ['nullable', 'string', 'max:64'],
+            'whatsapp_api_key' => ['nullable', 'string', 'max:500'],
+            'clear_whatsapp_api_key' => ['boolean'],
         ]);
 
         PlatformSettings::update([
@@ -70,6 +79,15 @@ final class PlatformSettingsController extends Controller
             'default_locale' => $validated['default_locale'],
             'default_timezone' => $validated['default_timezone'],
             'default_country_code' => strtoupper($validated['default_country_code']),
+            'self_service_enabled' => $request->boolean('self_service_enabled', true),
+            'self_service_requires_approval' => $request->boolean('self_service_requires_approval'),
+            'payment_instructions' => $validated['payment_instructions'] ?? null,
+            'bkash_merchant_number' => $validated['bkash_merchant_number'] ?? null,
+            'nagad_merchant_number' => $validated['nagad_merchant_number'] ?? null,
+            'bank_transfer_details' => $validated['bank_transfer_details'] ?? null,
+            'whatsapp_provider' => $validated['whatsapp_provider'] ?? null,
+            'whatsapp_api_key' => $validated['whatsapp_api_key'] ?? null,
+            'clear_whatsapp_api_key' => $request->boolean('clear_whatsapp_api_key'),
         ]);
 
         activity()

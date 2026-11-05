@@ -199,6 +199,46 @@
                 </div>
             </div>
 
+            <h2 class="h6 mt-4">Self-service &amp; payments</h2>
+            <div class="form-check mb-2">
+                <input id="self_service_enabled" v-model="form.self_service_enabled" type="checkbox" class="form-check-input" />
+                <label class="form-check-label" for="self_service_enabled">Enable online registration</label>
+            </div>
+            <div class="form-check mb-3">
+                <input id="self_service_requires_approval" v-model="form.self_service_requires_approval" type="checkbox" class="form-check-input" />
+                <label class="form-check-label" for="self_service_requires_approval">Require payment approval before access</label>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Payment instructions</label>
+                <textarea v-model="form.payment_instructions" class="form-control" rows="2" />
+            </div>
+            <div class="row g-2 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">bKash merchant</label>
+                    <input v-model="form.bkash_merchant_number" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Nagad merchant</label>
+                    <input v-model="form.nagad_merchant_number" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">WhatsApp provider</label>
+                    <input v-model="form.whatsapp_provider" class="form-control" />
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Bank transfer details</label>
+                <textarea v-model="form.bank_transfer_details" class="form-control" rows="2" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">WhatsApp API key</label>
+                <input v-model="form.whatsapp_api_key" type="password" class="form-control" autocomplete="new-password" :placeholder="settings.whatsapp_api_key_set ? '••••••••' : ''" />
+                <div class="form-check mt-1">
+                    <input id="clear_whatsapp_api_key" v-model="form.clear_whatsapp_api_key" type="checkbox" class="form-check-input" />
+                    <label class="form-check-label" for="clear_whatsapp_api_key">Clear WhatsApp API key</label>
+                </div>
+            </div>
+
             <button type="submit" class="btn btn-primary" :disabled="form.processing">{{ t('common.save') }}</button>
         </form>
     </PlatformShellLayout>
@@ -242,6 +282,15 @@ const form = useForm({
     default_locale: props.settings.default_locale ?? 'en',
     default_timezone: props.settings.default_timezone ?? 'Asia/Dhaka',
     default_country_code: props.settings.default_country_code ?? 'BD',
+    self_service_enabled: props.settings.self_service_enabled ?? true,
+    self_service_requires_approval: props.settings.self_service_requires_approval ?? false,
+    payment_instructions: props.settings.payment_instructions ?? '',
+    bkash_merchant_number: props.settings.bkash_merchant_number ?? '',
+    nagad_merchant_number: props.settings.nagad_merchant_number ?? '',
+    bank_transfer_details: props.settings.bank_transfer_details ?? '',
+    whatsapp_provider: props.settings.whatsapp_provider ?? '',
+    whatsapp_api_key: '',
+    clear_whatsapp_api_key: false,
 });
 
 function submit() {

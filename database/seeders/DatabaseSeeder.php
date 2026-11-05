@@ -26,16 +26,9 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $plan = SubscriptionPlan::query()->firstOrCreate(
-            ['slug' => 'professional'],
-            [
-                'name' => 'Professional',
-                'price_cents' => 4900,
-                'trial_days' => 14,
-                'features' => ['pos' => true, 'reports' => true, 'markup_pricing' => true, 'multi_branch' => false],
-                'limits' => ['max_branches' => 1],
-            ],
-        );
+        $this->call(SubscriptionPlanSeeder::class);
+
+        $plan = SubscriptionPlan::query()->where('slug', 'professional')->firstOrFail();
 
         $tenant = Tenant::query()->create([
             'name' => 'Demo Pharmacy',

@@ -132,22 +132,33 @@ onUnmounted(() => {
     document.body.classList.remove('overflow-hidden');
 });
 
+const permissions = computed(() => page.props.auth?.user?.permissions || []);
+const isSuper = computed(() => (page.props.auth?.user?.roles || []).includes('super admin') || page.props.auth?.user?.is_platform_super_admin);
+
+function can(perm) {
+    return isSuper.value || permissions.value.includes(perm);
+}
+
 const navItems = computed(() => [
     { href: '/platform/dashboard', label: t('platform.nav_overview') },
-    { href: '/platform/tenants', label: t('platform.nav_pharmacies') },
-    { href: '/platform/plans', label: t('platform.nav_plans') },
-    { href: '/platform/resellers', label: t('platform.nav_resellers') },
-    { href: '/platform/master-catalog', label: t('platform.nav_master_catalog') },
-    { href: '/platform/master-catalog/suggestions', label: t('platform.nav_master_suggestions') },
-    { href: '/platform/catalog-templates', label: t('platform.nav_catalog') },
-    { href: '/platform/product-types', label: t('platform.nav_product_types') },
-    { href: '/platform/announcements', label: t('platform.nav_announcements') },
-    { href: '/platform/billing', label: t('platform.nav_billing') },
-    { href: '/platform/admins', label: t('platform.nav_admins') },
-    { href: '/platform/audit', label: t('platform.nav_audit') },
-    { href: '/platform/health', label: t('platform.nav_health') },
-    { href: '/platform/settings', label: t('platform.nav_settings') },
-]);
+    can('platform.leads') ? { href: '/platform/leads', label: t('platform.nav_leads') } : null,
+    can('platform.demos') ? { href: '/platform/demos', label: t('platform.nav_demos') } : null,
+    can('platform.payments.view') ? { href: '/platform/payments', label: t('platform.nav_payments') } : null,
+    isSuper.value ? { href: '/platform/tenants', label: t('platform.nav_pharmacies') } : null,
+    isSuper.value ? { href: '/platform/plans', label: t('platform.nav_plans') } : null,
+    isSuper.value ? { href: '/platform/resellers', label: t('platform.nav_resellers') } : null,
+    isSuper.value ? { href: '/platform/master-catalog', label: t('platform.nav_master_catalog') } : null,
+    isSuper.value ? { href: '/platform/master-catalog/suggestions', label: t('platform.nav_master_suggestions') } : null,
+    isSuper.value ? { href: '/platform/catalog-templates', label: t('platform.nav_catalog') } : null,
+    isSuper.value ? { href: '/platform/product-types', label: t('platform.nav_product_types') } : null,
+    isSuper.value ? { href: '/platform/announcements', label: t('platform.nav_announcements') } : null,
+    isSuper.value ? { href: '/platform/billing', label: t('platform.nav_billing') } : null,
+    { href: '/platform/notifications', label: t('platform.nav_notifications') },
+    isSuper.value ? { href: '/platform/admins', label: t('platform.nav_admins') } : null,
+    isSuper.value ? { href: '/platform/audit', label: t('platform.nav_audit') } : null,
+    isSuper.value ? { href: '/platform/health', label: t('platform.nav_health') } : null,
+    isSuper.value ? { href: '/platform/settings', label: t('platform.nav_settings') } : null,
+].filter(Boolean));
 
 function pathNow() {
     return (page.url || '').split('?')[0];

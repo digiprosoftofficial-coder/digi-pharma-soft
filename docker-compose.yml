@@ -11,8 +11,8 @@ services:
       DB_DATABASE: ${DB_DATABASE:-digi_saas_pharma}
       DB_USERNAME: root
       DB_PASSWORD: ${DB_PASSWORD:-rootroot}
-      APP_URL: http://localhost:8000
-      SANCTUM_STATEFUL_DOMAINS: localhost:8000,localhost,127.0.0.1:8000,127.0.0.1
+      APP_URL: http://localhost:8010
+      SANCTUM_STATEFUL_DOMAINS: localhost:8010,localhost,127.0.0.1:8010,127.0.0.1
       RUN_MIGRATIONS: "true"
     volumes:
       - storage:/var/www/html/storage
@@ -42,7 +42,7 @@ services:
       context: .
       target: web
     ports:
-      - "127.0.0.1:8000:80"
+      - "127.0.0.1:8010:80"
     volumes:
       - storage:/var/www/html/storage:ro
     depends_on:
@@ -55,7 +55,7 @@ services:
       MYSQL_DATABASE: ${DB_DATABASE:-digi_saas_pharma}
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-rootroot}
     ports:
-      - "127.0.0.1:3306:3306"
+      - "127.0.0.1:3310:3306"
     volumes:
       - dbdata:/var/lib/mysql
     healthcheck:
@@ -68,7 +68,7 @@ services:
   phpmyadmin:
     image: phpmyadmin:latest
     ports:
-      - "127.0.0.1:8080:80"
+      - "127.0.0.1:8082:80"
     environment:
       PMA_HOST: db
       PMA_PORT: 3306

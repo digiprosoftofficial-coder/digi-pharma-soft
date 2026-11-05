@@ -119,10 +119,58 @@ final class PlatformSettings
             $row->default_country_code = strtoupper((string) $data['default_country_code']) ?: 'BD';
         }
 
+        if (array_key_exists('self_service_enabled', $data)) {
+            $row->self_service_enabled = (bool) $data['self_service_enabled'];
+        }
+
+        if (array_key_exists('self_service_requires_approval', $data)) {
+            $row->self_service_requires_approval = (bool) $data['self_service_requires_approval'];
+        }
+
+        if (array_key_exists('payment_instructions', $data)) {
+            $row->payment_instructions = $data['payment_instructions'] ?: null;
+        }
+
+        if (array_key_exists('bkash_merchant_number', $data)) {
+            $row->bkash_merchant_number = $data['bkash_merchant_number'] ?: null;
+        }
+
+        if (array_key_exists('nagad_merchant_number', $data)) {
+            $row->nagad_merchant_number = $data['nagad_merchant_number'] ?: null;
+        }
+
+        if (array_key_exists('bank_transfer_details', $data)) {
+            $row->bank_transfer_details = $data['bank_transfer_details'] ?: null;
+        }
+
+        if (array_key_exists('whatsapp_provider', $data)) {
+            $row->whatsapp_provider = $data['whatsapp_provider'] ?: null;
+        }
+
+        if (! empty($data['clear_whatsapp_api_key'])) {
+            $row->whatsapp_api_key = null;
+        } elseif (array_key_exists('whatsapp_api_key', $data) && $data['whatsapp_api_key'] !== null && $data['whatsapp_api_key'] !== '') {
+            $row->whatsapp_api_key = $data['whatsapp_api_key'];
+        }
+
+        if (array_key_exists('notification_preferences', $data)) {
+            $row->notification_preferences = $data['notification_preferences'];
+        }
+
         $row->save();
         Cache::forget(self::CACHE_KEY);
 
         return self::present($row->fresh());
+    }
+
+    public static function selfServiceEnabled(): bool
+    {
+        return (bool) (self::get()['self_service_enabled'] ?? true);
+    }
+
+    public static function selfServiceRequiresApproval(): bool
+    {
+        return (bool) (self::get()['self_service_requires_approval'] ?? false);
     }
 
     public static function defaultTrialDays(): int
@@ -227,6 +275,16 @@ final class PlatformSettings
             'default_locale' => (string) ($row->default_locale ?? 'en'),
             'default_timezone' => (string) ($row->default_timezone ?? 'Asia/Dhaka'),
             'default_country_code' => (string) ($row->default_country_code ?? 'BD'),
+            'self_service_enabled' => (bool) ($row->self_service_enabled ?? true),
+            'self_service_requires_approval' => (bool) ($row->self_service_requires_approval ?? false),
+            'payment_instructions' => $row->payment_instructions,
+            'bkash_merchant_number' => $row->bkash_merchant_number,
+            'nagad_merchant_number' => $row->nagad_merchant_number,
+            'bank_transfer_details' => $row->bank_transfer_details,
+            'whatsapp_provider' => $row->whatsapp_provider,
+            'whatsapp_api_key' => null,
+            'whatsapp_api_key_set' => filled($row->whatsapp_api_key),
+            'notification_preferences' => $row->notification_preferences ?? [],
         ];
     }
 }

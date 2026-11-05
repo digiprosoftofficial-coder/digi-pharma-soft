@@ -13,6 +13,7 @@ use App\Support\Tenant\BranchContext;
 use App\Support\Tenant\TenantContext;
 use App\Support\Tenant\TenantFeatures;
 use App\Support\Tenant\TenantImpersonation;
+use App\Support\Tenant\TenantOnboarding;
 use App\Support\Http\UserFacingDialog;
 use App\Support\Theme\ThemeCatalog;
 use Illuminate\Http\Request;
@@ -67,12 +68,18 @@ class HandleInertiaRequests extends Middleware
                 ? PlatformAnnouncementService::activeBanner()
                 : null,
             'registrationEnabled' => Features::enabled(Features::registration()),
+            'onboarding' => $tenant && $authUser && ! $authUser->shouldUsePlatformDashboard()
+                ? TenantOnboarding::progress($tenant)
+                : null,
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'info' => $request->session()->get('info'),
                 'warning' => $request->session()->get('warning'),
                 'error' => $request->session()->get('error'),
                 'app_dialog' => $request->session()->get(UserFacingDialog::SESSION_KEY),
+                'otp_session_token' => $request->session()->get('otp_session_token'),
+                'phone_verified' => $request->session()->get('phone_verified'),
+                'otp_debug_code' => $request->session()->get('otp_debug_code'),
             ],
             'auth' => [
                 'user' => $authUser instanceof User ? [

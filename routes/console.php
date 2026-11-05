@@ -11,3 +11,4 @@ Artisan::command('inspire', function () {
 Schedule::command('tenants:suspend-expired')->dailyAt('01:15');
 Schedule::command('platform:purge-compliance-retention')->dailyAt('02:00');
 Schedule::command('platform:suspend-payment-delinquent')->dailyAt('03:00');
+Schedule::command('platform:notify-subscription-lifecycle')->dailyAt('09:00');
