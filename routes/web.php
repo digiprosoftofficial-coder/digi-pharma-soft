@@ -91,6 +91,9 @@ Route::get('/demo', [MarketingController::class, 'demoForm'])->name('marketing.d
 Route::post('/demo', [MarketingController::class, 'storeDemo'])
     ->middleware('throttle:10,1')
     ->name('marketing.demo.store');
+Route::get('/privacy', [MarketingController::class, 'privacy'])->name('marketing.privacy');
+Route::get('/terms', [MarketingController::class, 'terms'])->name('marketing.terms');
+Route::get('/sitemap.xml', [MarketingController::class, 'sitemap'])->name('marketing.sitemap');
 
 Route::get('/get-started', [RegisterController::class, 'create'])->name('marketing.register');
 Route::post('/get-started/otp', [RegisterController::class, 'sendOtp'])
