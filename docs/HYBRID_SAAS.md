@@ -6,7 +6,7 @@ Additive commercial layer on top of existing DigiProSoft pharmacy ops. **No exis
 
 | Area | Routes / UI |
 |------|-------------|
-| Public marketing | `/`, `/pricing`, `/demo`, `/get-started` |
+| Public marketing | `/`, `/pricing`, `/demo`, `/get-started` — brand colors: [MARKETING_BRAND.md](./MARKETING_BRAND.md) |
 | Leads CRM | `/platform/leads` |
 | Demo booking | `/platform/demos` + public `/demo` |
 | Payments (manual BD) | `/platform/payments` |

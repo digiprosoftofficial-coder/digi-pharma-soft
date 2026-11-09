@@ -222,3 +222,4 @@ Granular permissions seeded via `RolePermissionSeeder`, including: products, cat
 ## Recently Added
 
 - **PWA + Offline POS** (2026-07-18): installable app, offline catalog cache, offline sales queue with automatic idempotent sync. See migration `add_offline_client_id_to_sales_table`, `resources/js/offline/db.js`, `resources/js/composables/useOfflinePos.js`.
+- **Public marketing brand tokens**: SoftoPharma home/pricing palette (`--sp-forest`, `--sp-brand`, cream/sage, etc.). See [MARKETING_BRAND.md](./MARKETING_BRAND.md).
