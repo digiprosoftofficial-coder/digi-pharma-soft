@@ -47,15 +47,104 @@ export function catalogStripsPerBox(product) {
 }
 
 export function catalogBoxesPerCarton(product) {
-    if (product?.boxes_per_carton != null && product.boxes_per_carton !== '') {
-        return Number(product.boxes_per_carton);
-    }
     const boxFactor = boxConversionFactor(product);
     const cartonFactor = unitConversionFactor(product, 'carton');
-    if (boxFactor > 0 && cartonFactor > 0) {
-        return cartonFactor / boxFactor;
+    const derived = boxFactor > 0 && cartonFactor > 0
+        ? cartonFactor / boxFactor
+        : null;
+
+    const stored = product?.boxes_per_carton != null && product.boxes_per_carton !== ''
+        ? Number(product.boxes_per_carton)
+        : null;
+
+    // Prefer catalog field, but ignore a stale "1" when unit math implies a real multi-box carton.
+    if (stored != null && stored > 0) {
+        if (derived != null && stored <= 1 && derived > 1.0001) {
+            return Math.round(derived * 10000) / 10000;
+        }
+
+        return stored;
     }
-    return null;
+
+    return derived != null ? Math.round(derived * 10000) / 10000 : null;
+}
+
+/**
+ * Strips/pieces contained in one box — used when buying by carton
+ * (boxes_per_carton × boxFactor → base units per carton).
+ *
+ * Prefer catalog pack fields (and receipt overrides) over a possibly-stale
+ * box unit conversion_factor of 1, which previously made carton stock wrong
+ * while box purchases still looked correct via strips_per_box.
+ *
+ * @param {{
+ *   base_unit?: string,
+ *   unit_options?: Array<{sell_unit:string,conversion_factor?:number}>,
+ *   units?: Array<{sell_unit:string,conversion_factor?:number}>,
+ *   pack_strips_per_box?: number|null,
+ *   pack_pieces_per_box?: number|null,
+ *   catalog_strips_per_box?: number|null,
+ *   catalog_pieces_per_box?: number|null,
+ *   strips_per_box?: number|null,
+ *   pieces_per_box?: number|null,
+ * }} lineOrProduct
+ */
+export function resolveBoxFactorForLine(lineOrProduct) {
+    if (!lineOrProduct) {
+        return 0;
+    }
+
+    const base = lineOrProduct.base_unit ?? 'strip';
+    if (base === 'box') {
+        return 1;
+    }
+
+    const units = lineOrProduct.unit_options ?? lineOrProduct.units;
+
+    if (base === 'strip') {
+        const packOverride = Number(lineOrProduct.pack_strips_per_box);
+        if (packOverride > 0) {
+            return packOverride;
+        }
+        const catalog = Number(
+            lineOrProduct.catalog_strips_per_box ?? lineOrProduct.strips_per_box,
+        );
+        if (catalog > 0) {
+            return catalog;
+        }
+        const inferred = catalogStripsPerBox({
+            units,
+            strips_per_box: lineOrProduct.catalog_strips_per_box ?? lineOrProduct.strips_per_box,
+            base_unit: base,
+        });
+        if (inferred > 0) {
+            return inferred;
+        }
+    }
+
+    if (base === 'piece') {
+        const packOverride = Number(lineOrProduct.pack_pieces_per_box);
+        if (packOverride > 0) {
+            return packOverride;
+        }
+        const catalog = Number(
+            lineOrProduct.catalog_pieces_per_box ?? lineOrProduct.pieces_per_box,
+        );
+        if (catalog > 0) {
+            return catalog;
+        }
+        const inferred = catalogPiecesPerBox({
+            units,
+            pieces_per_box: lineOrProduct.catalog_pieces_per_box ?? lineOrProduct.pieces_per_box,
+            base_unit: base,
+        });
+        if (inferred > 0) {
+            return inferred;
+        }
+    }
+
+    const fromUnits = boxConversionFactor(units);
+    return fromUnits > 0 ? fromUnits : 0;
 }
 
 export function catalogPiecesPerBox(product) {
@@ -155,6 +244,9 @@ export function buildPurchaseUnitOptions(product, { stripTypes = ['tablet', 'cap
             conversionFactor = boxFactor * bpc;
         } else if (sellUnit === 'carton' && base === 'box' && bpc > 0) {
             conversionFactor = bpc;
+        } else if (sellUnit === 'carton') {
+            // Do not invent conversion_factor=1 (1 base unit per carton) — skip synthesizing.
+            return null;
         }
 
         return {
@@ -164,7 +256,7 @@ export function buildPurchaseUnitOptions(product, { stripTypes = ['tablet', 'cap
             sale_price: conversionFactor > 0 ? baseSale * conversionFactor : baseSale,
             is_default: sellUnit === base,
         };
-    });
+    }).filter(Boolean);
 }
 
 /**

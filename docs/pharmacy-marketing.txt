@@ -1,0 +1,128 @@
+কাজগুলো দুইভাবে টেস্ট করতে পারেন: **অটোমেটেড টেস্ট** আর **ম্যানুয়াল ব্রাউজার টেস্ট**।
+
+---
+
+## 1) আগে সার্ভার চালু করুন
+
+Docker দিয়ে চালাচ্ছেন বলে মনে হচ্ছে:
+
+```bash
+docker compose up -d --build web app
+# প্রয়োজন হলে queue worker ও:
+# docker compose exec app php artisan queue:work
+```
+
+লোকালি (Docker ছাড়া):
+
+```bash
+composer run dev
+# বা: php artisan serve + npm run dev
+```
+
+মাইগ্রেশন/সিড (ফ্রেশ DB হলে):
+
+```bash
+php artisan migrate
+php artisan db:seed
+```
+
+**লগইন অ্যাকাউন্ট (সিডার):**
+| কে | URL | Email | Password |
+|----|-----|-------|----------|
+| Super Admin | `/platform/login` | `admin@example.com` | `password` |
+| Pharmacy Owner | `/login` | `owner@example.com` | `password` |
+
+---
+
+## 2) অটোমেটেড টেস্ট (দ্রুত নিশ্চিতকরণ)
+
+প্রজেক্ট রুটে:
+
+```bash
+php artisan test --filter='LeadManagementTest|DemoAndPaymentTest|SelfServiceRegistrationTest|PlatformPlanCrudTest|PlatformBillingTest'
+```
+
+এগুলো চেক করে: lead create/convert, public demo, payment verify, self-service trial signup, plan CRUD, পুরনো billing।
+
+---
+
+## 3) ম্যানুয়াল টেস্ট চেকলিস্ট
+
+### A. Public marketing
+1. ব্রাউজারে খুলুন: `/` → হোম  
+2. `/pricing` → মাসিক/বাৎসরিক টগল, প্ল্যান দেখা যায় কিনা  
+3. `/demo` → ফর্ম সাবমিট (ফার্মেসি নাম, মোবাইল ইত্যাদি)  
+4. Success মেসেজ আসলে Super Admin এ `/platform/demos` ও `/platform/leads`-এ নতুন রেকর্ড দেখুন  
+
+### B. Lead CRM (Super Admin)
+1. `/platform/login` → admin  
+2. **Leads** → New lead তৈরি  
+3. Lead detail → status/assign/note  
+4. **Convert to customer** → নতুন pharmacy `/platform/tenants`-এ তৈরি হয় কিনা  
+
+### C. Plans (মাসিক/বাৎসরিক)
+1. `/platform/plans` → Edit/Create  
+2. Monthly + Yearly price, Active, Sort order সেভ হয় কিনা  
+
+### D. Self-service registration
+1. Logout করে `/get-started`  
+2. Phone দিন → **Send OTP**  
+3. Dev-এ OTP সাধারণত flash/log-এ দেখা যায় (production নয়)  
+4. OTP Verify → Trial চেক করে অ্যাকাউন্ট তৈরি  
+5. Trial হলে pharmacy dashboard খোলা উচিত; payment path হলে `/get-started/pending`  
+
+OTP কোড না দেখলে (লোকাল):
+
+```bash
+# storage/logs/laravel.log এ "OTP issued" খুঁজুন
+tail -f storage/logs/laravel.log
+```
+
+### E. Payment verify
+1. Signup করে trial ছাড়া payment + transaction ID দিন  
+2. Admin → `/platform/payments` → **Verify**  
+3. Tenant `billing_status` active হয় ও অ্যাক্সেস খোলে কিনা  
+4. একই trx আবার দিলে duplicate block হয় কিনা  
+
+### F. Onboarding
+1. Owner (`owner@example.com`) বা নতুন trial অ্যাকাউন্ট দিয়ে `/login`  
+2. টপ ব্যানারে onboarding % দেখা যায় কিনা  
+3. `/onboarding` → ধাপগুলোতে লিংক (settings, branches, products…) কাজ করে কিনা  
+
+### G. Dashboard analytics
+1. Admin → `/platform/dashboard`  
+2. Growth সেকশনে leads/demos/trial/pending payments/MRR — স্ট্যাটিক না, DB থেকে  
+
+### H. Settings
+1. `/platform/settings` → self-service on/off, bKash/Nagad/bank নম্বর সেভ  
+
+### I. পুরনো pharmacy ops ভাঙেনি
+1. Owner লগইন → POS সেল, purchase, product list  
+2. Expired subscription থাকলে tenant block, **platform admin আটকাবে না**  
+
+---
+
+## 4) Sales রোল টেস্ট (ঐচ্ছিক)
+
+সিডারে শুধু `super admin` ইউজার আছে। Sales ইউজার ম্যানুয়ালি তৈরি করে `sales` রোল দিলে:
+- `/platform/leads`, `/demos`, `/payments` দেখা যাবে  
+- Tenants/Plans/Settings দেখা যাবে না (nav + policy)
+
+---
+
+## 5) সাধারণ সমস্যা
+
+| সমস্যা | কী করবেন |
+|--------|----------|
+| 404 নতুন পেজে | `migrate` রান হয়েছে কিনা; Vite/assets build (`npm run build` বা `npm run dev`) |
+| Inertia/Vue পুরনো | soft refresh / `npm run dev` |
+| OTP পাচ্ছেন না | log দেখুন; MAIL/SMS stub — local-এ flash `otp_debug_code` |
+| Queue notification delay | `php artisan queue:work` চালু রাখুন |
+| Docker-এ পুরনো কোড | `docker compose up -d --build` |
+
+---
+
+**সবচেয়ে ছোট পাথ:**  
+`php artisan test --filter='LeadManagementTest|DemoAndPaymentTest|SelfServiceRegistrationTest'` চালান → তারপর ব্রাউজারে `/demo` সাবমিট → admin এ lead/demo দেখুন → `/get-started` দিয়ে trial অ্যাকাউন্ট খুলুন।
+
+চাইলে Agent mode-এ আমি আপনার Docker URL ধরে ধাপে ধাপে browser দিয়েও ভেরিফাই করতে পারি।

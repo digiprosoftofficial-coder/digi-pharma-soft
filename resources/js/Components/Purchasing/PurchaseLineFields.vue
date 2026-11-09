@@ -88,67 +88,113 @@
                     </p>
                 </div>
 
-                <div v-if="needsPackSize" class="purchase-trade-pack">
-                    <label class="purchase-trade-label" :for="packInputId">{{ packSizeLabel }}</label>
-                    <input
-                        v-if="usesStripsPerBox"
-                        :id="packInputId"
-                        v-model.number="line.pack_strips_per_box"
-                        type="number"
-                        min="0.0001"
-                        step="any"
-                        class="form-control form-control-sm"
-                        :required="requireFields"
-                        inputmode="decimal"
-                        @input="syncPackInput"
-                    />
-                    <input
-                        v-else-if="usesPiecesPerBox"
-                        :id="packInputId"
-                        v-model.number="line.pack_pieces_per_box"
-                        type="number"
-                        min="0.0001"
-                        step="any"
-                        class="form-control form-control-sm"
-                        :required="requireFields"
-                        inputmode="decimal"
-                        @input="syncPackInput"
-                    />
-                    <input
-                        v-else-if="usesPiecesPerStrip"
-                        :id="packInputId"
-                        v-model.number="line.pack_pieces_per_strip"
-                        type="number"
-                        min="0.0001"
-                        step="any"
-                        class="form-control form-control-sm"
-                        :required="requireFields"
-                        inputmode="decimal"
-                        @input="syncPackInput"
-                    />
-                    <input
-                        v-else-if="usesBoxesPerCarton"
-                        :id="packInputId"
-                        v-model.number="line.pack_boxes_per_carton"
-                        type="number"
-                        min="0.0001"
-                        step="any"
-                        class="form-control form-control-sm"
-                        :required="requireFields"
-                        inputmode="decimal"
-                        @input="syncPackInput"
-                    />
-                    <input
-                        v-else
-                        :id="packInputId"
-                        v-model.number="line.conversion_factor"
-                        type="number"
-                        min="0.0001"
-                        step="any"
-                        class="form-control form-control-sm"
-                        :required="requireFields"
-                        inputmode="decimal"
-                    />
+                <div
+                    v-if="needsPackSize"
+                    class="purchase-trade-pack"
+                    :class="{ 'purchase-trade-pack--dual': usesBoxesPerCarton && (cartonShowsPiecesPerBox || cartonShowsStripsPerBox) }"
+                >
+                    <template v-if="usesBoxesPerCarton">
+                        <div class="purchase-trade-pack__row">
+                            <div v-if="cartonShowsPiecesPerBox" class="purchase-trade-pack__field">
+                                <label class="purchase-trade-label" :for="packBoxFactorInputId">
+                                    {{ t('catalog.purchase_pieces_per_box') }}
+                                </label>
+                                <input
+                                    :id="packBoxFactorInputId"
+                                    v-model.number="line.pack_pieces_per_box"
+                                    type="number"
+                                    min="0.0001"
+                                    step="any"
+                                    class="form-control form-control-sm"
+                                    :required="requireFields"
+                                    inputmode="decimal"
+                                    @input="syncPackInput"
+                                />
+                            </div>
+                            <div v-else-if="cartonShowsStripsPerBox" class="purchase-trade-pack__field">
+                                <label class="purchase-trade-label" :for="packBoxFactorInputId">
+                                    {{ t('catalog.purchase_strips_per_box') }}
+                                </label>
+                                <input
+                                    :id="packBoxFactorInputId"
+                                    v-model.number="line.pack_strips_per_box"
+                                    type="number"
+                                    min="0.0001"
+                                    step="any"
+                                    class="form-control form-control-sm"
+                                    :required="requireFields"
+                                    inputmode="decimal"
+                                    @input="syncPackInput"
+                                />
+                            </div>
+                            <div class="purchase-trade-pack__field">
+                                <label class="purchase-trade-label" :for="packInputId">
+                                    {{ t('catalog.purchase_boxes_per_carton') }}
+                                </label>
+                                <input
+                                    :id="packInputId"
+                                    v-model.number="line.pack_boxes_per_carton"
+                                    type="number"
+                                    min="0.0001"
+                                    step="any"
+                                    class="form-control form-control-sm"
+                                    :required="requireFields"
+                                    inputmode="decimal"
+                                    @input="syncPackInput"
+                                />
+                            </div>
+                        </div>
+                    </template>
+                    <template v-else>
+                        <label class="purchase-trade-label" :for="packInputId">{{ packSizeLabel }}</label>
+                        <input
+                            v-if="usesStripsPerBox"
+                            :id="packInputId"
+                            v-model.number="line.pack_strips_per_box"
+                            type="number"
+                            min="0.0001"
+                            step="any"
+                            class="form-control form-control-sm"
+                            :required="requireFields"
+                            inputmode="decimal"
+                            @input="syncPackInput"
+                        />
+                        <input
+                            v-else-if="usesPiecesPerBox"
+                            :id="packInputId"
+                            v-model.number="line.pack_pieces_per_box"
+                            type="number"
+                            min="0.0001"
+                            step="any"
+                            class="form-control form-control-sm"
+                            :required="requireFields"
+                            inputmode="decimal"
+                            @input="syncPackInput"
+                        />
+                        <input
+                            v-else-if="usesPiecesPerStrip"
+                            :id="packInputId"
+                            v-model.number="line.pack_pieces_per_strip"
+                            type="number"
+                            min="0.0001"
+                            step="any"
+                            class="form-control form-control-sm"
+                            :required="requireFields"
+                            inputmode="decimal"
+                            @input="syncPackInput"
+                        />
+                        <input
+                            v-else
+                            :id="packInputId"
+                            v-model.number="line.conversion_factor"
+                            type="number"
+                            min="0.0001"
+                            step="any"
+                            class="form-control form-control-sm"
+                            :required="requireFields"
+                            inputmode="decimal"
+                        />
+                    </template>
                     <p v-if="quantityBase > 0" class="purchase-trade-pack__meta mb-0">
                         <span>
                             {{ t('purchases.stock_add_short', {
@@ -156,6 +202,7 @@
                                 unit: unitLabel(line.base_unit),
                             }) }}
                         </span>
+                        <span v-if="packSizeBreakdown" class="text-muted"> · {{ packSizeBreakdown }}</span>
                         <span v-if="packSizeDiffersFromDefault" class="text-warning"> · {{ packSizeDefaultHint }}</span>
                     </p>
                 </div>
@@ -223,11 +270,11 @@ import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { useQuantity } from '@/composables/useQuantity';
 import {
-    boxConversionFactor,
     catalogBoxesPerCarton,
     catalogPiecesPerBox,
     catalogPiecesPerStrip,
     catalogStripsPerBox,
+    resolveBoxFactorForLine,
     unitLabel,
 } from '@/composables/useProductUnits';
 import { computed, nextTick, onBeforeUnmount, ref, useId } from 'vue';
@@ -244,6 +291,7 @@ const { t } = useLocale();
 const { formatMoney, currencySymbol } = useMoney();
 const { formatQty } = useQuantity();
 const packInputId = useId();
+const packBoxFactorInputId = useId();
 
 const unitFieldsFlash = ref(false);
 let unitFlashTimer = null;
@@ -288,26 +336,15 @@ onBeforeUnmount(() => {
 });
 
 function resolveBoxFactor() {
-    if (props.line.base_unit === 'box') {
-        return 1;
-    }
-    const fromUnits = boxConversionFactor(props.line.unit_options);
-    if (fromUnits > 0) {
-        return fromUnits;
-    }
-    if (props.line.base_unit === 'strip') {
-        const strips = Number(props.line.pack_strips_per_box ?? props.line.catalog_strips_per_box);
-        return strips > 0 ? strips : 0;
-    }
-    if (props.line.base_unit === 'piece') {
-        const pieces = Number(props.line.pack_pieces_per_box ?? props.line.catalog_pieces_per_box);
-        return pieces > 0 ? pieces : 0;
-    }
-    return 0;
+    return resolveBoxFactorForLine(props.line);
 }
 
 const usesBoxesPerCarton = computed(
-    () => props.line.sell_unit === 'carton' && resolveBoxFactor() > 0,
+    () => props.line.sell_unit === 'carton' && (
+        props.line.base_unit === 'box'
+        || props.line.base_unit === 'strip'
+        || props.line.base_unit === 'piece'
+    ),
 );
 const usesStripsPerBox = computed(
     () => props.line.sell_unit === 'box' && props.line.base_unit === 'strip',
@@ -317,6 +354,12 @@ const usesPiecesPerBox = computed(
 );
 const usesPiecesPerStrip = computed(
     () => props.line.sell_unit === 'piece' && props.line.base_unit === 'strip',
+);
+const cartonShowsPiecesPerBox = computed(
+    () => usesBoxesPerCarton.value && props.line.base_unit === 'piece',
+);
+const cartonShowsStripsPerBox = computed(
+    () => usesBoxesPerCarton.value && props.line.base_unit === 'strip',
 );
 const usesPackSizeFriendlyInput = computed(
     () => usesStripsPerBox.value || usesPiecesPerBox.value || usesBoxesPerCarton.value || usesPiecesPerStrip.value,
@@ -335,7 +378,14 @@ function defaultStripsPerBox() {
         base_unit: props.line.base_unit,
     };
     const value = catalogStripsPerBox(product);
-    return value && value > 0 ? value : defaultConversion();
+    if (value && value > 0) {
+        return value;
+    }
+    if (props.line.sell_unit === 'box') {
+        return defaultConversion();
+    }
+    const fromUnits = resolveBoxFactorForLine({ ...props.line, pack_strips_per_box: null });
+    return fromUnits > 0 ? fromUnits : 1;
 }
 
 function defaultPiecesPerBox() {
@@ -345,7 +395,14 @@ function defaultPiecesPerBox() {
         base_unit: props.line.base_unit,
     };
     const value = catalogPiecesPerBox(product);
-    return value && value > 0 ? value : defaultConversion();
+    if (value && value > 0) {
+        return value;
+    }
+    if (props.line.sell_unit === 'box') {
+        return defaultConversion();
+    }
+    const fromUnits = resolveBoxFactorForLine({ ...props.line, pack_pieces_per_box: null });
+    return fromUnits > 0 ? fromUnits : 1;
 }
 
 function defaultPiecesPerStrip() {
@@ -422,8 +479,15 @@ function syncPackInput() {
         return;
     }
     const boxes = Number(props.line.pack_boxes_per_carton);
-    const boxFactor = resolveBoxFactor();
-    if (Number.isNaN(boxes) || boxes <= 0 || boxFactor <= 0) {
+    let boxFactor = 1;
+    if (cartonShowsPiecesPerBox.value) {
+        boxFactor = Number(props.line.pack_pieces_per_box);
+    } else if (cartonShowsStripsPerBox.value) {
+        boxFactor = Number(props.line.pack_strips_per_box);
+    } else {
+        boxFactor = resolveBoxFactor();
+    }
+    if (Number.isNaN(boxes) || boxes <= 0 || Number.isNaN(boxFactor) || boxFactor <= 0) {
         return;
     }
     props.line.conversion_factor = formatConversionFactor(boxes * boxFactor);
@@ -475,8 +539,19 @@ const packSizeDiffersFromDefault = computed(() => {
         return !Number.isNaN(current) && Math.abs(current - defaultPiecesPerStrip()) > 0.0001;
     }
     if (usesBoxesPerCarton.value) {
-        const current = Number(props.line.pack_boxes_per_carton);
-        return !Number.isNaN(current) && Math.abs(current - defaultBoxesPerCarton()) > 0.0001;
+        const boxes = Number(props.line.pack_boxes_per_carton);
+        const boxesDiffer = !Number.isNaN(boxes) && Math.abs(boxes - defaultBoxesPerCarton()) > 0.0001;
+        if (cartonShowsPiecesPerBox.value) {
+            const pieces = Number(props.line.pack_pieces_per_box);
+            const piecesDiffer = !Number.isNaN(pieces) && Math.abs(pieces - defaultPiecesPerBox()) > 0.0001;
+            return boxesDiffer || piecesDiffer;
+        }
+        if (cartonShowsStripsPerBox.value) {
+            const strips = Number(props.line.pack_strips_per_box);
+            const stripsDiffer = !Number.isNaN(strips) && Math.abs(strips - defaultStripsPerBox()) > 0.0001;
+            return boxesDiffer || stripsDiffer;
+        }
+        return boxesDiffer;
     }
     return Number(props.line.conversion_factor) !== defaultConversion();
 });
@@ -492,7 +567,13 @@ const packSizeDefaultHint = computed(() => {
         return t('catalog.purchase_catalog_default_pieces', { qty: formatQty(defaultPiecesPerStrip()) });
     }
     if (usesBoxesPerCarton.value) {
-        return t('catalog.purchase_catalog_default_boxes', { qty: formatQty(defaultBoxesPerCarton()) });
+        const parts = [t('catalog.purchase_catalog_default_boxes', { qty: formatQty(defaultBoxesPerCarton()) })];
+        if (cartonShowsPiecesPerBox.value) {
+            parts.push(t('catalog.purchase_catalog_default_pieces', { qty: formatQty(defaultPiecesPerBox()) }));
+        } else if (cartonShowsStripsPerBox.value) {
+            parts.push(t('catalog.purchase_catalog_default_strips', { qty: formatQty(defaultStripsPerBox()) }));
+        }
+        return parts.join(' · ');
     }
     return `catalog default: ${defaultConversion()}`;
 });
@@ -645,6 +726,7 @@ const priceComparisonClass = computed(() => {
 .purchase-trade-top {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     gap: 0.65rem;
     padding-bottom: 0.7rem;
     margin-bottom: 0.7rem;
@@ -653,6 +735,7 @@ const priceComparisonClass = computed(() => {
 
 .purchase-trade-units {
     min-width: 0;
+    flex: 0 1 auto;
 }
 
 .purchase-unit-chips {
@@ -684,10 +767,26 @@ const priceComparisonClass = computed(() => {
 
 .purchase-trade-pack {
     min-width: 0;
+    flex: 0 1 auto;
+    max-width: 100%;
     padding: 0.55rem 0.65rem;
     border: 1px solid #dcece6;
     border-radius: 0.65rem;
     background: #f7fffb;
+}
+
+.purchase-trade-pack__row {
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: 1fr;
+}
+
+.purchase-trade-pack--dual .purchase-trade-pack__row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.purchase-trade-pack__field {
+    min-width: 0;
 }
 
 .purchase-trade-pack .purchase-trade-label {
@@ -764,17 +863,25 @@ const priceComparisonClass = computed(() => {
 @media (min-width: 768px) {
     .purchase-trade-top {
         flex-direction: row;
+        flex-wrap: wrap;
         align-items: flex-start;
+        justify-content: flex-start;
         gap: 0.75rem;
     }
 
     .purchase-trade-units {
-        flex: 1 1 auto;
+        flex: 0 1 auto;
     }
 
     .purchase-trade-pack {
-        flex: 0 0 12.5rem;
-        width: 12.5rem;
+        flex: 0 1 14rem;
+        width: auto;
+        min-width: 11rem;
+    }
+
+    .purchase-trade-pack--dual {
+        flex: 0 1 22rem;
+        min-width: 18rem;
     }
 
     .purchase-unit-chip {

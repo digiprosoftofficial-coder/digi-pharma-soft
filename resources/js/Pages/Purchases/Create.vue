@@ -588,13 +588,13 @@ import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
 import { usePermissions } from '@/composables/usePermissions';
 import {
-    boxConversionFactor,
     buildPurchaseUnitOptions,
     catalogBoxesPerCarton,
     catalogPiecesPerBox,
     catalogPiecesPerStrip,
     catalogStripsPerBox,
     defaultSellUnit,
+    resolveBoxFactorForLine,
     unitLabel,
     unitPurchasePrice,
     unitSalePrice,
@@ -982,26 +982,15 @@ function formatConversionFactor(value) {
 }
 
 function resolveBoxFactor(line) {
-    if (line.base_unit === 'box') {
-        return 1;
-    }
-    const fromUnits = boxConversionFactor(line.unit_options);
-    if (fromUnits > 0) {
-        return fromUnits;
-    }
-    if (line.base_unit === 'strip') {
-        const strips = Number(line.pack_strips_per_box ?? line.catalog_strips_per_box);
-        return strips > 0 ? strips : 0;
-    }
-    if (line.base_unit === 'piece') {
-        const pieces = Number(line.pack_pieces_per_box ?? line.catalog_pieces_per_box);
-        return pieces > 0 ? pieces : 0;
-    }
-    return 0;
+    return resolveBoxFactorForLine(line);
 }
 
 function usesBoxesPerCarton(line) {
-    return line.sell_unit === 'carton' && resolveBoxFactor(line) > 0;
+    return line.sell_unit === 'carton' && (
+        line.base_unit === 'box'
+        || line.base_unit === 'strip'
+        || line.base_unit === 'piece'
+    );
 }
 
 function usesStripsPerBox(line) {
@@ -1014,6 +1003,14 @@ function usesPiecesPerBox(line) {
 
 function usesPiecesPerStrip(line) {
     return line.sell_unit === 'piece' && line.base_unit === 'strip';
+}
+
+function cartonShowsPiecesPerBox(line) {
+    return usesBoxesPerCarton(line) && line.base_unit === 'piece';
+}
+
+function cartonShowsStripsPerBox(line) {
+    return usesBoxesPerCarton(line) && line.base_unit === 'strip';
 }
 
 function usesPackSizeFriendlyInput(line) {
@@ -1039,13 +1036,27 @@ function packSizeLabel(line) {
 function defaultStripsPerBox(line) {
     const product = { units: line.unit_options, strips_per_box: line.catalog_strips_per_box, base_unit: line.base_unit };
     const value = catalogStripsPerBox(product);
-    return value && value > 0 ? value : defaultConversion(line);
+    if (value && value > 0) {
+        return value;
+    }
+    if (line.sell_unit === 'box') {
+        return defaultConversion(line);
+    }
+    const fromUnits = resolveBoxFactor({ ...line, pack_strips_per_box: null });
+    return fromUnits > 0 ? fromUnits : 1;
 }
 
 function defaultPiecesPerBox(line) {
     const product = { units: line.unit_options, pieces_per_box: line.catalog_pieces_per_box, base_unit: line.base_unit };
     const value = catalogPiecesPerBox(product);
-    return value && value > 0 ? value : defaultConversion(line);
+    if (value && value > 0) {
+        return value;
+    }
+    if (line.sell_unit === 'box') {
+        return defaultConversion(line);
+    }
+    const fromUnits = resolveBoxFactor({ ...line, pack_pieces_per_box: null });
+    return fromUnits > 0 ? fromUnits : 1;
 }
 
 function defaultPiecesPerStrip(line) {
@@ -1090,8 +1101,15 @@ function syncLineConversionFromPackInput(line) {
         return;
     }
     const boxes = Number(line.pack_boxes_per_carton);
-    const boxFactor = resolveBoxFactor(line);
-    if (Number.isNaN(boxes) || boxes <= 0 || boxFactor <= 0) {
+    let boxFactor = 1;
+    if (cartonShowsPiecesPerBox(line)) {
+        boxFactor = Number(line.pack_pieces_per_box);
+    } else if (cartonShowsStripsPerBox(line)) {
+        boxFactor = Number(line.pack_strips_per_box);
+    } else {
+        boxFactor = resolveBoxFactor(line);
+    }
+    if (Number.isNaN(boxes) || boxes <= 0 || Number.isNaN(boxFactor) || boxFactor <= 0) {
         return;
     }
     line.conversion_factor = formatConversionFactor(boxes * boxFactor);
@@ -1099,16 +1117,30 @@ function syncLineConversionFromPackInput(line) {
 
 function initLinePackFields(line) {
     if (usesStripsPerBox(line)) {
-        line.pack_strips_per_box = defaultStripsPerBox(line);
+        if (!(Number(line.pack_strips_per_box) > 0)) {
+            line.pack_strips_per_box = defaultStripsPerBox(line);
+        }
         syncLineConversionFromPackInput(line);
     } else if (usesPiecesPerBox(line)) {
-        line.pack_pieces_per_box = defaultPiecesPerBox(line);
+        if (!(Number(line.pack_pieces_per_box) > 0)) {
+            line.pack_pieces_per_box = defaultPiecesPerBox(line);
+        }
         syncLineConversionFromPackInput(line);
     } else if (usesPiecesPerStrip(line)) {
-        line.pack_pieces_per_strip = defaultPiecesPerStrip(line);
+        if (!(Number(line.pack_pieces_per_strip) > 0)) {
+            line.pack_pieces_per_strip = defaultPiecesPerStrip(line);
+        }
         syncLineConversionFromPackInput(line);
     } else if (usesBoxesPerCarton(line)) {
-        line.pack_boxes_per_carton = defaultBoxesPerCarton(line);
+        if (cartonShowsPiecesPerBox(line) && !(Number(line.pack_pieces_per_box) > 0)) {
+            line.pack_pieces_per_box = defaultPiecesPerBox(line);
+        }
+        if (cartonShowsStripsPerBox(line) && !(Number(line.pack_strips_per_box) > 0)) {
+            line.pack_strips_per_box = defaultStripsPerBox(line);
+        }
+        if (!(Number(line.pack_boxes_per_carton) > 0)) {
+            line.pack_boxes_per_carton = defaultBoxesPerCarton(line);
+        }
         syncLineConversionFromPackInput(line);
     }
 }
@@ -1145,9 +1177,19 @@ function packSizeDiffersFromDefault(line) {
         return !Number.isNaN(current) && Math.abs(current - def) > 0.0001;
     }
     if (usesBoxesPerCarton(line)) {
-        const def = defaultBoxesPerCarton(line);
-        const current = Number(line.pack_boxes_per_carton);
-        return !Number.isNaN(current) && Math.abs(current - def) > 0.0001;
+        const boxes = Number(line.pack_boxes_per_carton);
+        const boxesDiffer = !Number.isNaN(boxes) && Math.abs(boxes - defaultBoxesPerCarton(line)) > 0.0001;
+        if (cartonShowsPiecesPerBox(line)) {
+            const pieces = Number(line.pack_pieces_per_box);
+            const piecesDiffer = !Number.isNaN(pieces) && Math.abs(pieces - defaultPiecesPerBox(line)) > 0.0001;
+            return boxesDiffer || piecesDiffer;
+        }
+        if (cartonShowsStripsPerBox(line)) {
+            const strips = Number(line.pack_strips_per_box);
+            const stripsDiffer = !Number.isNaN(strips) && Math.abs(strips - defaultStripsPerBox(line)) > 0.0001;
+            return boxesDiffer || stripsDiffer;
+        }
+        return boxesDiffer;
     }
     return Number(line.conversion_factor) !== defaultConversion(line);
 }
@@ -1163,7 +1205,13 @@ function packSizeDefaultHint(line) {
         return t('catalog.purchase_catalog_default_pieces', { qty: formatQty(defaultPiecesPerStrip(line)) });
     }
     if (usesBoxesPerCarton(line)) {
-        return t('catalog.purchase_catalog_default_boxes', { qty: formatQty(defaultBoxesPerCarton(line)) });
+        const parts = [t('catalog.purchase_catalog_default_boxes', { qty: formatQty(defaultBoxesPerCarton(line)) })];
+        if (cartonShowsPiecesPerBox(line)) {
+            parts.push(t('catalog.purchase_catalog_default_pieces', { qty: formatQty(defaultPiecesPerBox(line)) }));
+        } else if (cartonShowsStripsPerBox(line)) {
+            parts.push(t('catalog.purchase_catalog_default_strips', { qty: formatQty(defaultStripsPerBox(line)) }));
+        }
+        return parts.join(' · ');
     }
     return `catalog default: ${defaultConversion(line)}`;
 }
@@ -1293,6 +1341,12 @@ function applyBatchPick(line) {
                 const factor = Number(batch.pack_conversion_factor);
                 line.pack_pieces_per_strip = factor > 0 ? formatConversionFactor(1 / factor) : null;
             } else if (usesBoxesPerCarton(line)) {
+                if (cartonShowsPiecesPerBox(line) && !(Number(line.pack_pieces_per_box) > 0)) {
+                    line.pack_pieces_per_box = defaultPiecesPerBox(line);
+                }
+                if (cartonShowsStripsPerBox(line) && !(Number(line.pack_strips_per_box) > 0)) {
+                    line.pack_strips_per_box = defaultStripsPerBox(line);
+                }
                 const boxFactor = resolveBoxFactor(line);
                 line.pack_boxes_per_carton =
                     boxFactor > 0 ? formatConversionFactor(Number(batch.pack_conversion_factor) / boxFactor) : null;
@@ -1349,10 +1403,28 @@ function applyLineCatalogPrices(line) {
 }
 
 async function onUnitChange(line) {
-    line.pack_strips_per_box = null;
-    line.pack_pieces_per_box = null;
+    const keepPieces = Number(line.pack_pieces_per_box) > 0 ? Number(line.pack_pieces_per_box) : null;
+    const keepStrips = Number(line.pack_strips_per_box) > 0 ? Number(line.pack_strips_per_box) : null;
+
     line.pack_pieces_per_strip = null;
     line.pack_boxes_per_carton = null;
+
+    if (line.sell_unit === 'carton' || line.sell_unit === 'box') {
+        if (line.base_unit === 'piece') {
+            line.pack_pieces_per_box = keepPieces;
+            line.pack_strips_per_box = null;
+        } else if (line.base_unit === 'strip') {
+            line.pack_strips_per_box = keepStrips;
+            line.pack_pieces_per_box = null;
+        } else {
+            line.pack_pieces_per_box = null;
+            line.pack_strips_per_box = null;
+        }
+    } else {
+        line.pack_strips_per_box = null;
+        line.pack_pieces_per_box = null;
+    }
+
     initLinePackFields(line);
     if (!usesPackSizeFriendlyInput(line)) {
         line.conversion_factor = defaultConversion(line);
@@ -1457,8 +1529,16 @@ function hasValidPackSize(line) {
     if (usesPiecesPerStrip(line) && !(Number(line.pack_pieces_per_strip) > 0)) {
         return false;
     }
-    if (usesBoxesPerCarton(line) && !(Number(line.pack_boxes_per_carton) > 0)) {
-        return false;
+    if (usesBoxesPerCarton(line)) {
+        if (!(Number(line.pack_boxes_per_carton) > 0)) {
+            return false;
+        }
+        if (cartonShowsPiecesPerBox(line) && !(Number(line.pack_pieces_per_box) > 0)) {
+            return false;
+        }
+        if (cartonShowsStripsPerBox(line) && !(Number(line.pack_strips_per_box) > 0)) {
+            return false;
+        }
     }
     if (!usesPackSizeFriendlyInput(line) && !(Number(line.conversion_factor) > 0)) {
         return false;
