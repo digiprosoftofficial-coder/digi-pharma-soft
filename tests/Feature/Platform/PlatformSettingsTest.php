@@ -58,6 +58,22 @@ class PlatformSettingsTest extends TestCase
         $this->assertSame('USD', PlatformSettings::defaultCurrency());
     }
 
+    public function test_super_admin_can_change_default_website_locale(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
+
+        $payload = $this->validSettingsPayload();
+        $payload['default_locale'] = 'bn';
+
+        $this->actingAs($admin)
+            ->put(route('platform.settings.update'), $payload)
+            ->assertRedirect(route('platform.settings.edit'));
+
+        $this->assertSame('bn', PlatformSettings::defaultLocale());
+    }
+
     public function test_platform_settings_rejects_unsupported_currency(): void
     {
         $this->seed(DatabaseSeeder::class);

@@ -84,10 +84,11 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">{{ t('platform.settings_default_locale') }}</label>
-                    <select v-model="form.default_locale" class="form-select" required>
-                        <option value="en">English</option>
-                        <option value="bn">বাংলা</option>
-                    </select>
+                    <LocaleSwitcher v-model="form.default_locale" fluid />
+                    <div class="form-text">{{ t('platform.settings_default_locale_help') }}</div>
+                    <div v-if="form.errors.default_locale" class="invalid-feedback d-block">
+                        {{ form.errors.default_locale }}
+                    </div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">{{ t('platform.settings_default_timezone') }}</label>

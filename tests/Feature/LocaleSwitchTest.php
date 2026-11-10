@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Support\Platform\PlatformSettings;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -23,6 +24,17 @@ class LocaleSwitchTest extends TestCase
 
         $this->actingAs($owner)
             ->get('/dashboard')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('locale', 'bn'));
+    }
+
+    public function test_marketing_home_uses_platform_default_locale(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        PlatformSettings::update(['default_locale' => 'bn']);
+
+        $this->get('/')
             ->assertOk()
             ->assertInertia(fn ($page) => $page->where('locale', 'bn'));
     }
