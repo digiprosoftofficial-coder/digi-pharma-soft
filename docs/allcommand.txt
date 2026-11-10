@@ -1,0 +1,9 @@
+php artisan migrate:fresh --seed
+
+all medicine
+php artisan catalog:import-master storage/app/bd-medicines.csv --from=master
+
+docker build 
+docker compose up -d --build web app
+
+নিজে করতে চাইলে (Docker হলে docker compose exec app দিয়ে):

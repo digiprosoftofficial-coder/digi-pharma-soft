@@ -113,7 +113,9 @@
                 <div v-for="card in revenueCards" :key="card.key" class="col-12 col-sm-6 col-lg-4">
                     <article class="platform-stat-card h-100 p-3 p-md-4 border rounded-3 bg-body">
                         <span class="text-muted small fw-semibold text-uppercase">{{ card.label }}</span>
-                        <p class="platform-stat-value h3 fw-semibold mb-0 mt-2">{{ formatMoney(card.value) }}</p>
+                        <p class="platform-stat-value h3 fw-semibold mb-0 mt-2">
+                            {{ card.format === 'count' ? card.value : formatMoney(card.value) }}
+                        </p>
                         <p v-if="card.hint" class="small text-muted mb-0 mt-1">{{ card.hint }}</p>
                     </article>
                 </div>
@@ -288,17 +290,20 @@ const revenueCards = computed(() => [
         key: 'month',
         label: t('platform.analytics_revenue_month'),
         value: props.analytics.revenue_this_month,
+        format: 'money',
         hint: t('platform.analytics_sales_month', { count: props.analytics.sales_count_this_month }),
     },
     {
         key: 'all',
         label: t('platform.analytics_revenue_all'),
         value: props.analytics.revenue_all_time,
+        format: 'money',
     },
     {
         key: 'active',
         label: t('platform.analytics_active_sellers'),
         value: props.analytics.active_selling_tenants,
+        format: 'count',
         hint: t('platform.analytics_active_sellers_hint'),
     },
 ]);
