@@ -9,6 +9,14 @@
             <div class="d-flex gap-2">
                 <Link :href="`/platform/leads/${lead.id}/edit`" class="btn btn-sm btn-outline-primary">{{ t('common.edit') }}</Link>
                 <button v-if="lead.status !== 'converted'" type="button" class="btn btn-sm btn-success" @click="convert">{{ t('platform.convert_lead') }}</button>
+                <button
+                    v-if="canDelete"
+                    type="button"
+                    class="btn btn-sm btn-outline-danger"
+                    @click="destroyLead"
+                >
+                    {{ t('common.delete') }}
+                </button>
             </div>
         </div>
         <div class="row g-3">
@@ -66,8 +74,8 @@
 <script setup>
 import PlatformShellLayout from '@/Layouts/PlatformShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
     lead: { type: Object, required: true },
@@ -78,6 +86,11 @@ const props = defineProps({
 });
 
 const { t } = useLocale();
+const page = usePage();
+const canDelete = computed(() => {
+    const user = page.props.auth?.user;
+    return Boolean(user?.is_platform_super_admin || (user?.roles || []).includes('super admin'));
+});
 const note = ref('');
 const statusForm = useForm({
     status: props.lead.status,
@@ -103,5 +116,12 @@ function convert() {
         owner_invite: true,
         billing_interval: 'monthly',
     });
+}
+
+function destroyLead() {
+    if (!confirm(t('platform.lead_delete_confirm', { name: props.lead.pharmacy_name }))) {
+        return;
+    }
+    router.delete(`/platform/leads/${props.lead.id}`);
 }
 </script>

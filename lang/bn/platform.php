@@ -717,7 +717,11 @@ return [
 
     'leads_title' => 'লিড ম্যানেজমেন্ট',
     'new_lead' => 'নতুন লিড',
+    'lead_deleted' => 'লিড মুছে ফেলা হয়েছে।',
+    'lead_delete_confirm' => '“:name” লিড মুছবেন? সম্পর্কিত অ্যাক্টিভিটি নোটও যাবে। লিংকড ডেমো থাকবে, কিন্তু লিড লিংক সরে যাবে।',
     'demos_title' => 'ডেমো অনুরোধ',
+    'demo_deleted' => 'ডেমো অনুরোধ মুছে ফেলা হয়েছে।',
+    'demo_delete_confirm' => '“:name”-এর ডেমো অনুরোধ মুছবেন?',
     'payments_title' => 'SaaS পেমেন্ট',
     'growth_title' => 'বিক্রয় ও বৃদ্ধি',
     'onboarding_title' => 'ফার্মেসি প্রস্তুত করুন',

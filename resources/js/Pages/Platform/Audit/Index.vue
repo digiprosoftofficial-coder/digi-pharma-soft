@@ -14,7 +14,7 @@
                 </thead>
                 <tbody>
                     <tr v-for="a in activities.data" :key="a.id">
-                        <td class="small text-muted">{{ a.created_at }}</td>
+                        <td class="small text-muted text-nowrap">{{ formatDateTime(a.created_at) }}</td>
                         <td><code>{{ a.event }}</code></td>
                         <td>{{ a.description }}</td>
                         <td>{{ a.causer_name || '—' }}</td>
@@ -28,6 +28,7 @@
 <script setup>
 import PlatformShellLayout from '@/Layouts/PlatformShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
+import { formatHumanDateTime as formatDateTime } from '@/utils/dates';
 import { Head } from '@inertiajs/vue3';
 
 defineProps({ activities: { type: Object, required: true } });

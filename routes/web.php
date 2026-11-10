@@ -298,12 +298,14 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
         Route::get('/leads/{lead}', [PlatformLeadController::class, 'show'])->name('leads.show');
         Route::get('/leads/{lead}/edit', [PlatformLeadController::class, 'edit'])->name('leads.edit');
         Route::put('/leads/{lead}', [PlatformLeadController::class, 'update'])->name('leads.update');
+        Route::delete('/leads/{lead}', [PlatformLeadController::class, 'destroy'])->name('leads.destroy');
         Route::post('/leads/{lead}/notes', [PlatformLeadController::class, 'addNote'])->name('leads.notes.store');
         Route::post('/leads/{lead}/convert', [PlatformLeadController::class, 'convert'])->name('leads.convert');
 
         Route::get('/demos', [PlatformDemoController::class, 'index'])->name('demos.index');
         Route::get('/demos/{demo}', [PlatformDemoController::class, 'show'])->name('demos.show');
         Route::put('/demos/{demo}', [PlatformDemoController::class, 'update'])->name('demos.update');
+        Route::delete('/demos/{demo}', [PlatformDemoController::class, 'destroy'])->name('demos.destroy');
 
         Route::get('/payments', [PlatformPaymentController::class, 'index'])->name('payments.index');
         Route::post('/payments/{payment}/verify', [PlatformPaymentController::class, 'verify'])->name('payments.verify');

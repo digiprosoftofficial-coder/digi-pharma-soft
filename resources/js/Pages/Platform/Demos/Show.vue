@@ -1,9 +1,21 @@
 <template>
     <PlatformShellLayout :page-title="demo.pharmacy_name">
         <Head :title="demo.pharmacy_name" />
+        <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2" style="max-width: 720px">
+            <div>
+                <h1 class="h5 mb-1">{{ demo.pharmacy_name }}</h1>
+                <p class="small text-muted mb-0">{{ demo.owner_name }} · {{ demo.mobile }} · {{ demo.status }}</p>
+            </div>
+            <button
+                v-if="canDelete"
+                type="button"
+                class="btn btn-sm btn-outline-danger"
+                @click="destroyDemo"
+            >
+                {{ t('common.delete') }}
+            </button>
+        </div>
         <div class="card border-0 shadow-sm card-body" style="max-width: 720px">
-            <h1 class="h5 mb-3">{{ demo.pharmacy_name }}</h1>
-            <p class="small text-muted">{{ demo.owner_name }} · {{ demo.mobile }} · {{ demo.status }}</p>
             <p>{{ demo.message }}</p>
             <form class="row g-3" @submit.prevent="save">
                 <div class="col-md-6">
@@ -36,7 +48,8 @@
 <script setup>
 import PlatformShellLayout from '@/Layouts/PlatformShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 const props = defineProps({
     demo: { type: Object, required: true },
@@ -45,6 +58,11 @@ const props = defineProps({
 });
 
 const { t } = useLocale();
+const page = usePage();
+const canDelete = computed(() => {
+    const user = page.props.auth?.user;
+    return Boolean(user?.is_platform_super_admin || (user?.roles || []).includes('super admin'));
+});
 const form = useForm({
     status: props.demo.status,
     scheduled_at: props.demo.scheduled_at ? props.demo.scheduled_at.slice(0, 16) : '',
@@ -54,5 +72,12 @@ const form = useForm({
 
 function save() {
     form.put(`/platform/demos/${props.demo.id}`);
+}
+
+function destroyDemo() {
+    if (!confirm(t('platform.demo_delete_confirm', { name: props.demo.pharmacy_name }))) {
+        return;
+    }
+    router.delete(`/platform/demos/${props.demo.id}`);
 }
 </script>

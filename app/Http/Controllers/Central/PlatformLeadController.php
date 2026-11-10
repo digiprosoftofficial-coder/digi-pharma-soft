@@ -106,6 +106,17 @@ final class PlatformLeadController extends Controller
             ->with('success', __('platform.lead_updated'));
     }
 
+    public function destroy(Lead $lead): RedirectResponse
+    {
+        $this->authorize('delete', $lead);
+
+        $lead->delete();
+
+        return redirect()
+            ->route('platform.leads.index')
+            ->with('success', __('platform.lead_deleted'));
+    }
+
     public function addNote(Request $request, Lead $lead): RedirectResponse
     {
         $this->authorize('update', $lead);

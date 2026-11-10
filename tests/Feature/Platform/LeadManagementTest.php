@@ -75,4 +75,26 @@ class LeadManagementTest extends TestCase
         $this->assertNotNull($lead->converted_tenant_id);
         $this->assertTrue(Tenant::query()->where('slug', 'convert-me-pharmacy')->exists());
     }
+
+    public function test_super_admin_can_delete_lead(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
+
+        $lead = Lead::query()->create([
+            'pharmacy_name' => 'Delete Me Pharmacy',
+            'owner_name' => 'Owner',
+            'phone' => '01700000099',
+            'branch_count' => 1,
+            'source' => 'other',
+            'status' => Lead::STATUS_NEW,
+            'created_by' => $admin->getKey(),
+        ]);
+
+        $this->actingAs($admin)
+            ->delete("/platform/leads/{$lead->getKey()}")
+            ->assertRedirect(route('platform.leads.index'));
+
+        $this->assertDatabaseMissing('leads', ['id' => $lead->getKey()]);
+    }
 }

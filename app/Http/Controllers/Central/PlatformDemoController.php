@@ -60,6 +60,17 @@ final class PlatformDemoController extends Controller
         return back()->with('success', __('platform.demo_updated'));
     }
 
+    public function destroy(DemoRequest $demo): RedirectResponse
+    {
+        $this->authorize('delete', $demo);
+
+        $demo->delete();
+
+        return redirect()
+            ->route('platform.demos.index')
+            ->with('success', __('platform.demo_deleted'));
+    }
+
     /**
      * @return list<\App\Models\User>
      */

@@ -22,6 +22,11 @@ final class DemoRequestPolicy extends PlatformPolicy
         return $this->canDemos($user);
     }
 
+    public function delete(User $user, DemoRequest $demoRequest): bool
+    {
+        return $this->isPlatformSuperAdmin($user);
+    }
+
     private function canDemos(User $user): bool
     {
         return $this->isPlatformOperator($user) && (

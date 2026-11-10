@@ -38,6 +38,27 @@ class DemoAndPaymentTest extends TestCase
         ]);
     }
 
+    public function test_super_admin_can_delete_demo_request(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
+
+        $demo = DemoRequest::query()->create([
+            'pharmacy_name' => 'Delete Demo Pharmacy',
+            'owner_name' => 'Owner',
+            'mobile' => '01900000088',
+            'branch_count' => 1,
+            'status' => DemoRequest::STATUS_PENDING,
+            'message' => 'Remove me',
+        ]);
+
+        $this->actingAs($admin)
+            ->delete("/platform/demos/{$demo->getKey()}")
+            ->assertRedirect(route('platform.demos.index'));
+
+        $this->assertDatabaseMissing('demo_requests', ['id' => $demo->getKey()]);
+    }
+
     public function test_payment_verify_activates_subscription_idempotently(): void
     {
         $this->seed(DatabaseSeeder::class);
