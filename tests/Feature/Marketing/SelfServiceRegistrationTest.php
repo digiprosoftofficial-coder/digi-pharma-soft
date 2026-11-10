@@ -19,7 +19,11 @@ class SelfServiceRegistrationTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
 
-        $this->get('/')->assertOk();
+        $this->get('/')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Marketing/Home')
+                ->where('showTryLiveDemo', true));
         $this->get('/pricing')->assertOk();
         $this->get('/get-started')->assertOk();
     }

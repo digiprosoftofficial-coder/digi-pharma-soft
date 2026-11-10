@@ -26,6 +26,7 @@ class PlatformSetting extends Model
         'default_country_code',
         'self_service_enabled',
         'self_service_requires_approval',
+        'show_try_live_demo',
         'payment_instructions',
         'bkash_merchant_number',
         'nagad_merchant_number',
@@ -46,6 +47,7 @@ class PlatformSetting extends Model
             'auto_suspend_on_payment_failure' => 'boolean',
             'self_service_enabled' => 'boolean',
             'self_service_requires_approval' => 'boolean',
+            'show_try_live_demo' => 'boolean',
             'notification_preferences' => 'array',
         ];
     }

@@ -88,6 +88,28 @@ class PlatformSettingsTest extends TestCase
             ->assertSessionHasErrors('default_currency');
     }
 
+    public function test_super_admin_can_hide_try_live_demo_on_home(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
+
+        $payload = $this->validSettingsPayload();
+        $payload['show_try_live_demo'] = false;
+
+        $this->actingAs($admin)
+            ->put(route('platform.settings.update'), $payload)
+            ->assertRedirect(route('platform.settings.edit'));
+
+        $this->assertFalse(PlatformSettings::showTryLiveDemo());
+
+        $this->get('/')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Marketing/Home')
+                ->where('showTryLiveDemo', false));
+    }
+
     public function test_tenant_owner_cannot_access_platform_settings(): void
     {
         $this->seed(DatabaseSeeder::class);
@@ -124,6 +146,7 @@ class PlatformSettingsTest extends TestCase
             'default_locale' => 'en',
             'default_timezone' => 'Asia/Dhaka',
             'default_country_code' => 'BD',
+            'show_try_live_demo' => true,
         ];
     }
 }

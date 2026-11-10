@@ -127,6 +127,10 @@ final class PlatformSettings
             $row->self_service_requires_approval = (bool) $data['self_service_requires_approval'];
         }
 
+        if (array_key_exists('show_try_live_demo', $data)) {
+            $row->show_try_live_demo = (bool) $data['show_try_live_demo'];
+        }
+
         if (array_key_exists('payment_instructions', $data)) {
             $row->payment_instructions = $data['payment_instructions'] ?: null;
         }
@@ -171,6 +175,11 @@ final class PlatformSettings
     public static function selfServiceRequiresApproval(): bool
     {
         return (bool) (self::get()['self_service_requires_approval'] ?? false);
+    }
+
+    public static function showTryLiveDemo(): bool
+    {
+        return (bool) (self::get()['show_try_live_demo'] ?? true);
     }
 
     public static function defaultTrialDays(): int
@@ -277,6 +286,7 @@ final class PlatformSettings
             'default_country_code' => (string) ($row->default_country_code ?? 'BD'),
             'self_service_enabled' => (bool) ($row->self_service_enabled ?? true),
             'self_service_requires_approval' => (bool) ($row->self_service_requires_approval ?? false),
+            'show_try_live_demo' => (bool) ($row->show_try_live_demo ?? true),
             'payment_instructions' => $row->payment_instructions,
             'bkash_merchant_number' => $row->bkash_merchant_number,
             'nagad_merchant_number' => $row->nagad_merchant_number,

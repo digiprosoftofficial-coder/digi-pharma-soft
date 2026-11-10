@@ -23,6 +23,7 @@ final class MarketingController extends Controller
             'plans' => $this->publicPlans(),
             'currency' => PlatformSettings::defaultCurrency(),
             'selfServiceEnabled' => PlatformSettings::selfServiceEnabled(),
+            'showTryLiveDemo' => PlatformSettings::showTryLiveDemo(),
             'support' => $this->support(),
             'screenshots' => $this->screenshots(),
             'paymentMethods' => PlatformPayment::METHODS,

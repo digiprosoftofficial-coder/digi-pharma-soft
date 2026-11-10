@@ -19,14 +19,18 @@
                     <p class="sp-bn">{{ t('platform.marketing_hero_bn') }}</p>
                     <div class="sp-hero-ctas">
                         <button
-                            v-if="selfServiceEnabled"
+                            v-if="showTryLiveDemo && selfServiceEnabled"
                             type="button"
                             class="sp-btn sp-btn-primary"
                             @click="openRegisterModal"
                         >
                             {{ t('platform.try_live_demo') }}
                         </button>
-                        <a v-else href="/#demo" class="sp-btn sp-btn-primary">{{ t('platform.try_live_demo') }}</a>
+                        <a
+                            v-else-if="showTryLiveDemo"
+                            href="/#demo"
+                            class="sp-btn sp-btn-primary"
+                        >{{ t('platform.try_live_demo') }}</a>
                         <a href="/#demo" class="sp-btn sp-btn-secondary">{{ t('platform.book_demo') }}</a>
                     </div>
                     <p class="sp-trust-line">{{ t('platform.hero_trust') }}</p>
@@ -327,14 +331,18 @@
                 <p class="sp-lead">{{ t('platform.final_cta_sub') }}</p>
                 <div class="sp-hero-ctas">
                     <button
-                        v-if="selfServiceEnabled"
+                        v-if="showTryLiveDemo && selfServiceEnabled"
                         type="button"
                         class="sp-btn sp-btn-primary"
                         @click="openRegisterModal"
                     >
                         {{ t('platform.try_live_demo') }}
                     </button>
-                    <a v-else href="/#demo" class="sp-btn sp-btn-primary">{{ t('platform.try_live_demo') }}</a>
+                    <a
+                        v-else-if="showTryLiveDemo"
+                        href="/#demo"
+                        class="sp-btn sp-btn-primary"
+                    >{{ t('platform.try_live_demo') }}</a>
                     <a
                         href="/#demo"
                         class="sp-btn sp-btn-secondary"
@@ -370,6 +378,7 @@ const props = defineProps({
     plans: { type: Array, required: true },
     currency: { type: String, default: 'BDT' },
     selfServiceEnabled: { type: Boolean, default: true },
+    showTryLiveDemo: { type: Boolean, default: true },
     support: { type: Object, default: () => ({ email: null, phone: null }) },
     screenshots: { type: Object, default: () => ({}) },
     paymentMethods: { type: Array, default: () => [] },

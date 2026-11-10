@@ -200,6 +200,13 @@
                 </div>
             </div>
 
+            <h2 class="h6 mt-4">{{ t('platform.settings_section_marketing') }}</h2>
+            <div class="form-check mb-2">
+                <input id="show_try_live_demo" v-model="form.show_try_live_demo" type="checkbox" class="form-check-input" />
+                <label class="form-check-label" for="show_try_live_demo">{{ t('platform.settings_show_try_live_demo') }}</label>
+            </div>
+            <p class="form-text small mb-3">{{ t('platform.settings_show_try_live_demo_help') }}</p>
+
             <h2 class="h6 mt-4">Self-service &amp; payments</h2>
             <div class="form-check mb-2">
                 <input id="self_service_enabled" v-model="form.self_service_enabled" type="checkbox" class="form-check-input" />
@@ -285,6 +292,7 @@ const form = useForm({
     default_country_code: props.settings.default_country_code ?? 'BD',
     self_service_enabled: props.settings.self_service_enabled ?? true,
     self_service_requires_approval: props.settings.self_service_requires_approval ?? false,
+    show_try_live_demo: props.settings.show_try_live_demo ?? true,
     payment_instructions: props.settings.payment_instructions ?? '',
     bkash_merchant_number: props.settings.bkash_merchant_number ?? '',
     nagad_merchant_number: props.settings.nagad_merchant_number ?? '',
