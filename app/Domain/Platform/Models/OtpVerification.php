@@ -12,6 +12,7 @@ class OtpVerification extends Model
 
     protected $fillable = [
         'phone',
+        'email',
         'purpose',
         'code_hash',
         'attempts',
@@ -29,12 +30,16 @@ class OtpVerification extends Model
         ];
     }
 
-    public static function issue(string $phone, string $purpose = self::PURPOSE_REGISTRATION, int $ttlMinutes = 10): array
+    /**
+     * @return array{0: self, 1: string}
+     */
+    public static function issue(string $email, string $purpose = self::PURPOSE_REGISTRATION, int $ttlMinutes = 10): array
     {
         $code = (string) random_int(100000, 999999);
 
         $row = static::query()->create([
-            'phone' => $phone,
+            'email' => Str::lower(trim($email)),
+            'phone' => '',
             'purpose' => $purpose,
             'code_hash' => Hash::make($code),
             'expires_at' => now()->addMinutes($ttlMinutes),

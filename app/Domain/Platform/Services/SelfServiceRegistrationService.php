@@ -24,22 +24,22 @@ final class SelfServiceRegistrationService
         private readonly OtpService $otp,
     ) {}
 
-    public function sendOtp(string $phone): OtpVerification
+    public function sendOtp(string $email): OtpVerification
     {
         if (! PlatformSettings::selfServiceEnabled()) {
             throw ValidationException::withMessages([
-                'phone' => __('platform.self_service_disabled'),
+                'owner_email' => __('platform.self_service_disabled'),
             ]);
         }
 
-        [$row] = $this->otp->send($phone, OtpVerification::PURPOSE_REGISTRATION);
+        [$row] = $this->otp->send($email, OtpVerification::PURPOSE_REGISTRATION);
 
         return $row;
     }
 
-    public function verifyOtp(string $phone, string $code): OtpVerification
+    public function verifyOtp(string $email, string $code): OtpVerification
     {
-        return $this->otp->verify($phone, $code, OtpVerification::PURPOSE_REGISTRATION);
+        return $this->otp->verify($email, $code, OtpVerification::PURPOSE_REGISTRATION);
     }
 
     /**
@@ -71,7 +71,7 @@ final class SelfServiceRegistrationService
 
         $otp = OtpVerification::query()
             ->where('session_token', $data['otp_session_token'])
-            ->where('phone', $data['phone'])
+            ->where('email', Str::lower(trim($data['owner_email'])))
             ->where('purpose', OtpVerification::PURPOSE_REGISTRATION)
             ->first();
 

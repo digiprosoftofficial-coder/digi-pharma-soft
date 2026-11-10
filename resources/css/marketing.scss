@@ -916,6 +916,47 @@
     font-size: 0.8rem;
 }
 
+.sp-field-hint {
+    margin-top: 0.35rem;
+    color: var(--sp-muted);
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.sp-input-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: stretch;
+}
+
+.sp-input-row input {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.sp-btn-compact {
+    flex: none;
+    min-height: 2.6rem;
+    padding: 0.45rem 0.85rem;
+    white-space: nowrap;
+}
+
+.sp-check-row {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: var(--sp-forest);
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.sp-check-row input {
+    width: 1.05rem;
+    height: 1.05rem;
+    accent-color: var(--sp-brand);
+}
+
 .sp-alert-success {
     padding: 0.85rem 1rem;
     border-radius: var(--sp-radius);
@@ -990,6 +1031,10 @@
     box-shadow: 0 1.25rem 3rem rgba(18, 61, 50, 0.28);
 }
 
+.sp-modal-panel--wide {
+    width: min(720px, 100%);
+}
+
 .sp-modal-header {
     display: flex;
     align-items: flex-start;
@@ -1037,9 +1082,44 @@
 .sp-modal-panel .sp-field input,
 .sp-modal-panel .sp-field textarea,
 .sp-modal-panel .sp-field select {
-    background: #ffffff;
+    background: #f8f8f4;
     border-color: rgba(18, 61, 50, 0.18);
     color: #252c28;
+}
+
+.sp-modal-panel .sp-field input:focus,
+.sp-modal-panel .sp-field textarea:focus,
+.sp-modal-panel .sp-field select:focus {
+    background: #ffffff;
+}
+
+.sp-modal-panel .sp-check-row {
+    color: #123d32;
+}
+
+.sp-modal-panel .sp-field-hint {
+    color: #5a655e;
+}
+
+.sp-modal-panel .sp-btn-secondary {
+    border-color: #123d32;
+    color: #123d32;
+    background: #ffffff;
+}
+
+.sp-modal-panel .sp-btn-secondary:hover {
+    background: #e7f0e9;
+}
+
+.sp-modal-panel .sp-btn-primary {
+    background: #287a57;
+    border-color: #287a57;
+    color: #ffffff;
+}
+
+.sp-modal-panel .sp-btn-primary:hover {
+    background: #1f6547;
+    border-color: #1f6547;
 }
 
 /* —— FAQ —— */

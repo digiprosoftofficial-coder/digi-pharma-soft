@@ -18,7 +18,15 @@
                     <p class="sp-lead">{{ t('platform.marketing_hero_sub') }}</p>
                     <p class="sp-bn">{{ t('platform.marketing_hero_bn') }}</p>
                     <div class="sp-hero-ctas">
-                        <Link :href="liveDemoHref" class="sp-btn sp-btn-primary">{{ t('platform.try_live_demo') }}</Link>
+                        <button
+                            v-if="selfServiceEnabled"
+                            type="button"
+                            class="sp-btn sp-btn-primary"
+                            @click="openRegisterModal"
+                        >
+                            {{ t('platform.try_live_demo') }}
+                        </button>
+                        <a v-else href="/#demo" class="sp-btn sp-btn-primary">{{ t('platform.try_live_demo') }}</a>
                         <a href="/#demo" class="sp-btn sp-btn-secondary">{{ t('platform.book_demo') }}</a>
                     </div>
                     <p class="sp-trust-line">{{ t('platform.hero_trust') }}</p>
@@ -318,7 +326,15 @@
                 <h2 class="sp-display">{{ t('platform.final_cta_title') }}</h2>
                 <p class="sp-lead">{{ t('platform.final_cta_sub') }}</p>
                 <div class="sp-hero-ctas">
-                    <Link :href="liveDemoHref" class="sp-btn sp-btn-primary">{{ t('platform.try_live_demo') }}</Link>
+                    <button
+                        v-if="selfServiceEnabled"
+                        type="button"
+                        class="sp-btn sp-btn-primary"
+                        @click="openRegisterModal"
+                    >
+                        {{ t('platform.try_live_demo') }}
+                    </button>
+                    <a v-else href="/#demo" class="sp-btn sp-btn-primary">{{ t('platform.try_live_demo') }}</a>
                     <a
                         href="/#demo"
                         class="sp-btn sp-btn-secondary"
@@ -329,14 +345,23 @@
                 </div>
             </div>
         </section>
+
+        <RegisterModal
+            v-if="selfServiceEnabled"
+            :plans="plans"
+            :payment-methods="paymentMethods"
+            :payment-info="paymentInfo"
+        />
     </MarketingLayout>
 </template>
 
 <script setup>
 import DemoLeadForm from '@/Components/Marketing/DemoLeadForm.vue';
 import ProductPreview from '@/Components/Marketing/ProductPreview.vue';
+import RegisterModal from '@/Components/Marketing/RegisterModal.vue';
 import SeoHead from '@/Components/Marketing/SeoHead.vue';
 import MarketingLayout from '@/Layouts/MarketingLayout.vue';
+import { useRegisterModal } from '@/composables/useRegisterModal';
 import { useLocale } from '@/composables/useLocale';
 import { Link } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
@@ -347,13 +372,14 @@ const props = defineProps({
     selfServiceEnabled: { type: Boolean, default: true },
     support: { type: Object, default: () => ({ email: null, phone: null }) },
     screenshots: { type: Object, default: () => ({}) },
+    paymentMethods: { type: Array, default: () => [] },
+    paymentInfo: { type: Object, default: () => ({}) },
 });
 
 const { t } = useLocale();
+const { openRegisterModal } = useRegisterModal();
 const interval = ref('monthly');
 const activeModule = ref(0);
-
-const liveDemoHref = computed(() => (props.selfServiceEnabled ? '/get-started' : '/demo'));
 
 const challenges = computed(() => [
     { title: t('platform.challenge_1_title'), body: t('platform.challenge_1_body') },

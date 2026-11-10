@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Marketing;
 
+use App\Domain\Billing\Models\PlatformPayment;
 use App\Domain\Billing\Models\SubscriptionPlan;
 use App\Domain\Crm\Services\DemoRequestService;
 use App\Http\Controllers\Controller;
@@ -16,12 +17,21 @@ final class MarketingController extends Controller
 {
     public function home(): Response
     {
+        $settings = PlatformSettings::get();
+
         return Inertia::render('Marketing/Home', [
             'plans' => $this->publicPlans(),
             'currency' => PlatformSettings::defaultCurrency(),
             'selfServiceEnabled' => PlatformSettings::selfServiceEnabled(),
             'support' => $this->support(),
             'screenshots' => $this->screenshots(),
+            'paymentMethods' => PlatformPayment::METHODS,
+            'paymentInfo' => [
+                'instructions' => $settings['payment_instructions'] ?? null,
+                'bkash' => $settings['bkash_merchant_number'] ?? null,
+                'nagad' => $settings['nagad_merchant_number'] ?? null,
+                'bank' => $settings['bank_transfer_details'] ?? null,
+            ],
         ]);
     }
 

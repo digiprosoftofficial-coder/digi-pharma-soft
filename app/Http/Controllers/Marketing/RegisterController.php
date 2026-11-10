@@ -51,10 +51,10 @@ final class RegisterController extends Controller
     public function sendOtp(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'phone' => ['required', 'string', 'max:32'],
+            'owner_email' => ['required', 'email', 'max:255'],
         ]);
 
-        $otp = $this->registration->sendOtp($data['phone']);
+        $otp = $this->registration->sendOtp($data['owner_email']);
 
         return back()->with([
             'success' => __('platform.otp_sent'),
@@ -65,16 +65,16 @@ final class RegisterController extends Controller
     public function verifyOtp(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'phone' => ['required', 'string', 'max:32'],
+            'owner_email' => ['required', 'email', 'max:255'],
             'code' => ['required', 'string', 'size:6'],
         ]);
 
-        $otp = $this->registration->verifyOtp($data['phone'], $data['code']);
+        $otp = $this->registration->verifyOtp($data['owner_email'], $data['code']);
 
         return back()->with([
             'success' => __('platform.otp_verified'),
             'otp_session_token' => $otp->session_token,
-            'phone_verified' => true,
+            'email_verified' => true,
         ]);
     }
 
@@ -86,7 +86,7 @@ final class RegisterController extends Controller
             'owner_name' => ['required', 'string', 'max:255'],
             'owner_email' => ['required', 'email', 'max:255'],
             'owner_password' => ['required', 'confirmed', Password::defaults()],
-            'phone' => ['required', 'string', 'max:32'],
+            'phone' => ['required', 'string', 'regex:/^01[3-9]\d{8}$/'],
             'otp_session_token' => ['required', 'string'],
             'subscription_plan_id' => ['required', 'integer', 'exists:subscription_plans,id'],
             'billing_interval' => ['required', Rule::in(['monthly', 'yearly'])],
@@ -95,6 +95,8 @@ final class RegisterController extends Controller
             'transaction_reference' => ['nullable', 'string', 'max:128'],
             'branch_count' => ['nullable', 'integer', 'min:1', 'max:500'],
             'address' => ['nullable', 'string', 'max:2000'],
+        ], [
+            'phone.regex' => __('platform.phone_invalid'),
         ]);
 
         $result = $this->registration->register($data);
