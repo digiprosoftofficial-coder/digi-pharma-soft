@@ -47,7 +47,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call(RolePermissionSeeder::class);
-        $this->call(MasterCatalogSeeder::class);
+        // Master catalog: import after seed via
+        // php artisan catalog:import-master storage/app/bd-medicines.csv --from=master
         SeedDefaultProductTypes::forTenant((int) $tenant->getKey());
         $defaultBranch = BranchProvisioner::provisionForTenant((int) $tenant->getKey());
 
