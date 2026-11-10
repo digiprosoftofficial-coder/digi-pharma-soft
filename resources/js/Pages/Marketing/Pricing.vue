@@ -66,16 +66,9 @@
                             <li v-if="plan.features?.barcode_camera_scan">{{ t('platform.feature_barcode') }}</li>
                             <li v-if="plan.features?.hr_payroll">{{ t('platform.feature_payroll') }}</li>
                         </ul>
-                        <Link
-                            v-if="selfServiceEnabled"
-                            :href="`/get-started?plan=${plan.slug}&interval=${interval}`"
-                            class="sp-btn sp-btn-primary"
-                        >
+                        <a href="/#demo" class="sp-btn sp-btn-primary">
                             {{ plan.slug === 'enterprise' ? t('platform.contact_sales') : t('platform.start_trial') }}
-                        </Link>
-                        <Link v-else href="/demo" class="sp-btn sp-btn-primary">
-                            {{ t('platform.book_demo') }}
-                        </Link>
+                        </a>
                     </article>
                 </div>
             </div>
@@ -87,7 +80,6 @@
 import SeoHead from '@/Components/Marketing/SeoHead.vue';
 import MarketingLayout from '@/Layouts/MarketingLayout.vue';
 import { useLocale } from '@/composables/useLocale';
-import { Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 const props = defineProps({

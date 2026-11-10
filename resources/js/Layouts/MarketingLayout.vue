@@ -11,7 +11,7 @@
                     <a href="/#home">{{ t('platform.nav_home') }}</a>
                     <a href="/#features">{{ t('platform.nav_features') }}</a>
                     <a href="/#solutions">{{ t('platform.nav_solutions') }}</a>
-                    <Link href="/pricing">{{ t('platform.nav_pricing') }}</Link>
+                    <a href="/#pricing">{{ t('platform.nav_pricing') }}</a>
                     <a href="/#faq">{{ t('platform.nav_faq') }}</a>
                     <a href="/#contact">{{ t('platform.nav_contact') }}</a>
                 </nav>
@@ -19,11 +19,15 @@
                 <div class="sp-nav-actions">
                     <LocaleSwitcher />
                     <Link href="/login" class="sp-btn sp-btn-secondary" style="min-height: 2.4rem; padding: 0.4rem 0.9rem;">
-                        {{ t('auth.login') || 'Login' }}
+                        {{ t('auth.sign_in') }}
                     </Link>
-                    <Link href="/demo" class="sp-btn sp-btn-primary" style="min-height: 2.4rem; padding: 0.4rem 0.9rem;">
+                    <a
+                        href="/#demo"
+                        class="sp-btn sp-btn-primary"
+                        style="min-height: 2.4rem; padding: 0.4rem 0.9rem;"
+                    >
                         {{ t('platform.book_demo') }}
-                    </Link>
+                    </a>
                 </div>
 
                 <button
@@ -45,17 +49,21 @@
                     <a href="/#home" @click="menuOpen = false">{{ t('platform.nav_home') }}</a>
                     <a href="/#features" @click="menuOpen = false">{{ t('platform.nav_features') }}</a>
                     <a href="/#solutions" @click="menuOpen = false">{{ t('platform.nav_solutions') }}</a>
-                    <Link href="/pricing" @click="menuOpen = false">{{ t('platform.nav_pricing') }}</Link>
+                    <a href="/#pricing" @click="menuOpen = false">{{ t('platform.nav_pricing') }}</a>
                     <a href="/#faq" @click="menuOpen = false">{{ t('platform.nav_faq') }}</a>
                     <a href="/#contact" @click="menuOpen = false">{{ t('platform.nav_contact') }}</a>
                     <div class="sp-mobile-cta">
                         <LocaleSwitcher />
                         <Link href="/login" class="sp-btn sp-btn-secondary" @click="menuOpen = false">
-                            {{ t('auth.login') || 'Login' }}
+                            {{ t('auth.sign_in') }}
                         </Link>
-                        <Link href="/demo" class="sp-btn sp-btn-primary" @click="menuOpen = false">
+                        <a
+                            href="/#demo"
+                            class="sp-btn sp-btn-primary"
+                            @click="menuOpen = false"
+                        >
                             {{ t('platform.book_demo') }}
-                        </Link>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -90,8 +98,8 @@
                     <ul>
                         <li><a href="/#features">{{ t('platform.nav_features') }}</a></li>
                         <li><a href="/#solutions">{{ t('platform.nav_solutions') }}</a></li>
-                        <li><Link href="/pricing">{{ t('platform.nav_pricing') }}</Link></li>
-                        <li><Link href="/demo">{{ t('platform.book_demo') }}</Link></li>
+                        <li><a href="/#pricing">{{ t('platform.nav_pricing') }}</a></li>
+                        <li><a href="/#demo">{{ t('platform.book_demo') }}</a></li>
                     </ul>
                 </div>
 
@@ -101,7 +109,7 @@
                         <li><a href="/#trust">{{ t('platform.nav_about') }}</a></li>
                         <li><a href="/#faq">{{ t('platform.nav_faq') }}</a></li>
                         <li><a href="/#contact">{{ t('platform.nav_contact') }}</a></li>
-                        <li><Link href="/login">{{ t('auth.login') || 'Login' }}</Link></li>
+                        <li><Link href="/login">{{ t('auth.sign_in') }}</Link></li>
                     </ul>
                 </div>
 
@@ -120,6 +128,7 @@
                 <span>{{ t('platform.marketing_footer') }}</span>
             </div>
         </footer>
+
     </div>
 </template>
 
@@ -127,7 +136,7 @@
 import LocaleSwitcher from '@/Components/LocaleSwitcher.vue';
 import { useLocale } from '@/composables/useLocale';
 import { Link } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 
 defineProps({
     support: {
@@ -139,4 +148,26 @@ defineProps({
 const { t } = useLocale();
 const menuOpen = ref(false);
 const year = computed(() => new Date().getFullYear());
+
+function scrollToHash() {
+    if (typeof window === 'undefined') {
+        return;
+    }
+    const hash = window.location.hash;
+    if (!hash || hash.length < 2) {
+        return;
+    }
+    nextTick(() => {
+        document.querySelector(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+}
+
+onMounted(() => {
+    scrollToHash();
+    window.addEventListener('hashchange', scrollToHash);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('hashchange', scrollToHash);
+});
 </script>

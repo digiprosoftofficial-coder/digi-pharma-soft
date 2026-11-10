@@ -15,11 +15,26 @@
                 <div class="col-md-4"><label class="form-label">{{ t('platform.interested_plan') }}</label>
                     <select v-model="form.interested_plan_id" class="form-select"><option :value="null">—</option><option v-for="p in plans" :key="p.id" :value="p.id">{{ p.name }}</option></select>
                 </div>
-                <div class="col-md-4"><label class="form-label">{{ t('common.status') }}</label>
-                    <select v-model="form.status" class="form-select"><option v-for="s in statuses" :key="s" :value="s">{{ s }}</option></select>
+                <div class="col-md-4">
+                    <label class="form-label">{{ t('common.status') }}</label>
+                    <select v-if="statusEditable" v-model="form.status" class="form-select">
+                        <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
+                    </select>
+                    <template v-else>
+                        <input class="form-control" :value="lead?.status || '—'" disabled readonly />
+                        <div class="form-text">{{ t('platform.lead_status_locked') }}</div>
+                    </template>
                 </div>
-                <div class="col-md-4"><label class="form-label">{{ t('platform.assigned_to') }}</label>
-                    <select v-model="form.assigned_to" class="form-select"><option :value="null">—</option><option v-for="u in salesStaff" :key="u.id" :value="u.id">{{ u.name }}</option></select>
+                <div class="col-md-4">
+                    <label class="form-label">{{ t('platform.assigned_to') }}</label>
+                    <select v-if="canAssign" v-model="form.assigned_to" class="form-select">
+                        <option :value="null">—</option>
+                        <option v-for="u in salesStaff" :key="u.id" :value="u.id">{{ u.name }}</option>
+                    </select>
+                    <template v-else>
+                        <input class="form-control" :value="currentAssigneeName" disabled readonly />
+                        <div class="form-text">{{ t('platform.assigned_to_admin_only') }}</div>
+                    </template>
                 </div>
                 <div class="col-md-4"><label class="form-label">{{ t('platform.follow_up_at') }}</label><input v-model="form.follow_up_at" type="datetime-local" class="form-control" /></div>
                 <div class="col-12"><label class="form-label">{{ t('platform.address') }}</label><textarea v-model="form.address" class="form-control" rows="2" /></div>
@@ -33,7 +48,8 @@
 <script setup>
 import PlatformShellLayout from '@/Layouts/PlatformShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 const props = defineProps({
     lead: { type: Object, default: null },
@@ -44,6 +60,22 @@ const props = defineProps({
 });
 
 const { t } = useLocale();
+const page = usePage();
+const canAssign = computed(() => {
+    const user = page.props.auth?.user;
+    return Boolean(user?.is_platform_super_admin || (user?.roles || []).includes('super admin'));
+});
+const statusEditable = computed(() => {
+    if (!props.lead?.status) {
+        return true;
+    }
+    return props.statuses.includes(props.lead.status);
+});
+const currentAssigneeName = computed(() => {
+    const id = props.lead?.assigned_to;
+    const match = (props.salesStaff || []).find((u) => Number(u.id) === Number(id));
+    return match?.name || '—';
+});
 const form = useForm({
     pharmacy_name: props.lead?.pharmacy_name || '',
     owner_name: props.lead?.owner_name || '',
@@ -54,14 +86,24 @@ const form = useForm({
     address: props.lead?.address || '',
     source: props.lead?.source || 'other',
     interested_plan_id: props.lead?.interested_plan_id || null,
-    status: props.lead?.status || 'new',
+    status: statusEditable.value ? (props.lead?.status || 'new') : 'new',
     notes: props.lead?.notes || '',
     follow_up_at: props.lead?.follow_up_at ? props.lead.follow_up_at.slice(0, 16) : '',
     assigned_to: props.lead?.assigned_to || null,
 });
 
 function submit() {
-    if (props.lead) form.put(`/platform/leads/${props.lead.id}`);
-    else form.post('/platform/leads');
+    const payload = { ...form.data() };
+    if (!statusEditable.value) {
+        delete payload.status;
+    }
+    if (!canAssign.value) {
+        delete payload.assigned_to;
+    }
+    if (props.lead) {
+        form.transform(() => payload).put(`/platform/leads/${props.lead.id}`);
+    } else {
+        form.transform(() => payload).post('/platform/leads');
+    }
 }
 </script>

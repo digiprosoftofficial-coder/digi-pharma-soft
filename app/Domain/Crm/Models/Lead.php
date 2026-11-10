@@ -35,6 +35,18 @@ class Lead extends Model
         self::STATUS_LOST,
     ];
 
+    /**
+     * Statuses staff may set manually in CRM.
+     * trial_started / converted come from registration or Convert — not the status dropdown.
+     */
+    public const PIPELINE_STATUSES = [
+        self::STATUS_NEW,
+        self::STATUS_CONTACTED,
+        self::STATUS_DEMO_SCHEDULED,
+        self::STATUS_DEMO_COMPLETED,
+        self::STATUS_LOST,
+    ];
+
     public const SOURCES = [
         'website',
         'facebook',

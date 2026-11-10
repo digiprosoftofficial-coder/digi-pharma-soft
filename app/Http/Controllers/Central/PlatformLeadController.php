@@ -43,7 +43,7 @@ final class PlatformLeadController extends Controller
 
         return Inertia::render('Platform/Leads/Form', [
             'lead' => null,
-            'statuses' => Lead::STATUSES,
+            'statuses' => Lead::PIPELINE_STATUSES,
             'sources' => Lead::SOURCES,
             'salesStaff' => $this->salesStaff(),
             'plans' => SubscriptionPlan::query()->active()->orderBy('sort_order')->get(['id', 'name', 'slug']),
@@ -54,14 +54,19 @@ final class PlatformLeadController extends Controller
     {
         $this->authorize('create', Lead::class);
 
-        $lead = $this->leads->create($request->validated(), $request->user());
+        $data = $request->validated();
+        if (! $request->user()->isPlatformSuperAdminRole()) {
+            unset($data['assigned_to']);
+        }
+
+        $lead = $this->leads->create($data, $request->user());
 
         return redirect()
             ->route('platform.leads.show', $lead)
             ->with('success', __('platform.lead_created'));
     }
 
-    public function show(Lead $lead): Response
+    public function show(Request $request, Lead $lead): Response
     {
         $this->authorize('view', $lead);
 
@@ -75,9 +80,11 @@ final class PlatformLeadController extends Controller
 
         return Inertia::render('Platform/Leads/Show', [
             'lead' => $lead,
-            'statuses' => Lead::STATUSES,
+            'statuses' => Lead::PIPELINE_STATUSES,
+            'allStatuses' => Lead::STATUSES,
             'sources' => Lead::SOURCES,
             'salesStaff' => $this->salesStaff(),
+            'canConvert' => $request->user()?->can('convert', $lead) ?? false,
             'plans' => SubscriptionPlan::query()->orderBy('sort_order')->get(['id', 'name', 'slug', 'trial_days']),
         ]);
     }
@@ -88,7 +95,7 @@ final class PlatformLeadController extends Controller
 
         return Inertia::render('Platform/Leads/Form', [
             'lead' => $lead,
-            'statuses' => Lead::STATUSES,
+            'statuses' => Lead::PIPELINE_STATUSES,
             'sources' => Lead::SOURCES,
             'salesStaff' => $this->salesStaff(),
             'plans' => SubscriptionPlan::query()->orderBy('sort_order')->get(['id', 'name', 'slug']),
@@ -99,7 +106,12 @@ final class PlatformLeadController extends Controller
     {
         $this->authorize('update', $lead);
 
-        $this->leads->update($lead, $request->validated(), $request->user());
+        $data = $request->validated();
+        if (! $request->user()->isPlatformSuperAdminRole()) {
+            unset($data['assigned_to']);
+        }
+
+        $this->leads->update($lead, $data, $request->user());
 
         return redirect()
             ->route('platform.leads.show', $lead)
@@ -133,6 +145,7 @@ final class PlatformLeadController extends Controller
     public function convert(Request $request, Lead $lead, ConvertLeadToTenantAction $convert): RedirectResponse
     {
         $this->authorize('convert', $lead);
+        abort_unless($request->user()?->isPlatformSuperAdminRole(), 403);
 
         $data = $request->validate([
             'slug' => ['nullable', 'string', 'max:64', 'alpha_dash', Rule::unique('tenants', 'slug')],

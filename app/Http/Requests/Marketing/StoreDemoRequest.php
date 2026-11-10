@@ -20,9 +20,11 @@ class StoreDemoRequest extends FormRequest
             'pharmacy_name' => ['required', 'string', 'max:255'],
             'owner_name' => ['required', 'string', 'max:255'],
             'mobile' => ['required', 'string', 'max:32'],
-            'branch_count' => ['required', 'integer', 'min:1', 'max:500'],
-            'preferred_at' => ['nullable', 'date', 'after:now'],
+            'email' => ['required', 'email', 'max:255'],
+            'address' => ['required', 'string', 'max:2000'],
             'message' => ['nullable', 'string', 'max:2000'],
+            'branch_count' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:500'],
+            'preferred_at' => ['nullable', 'date', 'after:now'],
         ];
     }
 }

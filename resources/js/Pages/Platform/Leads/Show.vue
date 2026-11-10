@@ -8,7 +8,14 @@
             </div>
             <div class="d-flex gap-2">
                 <Link :href="`/platform/leads/${lead.id}/edit`" class="btn btn-sm btn-outline-primary">{{ t('common.edit') }}</Link>
-                <button v-if="lead.status !== 'converted'" type="button" class="btn btn-sm btn-success" @click="convert">{{ t('platform.convert_lead') }}</button>
+                <button
+                    v-if="canConvert && lead.status !== 'converted'"
+                    type="button"
+                    class="btn btn-sm btn-success"
+                    @click="convert"
+                >
+                    {{ t('platform.convert_lead') }}
+                </button>
                 <button
                     v-if="canDelete"
                     type="button"
@@ -51,16 +58,29 @@
             <div class="col-lg-5">
                 <div class="card border-0 shadow-sm card-body">
                     <h2 class="h6">{{ t('platform.quick_update') }}</h2>
+                    <p class="small text-muted">{{ t('platform.lead_status_pipeline_hint') }}</p>
                     <form @submit.prevent="updateStatus">
                         <label class="form-label">{{ t('common.status') }}</label>
-                        <select v-model="statusForm.status" class="form-select form-select-sm mb-2">
+                        <select
+                            v-if="statusEditable"
+                            v-model="statusForm.status"
+                            class="form-select form-select-sm mb-2"
+                        >
                             <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
                         </select>
+                        <template v-else>
+                            <input class="form-control form-control-sm mb-1" :value="lead.status" disabled readonly />
+                            <div class="form-text mb-2">{{ t('platform.lead_status_locked') }}</div>
+                        </template>
                         <label class="form-label">{{ t('platform.assigned_to') }}</label>
-                        <select v-model="statusForm.assigned_to" class="form-select form-select-sm mb-2">
+                        <select v-if="canAssign" v-model="statusForm.assigned_to" class="form-select form-select-sm mb-2">
                             <option :value="null">—</option>
                             <option v-for="u in salesStaff" :key="u.id" :value="u.id">{{ u.name }}</option>
                         </select>
+                        <template v-else>
+                            <input class="form-control form-control-sm mb-1" :value="lead.assignee?.name || '—'" disabled readonly />
+                            <div class="form-text mb-2">{{ t('platform.assigned_to_admin_only') }}</div>
+                        </template>
                         <label class="form-label">{{ t('platform.follow_up_at') }}</label>
                         <input v-model="statusForm.follow_up_at" type="datetime-local" class="form-control form-control-sm mb-3" />
                         <button class="btn btn-sm btn-outline-primary">{{ t('common.save') }}</button>
@@ -80,20 +100,24 @@ import { computed, ref } from 'vue';
 const props = defineProps({
     lead: { type: Object, required: true },
     statuses: { type: Array, required: true },
+    allStatuses: { type: Array, default: () => [] },
     sources: { type: Array, required: true },
     salesStaff: { type: Array, default: () => [] },
     plans: { type: Array, default: () => [] },
+    canConvert: { type: Boolean, default: false },
 });
 
 const { t } = useLocale();
 const page = usePage();
-const canDelete = computed(() => {
+const canAssign = computed(() => {
     const user = page.props.auth?.user;
     return Boolean(user?.is_platform_super_admin || (user?.roles || []).includes('super admin'));
 });
+const canDelete = canAssign;
+const statusEditable = computed(() => props.statuses.includes(props.lead.status));
 const note = ref('');
 const statusForm = useForm({
-    status: props.lead.status,
+    status: statusEditable.value ? props.lead.status : props.statuses[0],
     assigned_to: props.lead.assigned_to,
     follow_up_at: props.lead.follow_up_at ? props.lead.follow_up_at.slice(0, 16) : '',
 });
@@ -105,7 +129,16 @@ function addNote() {
 }
 
 function updateStatus() {
-    statusForm.put(`/platform/leads/${props.lead.id}`);
+    const payload = {
+        follow_up_at: statusForm.follow_up_at || null,
+    };
+    if (statusEditable.value) {
+        payload.status = statusForm.status;
+    }
+    if (canAssign.value) {
+        payload.assigned_to = statusForm.assigned_to;
+    }
+    statusForm.transform(() => payload).put(`/platform/leads/${props.lead.id}`);
 }
 
 function convert() {

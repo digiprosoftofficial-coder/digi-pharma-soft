@@ -925,6 +925,123 @@
     font-weight: 600;
 }
 
+.sp-req {
+    color: #b42318;
+    margin-right: 0.15rem;
+}
+
+.sp-footer-link-btn {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.sp-footer-link-btn:hover {
+    color: var(--sp-brand);
+}
+
+/* —— Demo modal (teleported to body — redefine tokens outside .marketing-shell) —— */
+.sp-modal-root {
+    --sp-forest: #123d32;
+    --sp-brand: #287a57;
+    --sp-brand-hover: #1f6547;
+    --sp-sage: #e7f0e9;
+    --sp-cream: #f8f8f4;
+    --sp-charcoal: #252c28;
+    --sp-muted: #5a655e;
+    --sp-line: rgba(18, 61, 50, 0.12);
+    --sp-white: #ffffff;
+    --sp-radius: 0.35rem;
+    --sp-font: 'Manrope', system-ui, sans-serif;
+    --sp-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    color: var(--sp-charcoal);
+    font-family: var(--sp-font);
+}
+
+.sp-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: rgba(18, 61, 50, 0.62);
+    cursor: pointer;
+}
+
+.sp-modal-panel {
+    position: relative;
+    z-index: 1;
+    width: min(560px, 100%);
+    max-height: min(92vh, 900px);
+    overflow: auto;
+    padding: 1.25rem 1.25rem 1.4rem;
+    border-radius: 0.65rem;
+    background: #ffffff;
+    box-shadow: 0 1.25rem 3rem rgba(18, 61, 50, 0.28);
+}
+
+.sp-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.sp-modal-title {
+    margin: 0;
+    color: #123d32;
+    font-family: var(--sp-display);
+    font-size: 1.35rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.sp-modal-close {
+    flex: none;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 0;
+    border-radius: 999px;
+    background: #e7f0e9;
+    color: #123d32;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.sp-modal-close:hover {
+    background: #d7e6db;
+}
+
+.sp-form--modal {
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.sp-modal-panel .sp-field label {
+    color: #123d32;
+}
+
+.sp-modal-panel .sp-field input,
+.sp-modal-panel .sp-field textarea,
+.sp-modal-panel .sp-field select {
+    background: #ffffff;
+    border-color: rgba(18, 61, 50, 0.18);
+    color: #252c28;
+}
+
 /* —— FAQ —— */
 .sp-faq {
     display: grid;

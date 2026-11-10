@@ -338,6 +338,9 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
             ->name('impersonation.destroy');
         Route::resource('plans', PlatformPlanController::class)->except(['show']);
         Route::get('/admins', [PlatformAdminController::class, 'index'])->name('admins.index');
+        Route::post('/admins', [PlatformAdminController::class, 'store'])->name('admins.store');
+        Route::put('/admins/{admin}', [PlatformAdminController::class, 'update'])->name('admins.update');
+        Route::delete('/admins/{admin}', [PlatformAdminController::class, 'destroy'])->name('admins.destroy');
         Route::get('/audit', [PlatformAuditController::class, 'index'])->name('audit.index');
         Route::get('/billing', [PlatformBillingController::class, 'index'])->name('billing.index');
         Route::post('/billing/invoices', [PlatformBillingController::class, 'store'])->name('billing.invoices.store');

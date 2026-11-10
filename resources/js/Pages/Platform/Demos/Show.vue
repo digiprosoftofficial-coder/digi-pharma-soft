@@ -5,6 +5,7 @@
             <div>
                 <h1 class="h5 mb-1">{{ demo.pharmacy_name }}</h1>
                 <p class="small text-muted mb-0">{{ demo.owner_name }} · {{ demo.mobile }} · {{ demo.status }}</p>
+                <p class="small text-muted mb-0">{{ t('platform.requested_at') }}: {{ formatWhen(demo.created_at) }}</p>
             </div>
             <button
                 v-if="canDelete"
@@ -15,8 +16,20 @@
                 {{ t('common.delete') }}
             </button>
         </div>
+        <div class="card border-0 shadow-sm card-body mb-3" style="max-width: 720px">
+            <h2 class="h6">{{ t('platform.lead_details') }}</h2>
+            <dl class="row mb-0 small">
+                <dt class="col-sm-4">{{ t('platform.email') }}</dt>
+                <dd class="col-sm-8">{{ demo.lead?.email || '—' }}</dd>
+                <dt class="col-sm-4">{{ t('platform.address') }}</dt>
+                <dd class="col-sm-8">{{ demo.lead?.address || '—' }}</dd>
+                <dt class="col-sm-4">{{ t('platform.message') }}</dt>
+                <dd class="col-sm-8">{{ demo.message || '—' }}</dd>
+                <dt class="col-sm-4">{{ t('platform.requested_at') }}</dt>
+                <dd class="col-sm-8">{{ formatWhen(demo.created_at) }}</dd>
+            </dl>
+        </div>
         <div class="card border-0 shadow-sm card-body" style="max-width: 720px">
-            <p>{{ demo.message }}</p>
             <form class="row g-3" @submit.prevent="save">
                 <div class="col-md-6">
                     <label class="form-label">{{ t('common.status') }}</label>
@@ -30,10 +43,18 @@
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">{{ t('platform.assigned_to') }}</label>
-                    <select v-model="form.assigned_to" class="form-select">
+                    <select v-if="canAssign" v-model="form.assigned_to" class="form-select">
                         <option :value="null">—</option>
                         <option v-for="u in salesStaff" :key="u.id" :value="u.id">{{ u.name }}</option>
                     </select>
+                    <input
+                        v-else
+                        class="form-control"
+                        :value="assigneeName"
+                        disabled
+                        readonly
+                    />
+                    <div v-if="!canAssign" class="form-text">{{ t('platform.assigned_to_admin_only') }}</div>
                 </div>
                 <div class="col-12">
                     <label class="form-label">{{ t('platform.meeting_notes') }}</label>
@@ -59,9 +80,14 @@ const props = defineProps({
 
 const { t } = useLocale();
 const page = usePage();
-const canDelete = computed(() => {
+const canAssign = computed(() => {
     const user = page.props.auth?.user;
     return Boolean(user?.is_platform_super_admin || (user?.roles || []).includes('super admin'));
+});
+const canDelete = canAssign;
+const assigneeName = computed(() => {
+    const match = (props.salesStaff || []).find((u) => Number(u.id) === Number(props.demo.assigned_to));
+    return match?.name || props.demo.assignee?.name || '—';
 });
 const form = useForm({
     status: props.demo.status,
@@ -69,6 +95,13 @@ const form = useForm({
     assigned_to: props.demo.assigned_to,
     meeting_notes: props.demo.meeting_notes || '',
 });
+
+function formatWhen(value) {
+    if (!value) {
+        return '—';
+    }
+    return new Date(value).toLocaleString();
+}
 
 function save() {
     form.put(`/platform/demos/${props.demo.id}`);

@@ -19,8 +19,7 @@
                     <p class="sp-bn">{{ t('platform.marketing_hero_bn') }}</p>
                     <div class="sp-hero-ctas">
                         <Link :href="liveDemoHref" class="sp-btn sp-btn-primary">{{ t('platform.try_live_demo') }}</Link>
-                        <Link href="/demo" class="sp-btn sp-btn-secondary">{{ t('platform.book_demo') }}</Link>
-                        <Link href="/pricing" class="sp-btn sp-btn-ghost">{{ t('platform.view_pricing') }}</Link>
+                        <a href="/#demo" class="sp-btn sp-btn-secondary">{{ t('platform.book_demo') }}</a>
                     </div>
                     <p class="sp-trust-line">{{ t('platform.hero_trust') }}</p>
                 </div>
@@ -240,16 +239,9 @@
                             <li v-if="plan.features?.reports">{{ t('platform.feature_reports') }}</li>
                             <li v-if="plan.features?.pos">{{ t('platform.feature_pos') }}</li>
                         </ul>
-                        <Link
-                            v-if="selfServiceEnabled"
-                            :href="`/get-started?plan=${plan.slug}&interval=${interval}`"
-                            class="sp-btn sp-btn-primary"
-                        >
+                        <a href="/#demo" class="sp-btn sp-btn-primary">
                             {{ t('platform.start_trial') }}
-                        </Link>
-                        <Link v-else href="/demo" class="sp-btn sp-btn-primary">
-                            {{ t('platform.book_demo') }}
-                        </Link>
+                        </a>
                     </article>
                 </div>
 
@@ -327,9 +319,13 @@
                 <p class="sp-lead">{{ t('platform.final_cta_sub') }}</p>
                 <div class="sp-hero-ctas">
                     <Link :href="liveDemoHref" class="sp-btn sp-btn-primary">{{ t('platform.try_live_demo') }}</Link>
-                    <Link href="/demo" class="sp-btn sp-btn-secondary" style="border-color: #f8f8f4; color: #f8f8f4;">
+                    <a
+                        href="/#demo"
+                        class="sp-btn sp-btn-secondary"
+                        style="border-color: #f8f8f4; color: #f8f8f4;"
+                    >
                         {{ t('platform.book_demo') }}
-                    </Link>
+                    </a>
                 </div>
             </div>
         </section>

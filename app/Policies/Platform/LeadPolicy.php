@@ -29,7 +29,8 @@ final class LeadPolicy extends PlatformPolicy
 
     public function convert(User $user, Lead $lead): bool
     {
-        return $this->canCrm($user);
+        // Only super admin provisions pharmacy / invite; sales tracks pipeline only.
+        return $this->isPlatformSuperAdmin($user);
     }
 
     public function delete(User $user, Lead $lead): bool

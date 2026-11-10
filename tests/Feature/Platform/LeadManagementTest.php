@@ -6,8 +6,10 @@ use App\Domain\Billing\Models\SubscriptionPlan;
 use App\Domain\Crm\Models\Lead;
 use App\Domain\Tenant\Models\Tenant;
 use App\Models\User;
+use App\Support\Permission\PlatformTeam;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class LeadManagementTest extends TestCase
@@ -96,5 +98,66 @@ class LeadManagementTest extends TestCase
             ->assertRedirect(route('platform.leads.index'));
 
         $this->assertDatabaseMissing('leads', ['id' => $lead->getKey()]);
+    }
+
+    public function test_sales_cannot_set_trial_started_or_convert(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
+        $plan = SubscriptionPlan::query()->where('slug', 'starter')->firstOrFail();
+
+        $registrar = app(PermissionRegistrar::class);
+        $previous = $registrar->getPermissionsTeamId();
+        $registrar->setPermissionsTeamId(PlatformTeam::ID);
+        try {
+            $sales = User::query()->create([
+                'name' => 'Sales Rep',
+                'email' => 'sales-lead@example.com',
+                'password' => 'password',
+                'tenant_id' => null,
+            ]);
+            $sales->forceFill(['email_verified_at' => now()])->save();
+            $sales->assignRole('sales');
+        } finally {
+            $registrar->setPermissionsTeamId($previous);
+        }
+
+        $lead = Lead::query()->create([
+            'pharmacy_name' => 'Pipeline Only Pharmacy',
+            'owner_name' => 'Owner',
+            'phone' => '01700000111',
+            'email' => 'pipeline@example.com',
+            'branch_count' => 1,
+            'source' => 'website',
+            'interested_plan_id' => $plan->getKey(),
+            'status' => Lead::STATUS_DEMO_COMPLETED,
+            'created_by' => $admin->getKey(),
+        ]);
+
+        $this->actingAs($sales)
+            ->from(route('platform.leads.show', $lead))
+            ->put("/platform/leads/{$lead->getKey()}", [
+                'status' => Lead::STATUS_TRIAL_STARTED,
+            ])
+            ->assertSessionHasErrors('status');
+
+        $lead->refresh();
+        $this->assertSame(Lead::STATUS_DEMO_COMPLETED, $lead->status);
+
+        $this->assertFalse($sales->fresh()->isPlatformSuperAdminRole());
+
+        $this->actingAs($sales->fresh())
+            ->from(route('platform.leads.show', $lead))
+            ->post("/platform/leads/{$lead->getKey()}/convert", [
+                'subscription_plan_id' => $plan->getKey(),
+                'owner_email' => 'pipeline@example.com',
+                'owner_invite' => true,
+            ])
+            ->assertRedirect();
+
+        $lead->refresh();
+        $this->assertSame(Lead::STATUS_DEMO_COMPLETED, $lead->status);
+        $this->assertNull($lead->converted_tenant_id);
+        $this->assertFalse(Tenant::query()->where('lead_id', $lead->getKey())->exists());
     }
 }

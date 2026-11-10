@@ -18,15 +18,16 @@
             <div class="col-md-2"><button class="btn btn-sm btn-outline-primary w-100">Filter</button></div>
         </form>
         <div class="card border-0 shadow-sm table-responsive">
-            <table class="table table-sm mb-0">
+            <table class="table table-sm mb-0 align-middle">
                 <thead class="table-light">
                     <tr>
                         <th>{{ t('platform.pharmacy_name') }}</th>
                         <th>{{ t('platform.owner_name') }}</th>
                         <th>{{ t('platform.mobile') }}</th>
                         <th>{{ t('common.status') }}</th>
+                        <th>{{ t('platform.requested_at') }}</th>
                         <th>{{ t('platform.scheduled_at') }}</th>
-                        <th></th>
+                        <th class="text-end">{{ t('common.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -35,8 +36,38 @@
                         <td>{{ d.owner_name }}</td>
                         <td>{{ d.mobile }}</td>
                         <td>{{ d.status }}</td>
-                        <td>{{ d.scheduled_at ? new Date(d.scheduled_at).toLocaleString() : '—' }}</td>
-                        <td class="text-end"><Link :href="`/platform/demos/${d.id}`" class="btn btn-sm btn-outline-primary">View</Link></td>
+                        <td>{{ formatWhen(d.created_at) }}</td>
+                        <td>{{ d.scheduled_at ? formatWhen(d.scheduled_at) : '—' }}</td>
+                        <td class="text-end text-nowrap">
+                            <Link
+                                :href="`/platform/demos/${d.id}`"
+                                class="btn btn-sm btn-outline-primary me-1"
+                                :title="t('common.edit')"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path d="M12 20h9" />
+                                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                                </svg>
+                                <span class="visually-hidden">{{ t('common.edit') }}</span>
+                            </Link>
+                            <button
+                                v-if="canDelete"
+                                type="button"
+                                class="btn btn-sm btn-outline-danger"
+                                :title="t('common.delete')"
+                                @click="destroyDemo(d)"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path d="M3 6h18" />
+                                    <path d="M8 6V4h8v2" />
+                                    <path d="M19 6l-1 14H6L5 6" />
+                                </svg>
+                                <span class="visually-hidden">{{ t('common.delete') }}</span>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr v-if="!demos.data?.length">
+                        <td colspan="7" class="text-center text-muted py-4">{{ t('common.no_results') }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -47,8 +78,8 @@
 <script setup>
 import PlatformShellLayout from '@/Layouts/PlatformShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
-import { Head, Link, router } from '@inertiajs/vue3';
-import { reactive } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { computed, reactive } from 'vue';
 
 const props = defineProps({
     demos: { type: Object, required: true },
@@ -59,6 +90,28 @@ const props = defineProps({
 });
 
 const { t } = useLocale();
+const page = usePage();
+const canDelete = computed(() => {
+    const user = page.props.auth?.user;
+    return Boolean(user?.is_platform_super_admin || (user?.roles || []).includes('super admin'));
+});
 const local = reactive({ search: props.filters.search || '', status: props.filters.status || '' });
-function filter() { router.get('/platform/demos', { ...local }, { preserveState: true }); }
+
+function filter() {
+    router.get('/platform/demos', { ...local }, { preserveState: true });
+}
+
+function formatWhen(value) {
+    if (!value) {
+        return '—';
+    }
+    return new Date(value).toLocaleString();
+}
+
+function destroyDemo(demo) {
+    if (!confirm(t('platform.demo_delete_confirm', { name: demo.pharmacy_name }))) {
+        return;
+    }
+    router.delete(`/platform/demos/${demo.id}`);
+}
 </script>

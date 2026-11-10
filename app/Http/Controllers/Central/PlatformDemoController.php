@@ -55,6 +55,10 @@ final class PlatformDemoController extends Controller
             'meeting_notes' => ['nullable', 'string', 'max:5000'],
         ]);
 
+        if (! $request->user()->isPlatformSuperAdminRole()) {
+            unset($data['assigned_to']);
+        }
+
         $this->demos->update($demo, $data, $request->user());
 
         return back()->with('success', __('platform.demo_updated'));

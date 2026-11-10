@@ -73,6 +73,58 @@
                     <span class="platform-mobile-brand__page">{{ pageTitle }}</span>
                 </div>
                 <h1 class="h5 mb-0 text-primary me-auto d-none d-lg-block">{{ pageTitle }}</h1>
+                <div class="platform-bell dropdown">
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary platform-bell-btn position-relative"
+                        :aria-expanded="bellOpen ? 'true' : 'false'"
+                        :aria-label="t('platform.nav_notifications')"
+                        @click="toggleBell"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                        </svg>
+                        <span
+                            v-if="unreadCount > 0"
+                            class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger"
+                        >
+                            {{ unreadCount > 99 ? '99+' : unreadCount }}
+                        </span>
+                    </button>
+                    <div v-if="bellOpen" class="platform-bell-menu dropdown-menu dropdown-menu-end show shadow">
+                        <div class="dropdown-header d-flex justify-content-between align-items-center">
+                            <span>{{ t('platform.notifications_title') }}</span>
+                            <button
+                                v-if="unreadCount > 0"
+                                type="button"
+                                class="btn btn-link btn-sm p-0"
+                                @click="markAllRead"
+                            >
+                                {{ t('platform.mark_all_read') }}
+                            </button>
+                        </div>
+                        <div v-if="!recentNotifications.length" class="px-3 py-3 small text-muted">
+                            {{ t('platform.no_notifications') }}
+                        </div>
+                        <button
+                            v-for="n in recentNotifications"
+                            :key="n.id"
+                            type="button"
+                            class="dropdown-item platform-bell-item"
+                            :class="{ 'fw-semibold': !n.read_at }"
+                            @click="openNotification(n)"
+                        >
+                            <div class="small">{{ n.title || t('platform.nav_notifications') }}</div>
+                            <div class="small text-muted text-wrap">{{ n.body }}</div>
+                            <div v-if="n.created_at" class="small text-muted">{{ formatWhen(n.created_at) }}</div>
+                        </button>
+                        <div class="dropdown-divider"></div>
+                        <Link href="/platform/notifications" class="dropdown-item text-center small" @click="bellOpen = false">
+                            {{ t('platform.view_all_notifications') }}
+                        </Link>
+                    </div>
+                </div>
                 <span class="small text-muted d-none d-md-inline">{{ userName }}</span>
                 <Link href="/logout" method="post" as="button" class="btn btn-sm btn-outline-secondary">
                     {{ t('common.logout') }}
@@ -92,7 +144,7 @@ import AppMessageModal from '@/Components/AppMessageModal.vue';
 import FlashToasts from '@/Components/FlashToasts.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useTheme } from '@/composables/useTheme';
-import { Link, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 defineProps({
@@ -105,11 +157,16 @@ const page = usePage();
 
 const userName = computed(() => page.props.auth?.user?.name ?? 'Admin');
 const mobileNavOpen = ref(false);
+const bellOpen = ref(false);
+
+const unreadCount = computed(() => Number(page.props.platformNotifications?.unread_count || 0));
+const recentNotifications = computed(() => page.props.platformNotifications?.recent || []);
 
 watch(
     () => page.url,
     () => {
         closeMobileNav();
+        bellOpen.value = false;
     },
 );
 
@@ -120,17 +177,63 @@ watch(mobileNavOpen, (open) => {
 function onEscape(event) {
     if (event.key === 'Escape') {
         closeMobileNav();
+        bellOpen.value = false;
+    }
+}
+
+function onDocumentClick(event) {
+    const root = event.target?.closest?.('.platform-bell');
+    if (!root) {
+        bellOpen.value = false;
     }
 }
 
 onMounted(() => {
     window.addEventListener('keydown', onEscape);
+    document.addEventListener('click', onDocumentClick);
 });
 
 onUnmounted(() => {
     window.removeEventListener('keydown', onEscape);
+    document.removeEventListener('click', onDocumentClick);
     document.body.classList.remove('overflow-hidden');
 });
+
+function toggleBell() {
+    bellOpen.value = !bellOpen.value;
+}
+
+function formatWhen(value) {
+    if (!value) {
+        return '';
+    }
+    return new Date(value).toLocaleString();
+}
+
+function markAllRead() {
+    router.post('/platform/notifications/read-all', {}, { preserveScroll: true });
+}
+
+function openNotification(notification) {
+    const go = () => {
+        bellOpen.value = false;
+        if (notification.url) {
+            router.visit(notification.url);
+        } else {
+            router.visit('/platform/notifications');
+        }
+    };
+
+    if (!notification.read_at) {
+        router.post(`/platform/notifications/${notification.id}/read`, {}, {
+            preserveScroll: true,
+            onFinish: go,
+        });
+        return;
+    }
+
+    go();
+}
 
 const permissions = computed(() => page.props.auth?.user?.permissions || []);
 const isSuper = computed(() => (page.props.auth?.user?.roles || []).includes('super admin') || page.props.auth?.user?.is_platform_super_admin);
@@ -255,6 +358,34 @@ function closeMobileNav() {
     min-width: 2.25rem;
     min-height: 2.25rem;
     padding: 0.3rem;
+}
+
+.platform-bell {
+    position: relative;
+}
+
+.platform-bell-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0.3rem;
+}
+
+.platform-bell-menu {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    right: 0;
+    z-index: 1050;
+    width: min(360px, 86vw);
+    max-height: min(70vh, 420px);
+    overflow: auto;
+    display: block;
+}
+
+.platform-bell-item {
+    white-space: normal;
 }
 
 .platform-mobile-brand {

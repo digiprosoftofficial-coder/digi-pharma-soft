@@ -28,7 +28,7 @@ class StoreLeadRequest extends FormRequest
             'address' => ['nullable', 'string', 'max:2000'],
             'source' => ['required', Rule::in(Lead::SOURCES)],
             'interested_plan_id' => ['nullable', 'integer', 'exists:subscription_plans,id'],
-            'status' => ['nullable', Rule::in(Lead::STATUSES)],
+            'status' => ['nullable', Rule::in(Lead::PIPELINE_STATUSES)],
             'notes' => ['nullable', 'string', 'max:5000'],
             'follow_up_at' => ['nullable', 'date'],
             'assigned_to' => ['nullable', 'integer', 'exists:users,id'],

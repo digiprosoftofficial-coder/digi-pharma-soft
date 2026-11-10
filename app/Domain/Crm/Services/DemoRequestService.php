@@ -55,6 +55,8 @@ final class DemoRequestService
                 'owner_name' => $data['owner_name'],
                 'phone' => $data['mobile'],
                 'whatsapp' => $data['mobile'],
+                'email' => $data['email'] ?? null,
+                'address' => $data['address'] ?? null,
                 'branch_count' => $data['branch_count'] ?? 1,
                 'source' => 'website',
                 'status' => Lead::STATUS_NEW,

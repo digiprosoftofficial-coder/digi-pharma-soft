@@ -97,6 +97,37 @@ class HandleInertiaRequests extends Middleware
                         : [],
                 ] : null,
             ],
+            'platformNotifications' => $this->platformNotificationsShare($authUser),
+        ];
+    }
+
+    /**
+     * @return array{unread_count:int, recent:list<array<string, mixed>>}|null
+     */
+    private function platformNotificationsShare(?User $user): ?array
+    {
+        if (! $user instanceof User || ! $user->shouldUsePlatformDashboard()) {
+            return null;
+        }
+
+        $recent = $user->notifications()
+            ->latest()
+            ->limit(8)
+            ->get()
+            ->map(static fn ($notification) => [
+                'id' => $notification->id,
+                'title' => $notification->data['title'] ?? '',
+                'body' => $notification->data['body'] ?? '',
+                'url' => $notification->data['url'] ?? null,
+                'read_at' => $notification->read_at,
+                'created_at' => optional($notification->created_at)?->toIso8601String(),
+            ])
+            ->values()
+            ->all();
+
+        return [
+            'unread_count' => $user->unreadNotifications()->count(),
+            'recent' => $recent,
         ];
     }
 

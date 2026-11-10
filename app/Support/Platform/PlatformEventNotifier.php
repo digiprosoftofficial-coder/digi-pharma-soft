@@ -6,8 +6,10 @@ use App\Models\User;
 use App\Notifications\PlatformEventNotification;
 use App\Support\Permission\PlatformTeam;
 use App\Support\Notifications\WhatsAppNotifier;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\PermissionRegistrar;
+use Throwable;
 
 final class PlatformEventNotifier
 {
@@ -18,18 +20,32 @@ final class PlatformEventNotifier
      */
     public function notifyOperators(string $event, string $title, string $body, array $data = [], ?string $whatsappTo = null): void
     {
-        $recipients = $this->platformUsers();
+        $dispatch = function () use ($event, $title, $body, $data, $whatsappTo): void {
+            try {
+                $recipients = $this->platformUsers();
 
-        if ($recipients->isNotEmpty()) {
-            Notification::send(
-                $recipients,
-                new PlatformEventNotification($event, $title, $body, $data),
-            );
+                if ($recipients->isNotEmpty()) {
+                    Notification::send(
+                        $recipients,
+                        new PlatformEventNotification($event, $title, $body, $data),
+                    );
+                }
+
+                if ($whatsappTo) {
+                    $this->whatsApp->send($whatsappTo, $title.' — '.$body);
+                }
+            } catch (Throwable $e) {
+                report($e);
+            }
+        };
+
+        if (DB::transactionLevel() > 0) {
+            DB::afterCommit($dispatch);
+
+            return;
         }
 
-        if ($whatsappTo) {
-            $this->whatsApp->send($whatsappTo, $title.' — '.$body);
-        }
+        $dispatch();
     }
 
     /**

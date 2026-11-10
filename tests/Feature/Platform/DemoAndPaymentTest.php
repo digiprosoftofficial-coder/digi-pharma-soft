@@ -7,8 +7,10 @@ use App\Domain\Billing\Models\SubscriptionPlan;
 use App\Domain\Crm\Models\DemoRequest;
 use App\Domain\Tenant\Models\Tenant;
 use App\Models\User;
+use App\Notifications\PlatformEventNotification;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class DemoAndPaymentTest extends TestCase
@@ -18,14 +20,18 @@ class DemoAndPaymentTest extends TestCase
     public function test_public_can_submit_demo_request(): void
     {
         $this->seed(DatabaseSeeder::class);
+        Notification::fake();
 
-        $this->post('/demo', [
-            'pharmacy_name' => 'Demo Seekers',
-            'owner_name' => 'Rahim',
-            'mobile' => '01933333333',
-            'branch_count' => 1,
-            'message' => 'Please call me',
-        ])->assertRedirect(route('marketing.demo'));
+        $this->from(route('marketing.home'))
+            ->post('/demo', [
+                'pharmacy_name' => 'Demo Seekers',
+                'owner_name' => 'Rahim',
+                'mobile' => '01933333333',
+                'email' => 'rahim@example.com',
+                'address' => 'Dhaka',
+                'message' => 'Please call me',
+            ])
+            ->assertRedirect(route('marketing.home'));
 
         $this->assertDatabaseHas('demo_requests', [
             'pharmacy_name' => 'Demo Seekers',
@@ -35,7 +41,14 @@ class DemoAndPaymentTest extends TestCase
         $this->assertDatabaseHas('leads', [
             'pharmacy_name' => 'Demo Seekers',
             'phone' => '01933333333',
+            'email' => 'rahim@example.com',
+            'address' => 'Dhaka',
         ]);
+
+        $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
+        Notification::assertSentTo($admin, PlatformEventNotification::class, function (PlatformEventNotification $notification) {
+            return $notification->event === 'demo.requested';
+        });
     }
 
     public function test_super_admin_can_delete_demo_request(): void

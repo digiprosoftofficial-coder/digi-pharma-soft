@@ -60,9 +60,7 @@ final class MarketingController extends Controller
     {
         $demos->submitPublic($request->validated());
 
-        return redirect()
-            ->route('marketing.demo')
-            ->with('success', __('platform.demo_submitted'));
+        return back()->with('success', __('platform.demo_submitted'));
     }
 
     public function sitemap()

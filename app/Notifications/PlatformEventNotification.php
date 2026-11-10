@@ -2,15 +2,11 @@
 
 namespace App\Notifications;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class PlatformEventNotification extends Notification implements ShouldQueue
+class PlatformEventNotification extends Notification
 {
-    use Queueable;
-
     /**
      * @param  array<string, mixed>  $data
      */
@@ -26,7 +22,8 @@ class PlatformEventNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        // Database is sync so the bell updates immediately; mail can still fail independently.
+        return ['database', 'mail'];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -42,11 +39,21 @@ class PlatformEventNotification extends Notification implements ShouldQueue
      */
     public function toArray(object $notifiable): array
     {
+        $url = null;
+        if (! empty($this->data['demo_id'])) {
+            $url = '/platform/demos/'.$this->data['demo_id'];
+        } elseif (! empty($this->data['lead_id'])) {
+            $url = '/platform/leads/'.$this->data['lead_id'];
+        } elseif (! empty($this->data['payment_id'])) {
+            $url = '/platform/payments';
+        }
+
         return [
             'event' => $this->event,
             'title' => $this->title,
             'body' => $this->body,
             'data' => $this->data,
+            'url' => $url,
         ];
     }
 }
