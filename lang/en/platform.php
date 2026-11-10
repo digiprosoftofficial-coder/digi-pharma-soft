@@ -780,6 +780,7 @@ return [
     'expired_subscriptions' => 'Expired subscriptions',
     'monthly_price' => 'Monthly price',
     'yearly_price' => 'Yearly price',
+    'yearly_price_auto_hint' => 'Auto-fills as monthly × 12 when you change monthly (still editable)',
     'sort_order' => 'Sort order',
     'onboarding_title' => 'Get your pharmacy ready',
     'onboarding_sub' => 'Complete these steps to start selling.',

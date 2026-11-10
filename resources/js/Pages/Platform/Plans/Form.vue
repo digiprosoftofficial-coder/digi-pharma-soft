@@ -15,13 +15,24 @@
             <div class="row g-2 mb-2">
                 <div class="col-md-4">
                     <label class="form-label">{{ t('platform.monthly_price') }}</label>
-                    <input v-model.number="monthlyTaka" type="number" min="0" step="0.01" class="form-control" required />
+                    <input
+                        v-model.number="monthlyTaka"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        class="form-control"
+                        required
+                        @input="syncYearlyFromMonthly"
+                    />
                     <div class="form-text">{{ formatMoney(monthlyTaka, { currency }) }}</div>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">{{ t('platform.yearly_price') }}</label>
                     <input v-model.number="yearlyTaka" type="number" min="0" step="0.01" class="form-control" required />
-                    <div class="form-text">{{ formatMoney(yearlyTaka, { currency }) }}</div>
+                    <div class="form-text">
+                        {{ formatMoney(yearlyTaka, { currency }) }}
+                        · {{ t('platform.yearly_price_auto_hint') }}
+                    </div>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Trial days</label>
@@ -210,6 +221,15 @@ const { formatMoney } = useMoney({ currency: props.currency });
 
 const monthlyTaka = ref(Number(props.plan?.monthly_price_cents ?? props.plan?.price_cents ?? 0) / 100);
 const yearlyTaka = ref(Number(props.plan?.yearly_price_cents ?? ((props.plan?.price_cents ?? 0) * 10) ?? 0) / 100);
+
+function roundMoney(value) {
+    return Math.round(Number(value || 0) * 100) / 100;
+}
+
+/** When monthly changes, suggest yearly = monthly × 12. Yearly stays manually editable afterward. */
+function syncYearlyFromMonthly() {
+    yearlyTaka.value = roundMoney(Number(monthlyTaka.value || 0) * 12);
+}
 
 const form = useForm({
     name: props.plan?.name ?? '',
