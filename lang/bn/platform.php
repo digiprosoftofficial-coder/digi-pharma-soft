@@ -742,6 +742,7 @@ return [
     'email_otp_body' => 'আপনার SoftoPharma OTP: :code। কয়েক মিনিটের জন্য বৈধ। কোডটি কারো সাথে শেয়ার করবেন না।',
     'phone_format_hint' => 'সঠিক বাংলাদেশি মোবাইল নম্বর দিন, যেমন ০১XXXXXXXXX (১১ ডিজিট)।',
     'phone_invalid' => 'সঠিক বাংলাদেশি মোবাইল নম্বর দিন (০১XXXXXXXXX)।',
+    'email_invalid' => 'সঠিক ইমেইল ঠিকানা দিন।',
     'otp_code' => 'OTP',
     'otp_sent' => 'ইমেইলে OTP পাঠানো হয়েছে।',
     'otp_verified' => 'ইমেইল যাচাই হয়েছে।',

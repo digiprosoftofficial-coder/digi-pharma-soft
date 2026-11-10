@@ -42,8 +42,13 @@
                     type="tel"
                     required
                     autocomplete="tel"
+                    inputmode="numeric"
+                    maxlength="11"
+                    pattern="01[3-9][0-9]{8}"
                     :placeholder="t('platform.mobile_placeholder')"
+                    @input="normalizeMobile"
                 />
+                <p class="sp-field-hint">{{ t('platform.phone_format_hint') }}</p>
                 <div v-if="form.errors.mobile" class="sp-field-error">{{ form.errors.mobile }}</div>
             </div>
         </div>
@@ -58,7 +63,9 @@
                 type="email"
                 required
                 autocomplete="email"
+                maxlength="255"
                 :placeholder="t('platform.email_placeholder')"
+                @blur="normalizeEmail"
             />
             <div v-if="form.errors.email" class="sp-field-error">{{ form.errors.email }}</div>
         </div>
@@ -121,7 +128,34 @@ const form = useForm({
 
 const successMessage = computed(() => page.props.flash?.success || '');
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const mobilePattern = /^01[3-9]\d{8}$/;
+
+function normalizeMobile(event) {
+    form.mobile = String(event.target.value || '').replace(/\D/g, '').slice(0, 11);
+}
+
+function normalizeEmail() {
+    form.email = String(form.email || '').trim().toLowerCase();
+}
+
 function submit() {
+    normalizeEmail();
+    form.clearErrors(['mobile', 'email']);
+
+    let invalid = false;
+    if (!mobilePattern.test(form.mobile)) {
+        form.setError('mobile', t('platform.phone_invalid'));
+        invalid = true;
+    }
+    if (!emailPattern.test(form.email)) {
+        form.setError('email', t('platform.email_invalid'));
+        invalid = true;
+    }
+    if (invalid) {
+        return;
+    }
+
     form.post('/demo', {
         preserveScroll: true,
         onSuccess: () => {

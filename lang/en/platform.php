@@ -740,6 +740,7 @@ return [
     'email_otp_body' => 'Your SoftoPharma OTP is :code. It is valid for a few minutes. Do not share this code.',
     'phone_format_hint' => 'Use a valid BD mobile number, e.g. 01XXXXXXXXX (11 digits).',
     'phone_invalid' => 'Enter a valid Bangladesh mobile number (01XXXXXXXXX).',
+    'email_invalid' => 'Enter a valid email address.',
     'otp_code' => 'OTP',
     'plan' => 'Plan',
     'billing_interval' => 'Billing interval',

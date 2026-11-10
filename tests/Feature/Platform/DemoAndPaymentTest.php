@@ -51,6 +51,26 @@ class DemoAndPaymentTest extends TestCase
         });
     }
 
+    public function test_demo_request_rejects_invalid_mobile_and_email(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->from(route('marketing.home'))
+            ->post('/demo', [
+                'pharmacy_name' => 'Bad Contact',
+                'owner_name' => 'Karim',
+                'mobile' => '01234567890',
+                'email' => 'not-an-email',
+                'address' => 'Dhaka',
+            ])
+            ->assertRedirect(route('marketing.home'))
+            ->assertSessionHasErrors(['mobile', 'email']);
+
+        $this->assertDatabaseMissing('demo_requests', [
+            'pharmacy_name' => 'Bad Contact',
+        ]);
+    }
+
     public function test_super_admin_can_delete_demo_request(): void
     {
         $this->seed(DatabaseSeeder::class);
