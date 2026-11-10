@@ -143,11 +143,11 @@ final class PlatformPlanController extends Controller
             : null;
 
         $themeTemplates = array_values(array_intersect(
-            array_map('strval', (array) $request->input('features.theme_templates', [ThemeCatalog::CLASSIC_BLUE])),
+            array_map('strval', (array) $request->input('features.theme_templates', [ThemeCatalog::DEFAULT])),
             ThemeCatalog::ids(),
         ));
         if ($themeTemplates === []) {
-            $themeTemplates = [ThemeCatalog::CLASSIC_BLUE];
+            $themeTemplates = [ThemeCatalog::DEFAULT];
         }
 
         $validated['features'] = [

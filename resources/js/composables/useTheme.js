@@ -1,8 +1,9 @@
 import { usePage } from '@inertiajs/vue3';
 import { watch } from 'vue';
 
-const DEFAULT_PRIMARY = '#0d6efd';
-const DEFAULT_PRIMARY_RGB = '13, 110, 253';
+/** SoftoPharma brand green (--sp-brand); keep in sync with ThemeCatalog::DEFAULT_PRIMARY */
+const DEFAULT_PRIMARY = '#287a57';
+const DEFAULT_PRIMARY_RGB = '40, 122, 87';
 
 /**
  * @param {string} hex

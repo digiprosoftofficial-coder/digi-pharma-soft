@@ -5,7 +5,7 @@
     <title>{{ $invoice->invoice_no }}</title>
     <style>
         body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #111; margin: 24px; }
-        .invoice-header { display: table; width: 100%; margin-bottom: 20px; border-bottom: 2px solid #0d6efd; padding-bottom: 12px; }
+        .invoice-header { display: table; width: 100%; margin-bottom: 20px; border-bottom: 2px solid #287a57; padding-bottom: 12px; }
         .invoice-header > div { display: table-cell; vertical-align: top; width: 50%; }
         .invoice-title { font-size: 20px; margin: 0 0 4px; }
         .invoice-no { font-size: 14px; font-weight: bold; margin: 0; }

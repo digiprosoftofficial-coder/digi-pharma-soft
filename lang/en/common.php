@@ -64,6 +64,7 @@ return [
     'account_expense' => 'Expense',
     'theme_section' => 'Color theme',
     'theme_section_hint' => 'Choose a template allowed by your plan. Preview updates instantly.',
+    'theme_softo_green' => 'SoftoPharma Green',
     'theme_classic_blue' => 'Classic Blue',
     'theme_emerald' => 'Emerald Green',
     'theme_teal' => 'Pharmacy Teal',

@@ -64,6 +64,7 @@ return [
     'account_expense' => 'ব্যয়',
     'theme_section' => 'রঙের থিম',
     'theme_section_hint' => 'আপনার প্ল্যানে অনুমোদিত টেমপ্লেট বেছে নিন। প্রিভিউ সাথে সাথে দেখাবে।',
+    'theme_softo_green' => 'সফটোফার্মা সবুজ',
     'theme_classic_blue' => 'ক্লাসিক নীল',
     'theme_emerald' => 'এমারেল্ড সবুজ',
     'theme_teal' => 'ফার্মেসি টিল',

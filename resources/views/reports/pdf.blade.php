@@ -5,7 +5,7 @@
     <title>{{ $title }}</title>
     <style>
         body { font-family: DejaVu Sans, sans-serif; color: #111; font-size: 10px; margin: 18px; }
-        .header { border-bottom: 2px solid #0d6efd; margin-bottom: 12px; padding-bottom: 8px; }
+        .header { border-bottom: 2px solid #287a57; margin-bottom: 12px; padding-bottom: 8px; }
         h1 { font-size: 18px; margin: 0 0 3px; }
         .muted { color: #666; font-size: 9px; }
         table { border-collapse: collapse; width: 100%; }

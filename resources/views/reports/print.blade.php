@@ -5,7 +5,7 @@
     <title>{{ $title }}</title>
     <style>
         body { font-family: Arial, sans-serif; color: #111827; margin: 24px; }
-        .header { border-bottom: 2px solid #0d6efd; margin-bottom: 16px; padding-bottom: 12px; }
+        .header { border-bottom: 2px solid #287a57; margin-bottom: 16px; padding-bottom: 12px; }
         h1 { font-size: 22px; margin: 0 0 4px; }
         .muted { color: #6b7280; font-size: 12px; }
         .summary { display: table; width: 100%; margin: 16px 0; border-spacing: 8px; }

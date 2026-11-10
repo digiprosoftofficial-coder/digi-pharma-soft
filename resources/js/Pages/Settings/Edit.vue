@@ -181,7 +181,7 @@ const props = defineProps({
     packageSalesAvailable: { type: Boolean, default: false },
     themeOptions: { type: Array, default: () => [] },
     allowCustomPrimary: { type: Boolean, default: false },
-    resolvedTheme: { type: Object, default: () => ({ template: 'classic_blue', primary: '#0d6efd' }) },
+    resolvedTheme: { type: Object, default: () => ({ template: 'softo_green', primary: '#287a57' }) },
 });
 
 const { t } = useLocale();
@@ -203,8 +203,8 @@ const form = useForm({
             smart_search: props.tenant.settings?.features?.smart_search ?? true,
         },
         theme: {
-            template: props.resolvedTheme?.template ?? props.tenant.settings?.theme?.template ?? 'classic_blue',
-            primary: props.resolvedTheme?.primary ?? props.tenant.settings?.theme?.primary ?? '#0d6efd',
+            template: props.resolvedTheme?.template ?? props.tenant.settings?.theme?.template ?? 'softo_green',
+            primary: props.resolvedTheme?.primary ?? props.tenant.settings?.theme?.primary ?? '#287a57',
         },
     },
 });
@@ -267,8 +267,8 @@ watch(
     () => {
         const tmpl = currentTemplateDef();
         const primary = props.allowCustomPrimary
-            ? (form.settings.theme.primary || tmpl?.primary || '#0d6efd')
-            : (tmpl?.primary || '#0d6efd');
+            ? (form.settings.theme.primary || tmpl?.primary || '#287a57')
+            : (tmpl?.primary || '#287a57');
         applyTheme({
             primary,
             primary_rgb: hexToRgb(primary),

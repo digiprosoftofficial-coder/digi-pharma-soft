@@ -7,18 +7,21 @@ use PHPUnit\Framework\TestCase;
 
 final class ThemeCatalogTest extends TestCase
 {
-    public function test_definitions_include_four_templates(): void
+    public function test_definitions_include_softo_green_default(): void
     {
         $ids = ThemeCatalog::ids();
 
         $this->assertSame(
-            ['classic_blue', 'emerald', 'teal', 'indigo'],
+            ['softo_green', 'classic_blue', 'emerald', 'teal', 'indigo'],
             $ids,
         );
+        $this->assertSame(ThemeCatalog::SOFTO_GREEN, ThemeCatalog::DEFAULT);
+        $this->assertSame('#287a57', ThemeCatalog::DEFAULT_PRIMARY);
     }
 
     public function test_hex_to_rgb(): void
     {
+        $this->assertSame('40, 122, 87', ThemeCatalog::hexToRgb('#287a57'));
         $this->assertSame('13, 110, 253', ThemeCatalog::hexToRgb('#0d6efd'));
         $this->assertSame('5, 150, 105', ThemeCatalog::hexToRgb('#059669'));
     }
@@ -27,8 +30,8 @@ final class ThemeCatalogTest extends TestCase
     {
         $theme = ThemeCatalog::resolveForTenant(null);
 
-        $this->assertSame('classic_blue', $theme['template']);
-        $this->assertSame('#0d6efd', $theme['primary']);
+        $this->assertSame('softo_green', $theme['template']);
+        $this->assertSame('#287a57', $theme['primary']);
         $this->assertFalse($theme['allow_custom_primary']);
         $this->assertCount(1, $theme['available_templates']);
     }

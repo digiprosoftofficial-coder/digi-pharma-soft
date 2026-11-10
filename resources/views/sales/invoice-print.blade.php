@@ -9,9 +9,9 @@
         body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; color: #111; background: #f3f4f6; }
         .toolbar { padding: 0.75rem 1rem; background: #fff; border-bottom: 1px solid #e5e7eb; display: flex; gap: 0.5rem; flex-wrap: wrap; }
         .toolbar a, .toolbar button { font: inherit; font-size: 0.875rem; padding: 0.4rem 0.85rem; border-radius: 0.375rem; border: 1px solid #d1d5db; background: #fff; cursor: pointer; text-decoration: none; color: #111; }
-        .toolbar .primary { background: #0d6efd; color: #fff; border-color: #0d6efd; }
+        .toolbar .primary { background: #287a57; color: #fff; border-color: #287a57; }
         .sheet { max-width: 720px; margin: 1.5rem auto 2rem; background: #fff; padding: 2rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; }
-        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0d6efd; padding-bottom: 1rem; margin-bottom: 1.5rem; }
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #287a57; padding-bottom: 1rem; margin-bottom: 1.5rem; }
         h1 { margin: 0; font-size: 1.35rem; }
         table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
         th, td { padding: 0.4rem 0.5rem; text-align: left; border-bottom: 1px solid #e5e7eb; }

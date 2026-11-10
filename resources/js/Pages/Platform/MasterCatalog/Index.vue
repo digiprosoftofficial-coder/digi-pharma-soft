@@ -414,7 +414,7 @@ function remove(item) {
 .stat-tile__hint {
     margin-top: 0.35rem;
     font-size: 0.72rem;
-    color: #0d6efd;
+    color: #287a57;
     font-weight: 600;
 }
 

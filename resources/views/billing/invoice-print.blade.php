@@ -43,8 +43,8 @@
         }
         .toolbar button.primary,
         .toolbar a.primary {
-            background: #0d6efd;
-            border-color: #0d6efd;
+            background: #287a57;
+            border-color: #287a57;
             color: #fff;
         }
         .preview-wrap {
@@ -66,7 +66,7 @@
             gap: 1rem;
             margin-bottom: 2rem;
             padding-bottom: 1rem;
-            border-bottom: 2px solid #0d6efd;
+            border-bottom: 2px solid #287a57;
         }
         .invoice-title {
             margin: 0 0 0.25rem;

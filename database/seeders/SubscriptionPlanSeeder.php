@@ -34,6 +34,7 @@ class SubscriptionPlanSeeder extends Seeder
                     'barcode_camera_scan' => false,
                     'pharmacy_notes' => false,
                     'package_sales' => false,
+                    'theme_templates' => ['softo_green', 'classic_blue', 'emerald', 'teal', 'indigo'],
                 ],
                 'limits' => [
                     'max_products' => 500,
@@ -66,6 +67,7 @@ class SubscriptionPlanSeeder extends Seeder
                     'barcode_camera_scan' => true,
                     'pharmacy_notes' => true,
                     'package_sales' => true,
+                    'theme_templates' => ['softo_green', 'classic_blue', 'emerald', 'teal', 'indigo'],
                 ],
                 'limits' => [
                     'max_products' => 5000,
@@ -98,6 +100,8 @@ class SubscriptionPlanSeeder extends Seeder
                     'barcode_camera_scan' => true,
                     'pharmacy_notes' => true,
                     'package_sales' => true,
+                    'theme_templates' => ['softo_green', 'classic_blue', 'emerald', 'teal', 'indigo'],
+                    'allow_custom_primary' => true,
                 ],
                 'limits' => [
                     'max_products' => null,

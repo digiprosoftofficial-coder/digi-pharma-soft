@@ -256,7 +256,7 @@ const form = useForm({
         pharmacy_notes: props.plan?.features?.pharmacy_notes ?? false,
         package_sales: props.plan?.features?.package_sales ?? false,
         allow_custom_primary: props.plan?.features?.allow_custom_primary ?? false,
-        theme_templates: props.plan?.features?.theme_templates ?? ['classic_blue'],
+        theme_templates: props.plan?.features?.theme_templates ?? ['softo_green'],
         import_preset: props.plan?.features?.import_preset ?? 'pro',
         import_columns: props.plan?.features?.import_columns ?? ['name'],
     },
@@ -275,7 +275,7 @@ function submit() {
     form.price_cents = form.monthly_price_cents;
 
     if (!form.features.theme_templates?.length) {
-        form.features.theme_templates = ['classic_blue'];
+        form.features.theme_templates = ['softo_green'];
     }
 
     if (props.plan) {

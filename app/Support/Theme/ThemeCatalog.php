@@ -6,6 +6,9 @@ use App\Domain\Tenant\Models\Tenant;
 
 final class ThemeCatalog
 {
+    /** SoftoPharma marketing brand green — system default for platform + tenants. */
+    public const SOFTO_GREEN = 'softo_green';
+
     public const CLASSIC_BLUE = 'classic_blue';
 
     public const EMERALD = 'emerald';
@@ -13,6 +16,13 @@ final class ThemeCatalog
     public const TEAL = 'teal';
 
     public const INDIGO = 'indigo';
+
+    public const DEFAULT = self::SOFTO_GREEN;
+
+    /** SoftoPharma --sp-brand */
+    public const DEFAULT_PRIMARY = '#287a57';
+
+    public const DEFAULT_PRIMARY_RGB = '40, 122, 87';
 
     /**
      * @return list<string>
@@ -28,6 +38,11 @@ final class ThemeCatalog
     public static function definitions(): array
     {
         return [
+            self::SOFTO_GREEN => [
+                'id' => self::SOFTO_GREEN,
+                'primary' => self::DEFAULT_PRIMARY,
+                'primary_rgb' => self::DEFAULT_PRIMARY_RGB,
+            ],
             self::CLASSIC_BLUE => [
                 'id' => self::CLASSIC_BLUE,
                 'primary' => '#0d6efd',
@@ -71,7 +86,7 @@ final class ThemeCatalog
     public static function allowedTemplatesForTenant(?Tenant $tenant): array
     {
         if ($tenant === null) {
-            return [self::CLASSIC_BLUE];
+            return [self::DEFAULT];
         }
 
         $tenant->loadMissing('activeSubscription.plan');
@@ -79,7 +94,7 @@ final class ThemeCatalog
         $fromPlan = $planFeatures['theme_templates'] ?? null;
 
         if (! is_array($fromPlan) || $fromPlan === []) {
-            return [self::CLASSIC_BLUE];
+            return [self::DEFAULT];
         }
 
         $allowed = array_values(array_intersect(
@@ -87,7 +102,7 @@ final class ThemeCatalog
             self::ids(),
         ));
 
-        return $allowed !== [] ? $allowed : [self::CLASSIC_BLUE];
+        return $allowed !== [] ? $allowed : [self::DEFAULT];
     }
 
     public static function allowCustomPrimary(?Tenant $tenant): bool
@@ -121,13 +136,13 @@ final class ThemeCatalog
 
         $requested = is_string($tenant?->settings['theme']['template'] ?? null)
             ? (string) $tenant->settings['theme']['template']
-            : self::CLASSIC_BLUE;
+            : self::DEFAULT;
 
         $templateId = in_array($requested, $allowedIds, true)
             ? $requested
             : $allowedIds[0];
 
-        $base = $definitions[$templateId] ?? $definitions[self::CLASSIC_BLUE];
+        $base = $definitions[$templateId] ?? $definitions[self::DEFAULT];
         $primary = $base['primary'];
         $primaryRgb = $base['primary_rgb'];
 
@@ -187,7 +202,7 @@ final class ThemeCatalog
     public static function normalizeTenantTheme(Tenant $tenant, array $incoming): array
     {
         $allowed = self::allowedTemplatesForTenant($tenant);
-        $template = is_string($incoming['template'] ?? null) ? (string) $incoming['template'] : self::CLASSIC_BLUE;
+        $template = is_string($incoming['template'] ?? null) ? (string) $incoming['template'] : self::DEFAULT;
         if (! in_array($template, $allowed, true)) {
             $template = $allowed[0];
         }

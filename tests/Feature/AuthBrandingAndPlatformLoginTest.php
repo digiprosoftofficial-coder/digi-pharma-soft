@@ -22,7 +22,7 @@ class AuthBrandingAndPlatformLoginTest extends TestCase
         $this->assertNotNull($plan);
 
         $features = $plan->features ?? [];
-        $features['theme_templates'] = ['classic_blue', 'emerald', 'teal', 'indigo'];
+        $features['theme_templates'] = ['softo_green', 'classic_blue', 'emerald', 'teal', 'indigo'];
         $plan->update(['features' => $features]);
 
         $tenant->settings = array_merge($tenant->settings ?? [], [
