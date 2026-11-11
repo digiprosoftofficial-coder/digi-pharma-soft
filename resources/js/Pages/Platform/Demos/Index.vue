@@ -1,11 +1,25 @@
 <template>
     <PlatformShellLayout :page-title="t('platform.demos_title')">
         <Head :title="t('platform.nav_demos')" />
-        <div class="d-flex gap-2 mb-3 flex-wrap">
-            <span class="badge text-bg-secondary">{{ stats.total }}</span>
-            <span class="badge text-bg-warning">pending: {{ stats.pending }}</span>
-            <span class="badge text-bg-primary">scheduled: {{ stats.scheduled }}</span>
-            <span class="badge text-bg-success">completed: {{ stats.completed }}</span>
+        <div class="d-flex gap-2 mb-3 flex-wrap align-items-center" role="group" :aria-label="t('common.status')">
+            <button
+                type="button"
+                class="btn btn-sm rounded-pill"
+                :class="!local.status ? 'btn-secondary' : 'btn-outline-secondary'"
+                @click="filterByStatus('')"
+            >
+                {{ t('platform.total') }}: {{ stats.total ?? 0 }}
+            </button>
+            <button
+                v-for="chip in statusChips"
+                :key="chip.status"
+                type="button"
+                class="btn btn-sm rounded-pill"
+                :class="statusChipClass(chip.status)"
+                @click="filterByStatus(chip.status)"
+            >
+                {{ chip.status }}: {{ stats[chip.status] ?? 0 }}
+            </button>
         </div>
         <div class="row g-2 mb-3 align-items-center">
             <div class="col-md-4">
@@ -213,6 +227,28 @@ const editForm = useForm({
 let filterTimer = null;
 
 const hasActiveFilters = computed(() => Boolean(local.search || local.status));
+
+const statusChips = computed(() => (props.statuses || []).map((status) => ({ status })));
+
+const statusTone = {
+    pending: 'warning',
+    approved: 'info',
+    rejected: 'danger',
+    scheduled: 'primary',
+    completed: 'success',
+    cancelled: 'dark',
+};
+
+function statusChipClass(status) {
+    const tone = statusTone[status] || 'secondary';
+    const active = local.status === status;
+    return active ? `btn-${tone}` : `btn-outline-${tone}`;
+}
+
+function filterByStatus(status) {
+    local.status = status || '';
+    applyFilters();
+}
 
 const assigneeName = computed(() => {
     if (!editing.value) {

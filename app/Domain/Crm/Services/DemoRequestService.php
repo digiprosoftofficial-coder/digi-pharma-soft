@@ -133,15 +133,32 @@ final class DemoRequestService
     }
 
     /**
-     * @return array<string, int>
+     * @return array{
+     *   total: int,
+     *   pending: int,
+     *   approved: int,
+     *   rejected: int,
+     *   scheduled: int,
+     *   completed: int,
+     *   cancelled: int,
+     *   upcoming: int
+     * }
      */
     public function dashboardStats(): array
     {
+        $counts = DemoRequest::query()
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        $byStatus = [];
+        foreach (DemoRequest::STATUSES as $status) {
+            $byStatus[$status] = (int) ($counts[$status] ?? 0);
+        }
+
         return [
-            'total' => DemoRequest::query()->count(),
-            'pending' => DemoRequest::query()->where('status', DemoRequest::STATUS_PENDING)->count(),
-            'scheduled' => DemoRequest::query()->where('status', DemoRequest::STATUS_SCHEDULED)->count(),
-            'completed' => DemoRequest::query()->where('status', DemoRequest::STATUS_COMPLETED)->count(),
+            'total' => array_sum($byStatus),
+            ...$byStatus,
             'upcoming' => DemoRequest::query()
                 ->where('status', DemoRequest::STATUS_SCHEDULED)
                 ->whereBetween('scheduled_at', [now(), now()->addDays(7)])
