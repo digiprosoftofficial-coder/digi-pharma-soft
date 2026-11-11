@@ -27,6 +27,7 @@ return [
     'menu' => 'মেনু',
     'close' => 'বন্ধ',
     'language' => 'ভাষা',
+    'status' => 'স্ট্যাটাস',
     'english' => 'English',
     'bangla' => 'বাংলা',
     'yes' => 'হ্যাঁ',

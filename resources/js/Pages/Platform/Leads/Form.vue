@@ -27,14 +27,18 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">{{ t('platform.assigned_to') }}</label>
-                    <select v-if="canAssign" v-model="form.assigned_to" class="form-select">
+                    <select v-model="form.assigned_to" class="form-select">
                         <option :value="null">—</option>
+                        <option
+                            v-if="currentAssigneeOutsideList"
+                            :value="lead.assigned_to"
+                            disabled
+                        >
+                            {{ lead.assignee?.name || currentAssigneeName }}
+                        </option>
                         <option v-for="u in salesStaff" :key="u.id" :value="u.id">{{ u.name }}</option>
                     </select>
-                    <template v-else>
-                        <input class="form-control" :value="currentAssigneeName" disabled readonly />
-                        <div class="form-text">{{ t('platform.assigned_to_admin_only') }}</div>
-                    </template>
+                    <div v-if="!canAssignToAdmins" class="form-text">{{ t('platform.assigned_to_sales_hint') }}</div>
                 </div>
                 <div class="col-md-4"><label class="form-label">{{ t('platform.follow_up_at') }}</label><input v-model="form.follow_up_at" type="datetime-local" class="form-control" /></div>
                 <div class="col-12"><label class="form-label">{{ t('platform.address') }}</label><textarea v-model="form.address" class="form-control" rows="2" /></div>
@@ -48,7 +52,7 @@
 <script setup>
 import PlatformShellLayout from '@/Layouts/PlatformShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
-import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const props = defineProps({
@@ -57,14 +61,10 @@ const props = defineProps({
     sources: { type: Array, required: true },
     salesStaff: { type: Array, default: () => [] },
     plans: { type: Array, default: () => [] },
+    canAssignToAdmins: { type: Boolean, default: false },
 });
 
 const { t } = useLocale();
-const page = usePage();
-const canAssign = computed(() => {
-    const user = page.props.auth?.user;
-    return Boolean(user?.is_platform_super_admin || (user?.roles || []).includes('super admin'));
-});
 const statusEditable = computed(() => {
     if (!props.lead?.status) {
         return true;
@@ -74,7 +74,14 @@ const statusEditable = computed(() => {
 const currentAssigneeName = computed(() => {
     const id = props.lead?.assigned_to;
     const match = (props.salesStaff || []).find((u) => Number(u.id) === Number(id));
-    return match?.name || '—';
+    return match?.name || props.lead?.assignee?.name || '—';
+});
+const currentAssigneeOutsideList = computed(() => {
+    const id = props.lead?.assigned_to;
+    if (!id) {
+        return false;
+    }
+    return !(props.salesStaff || []).some((u) => Number(u.id) === Number(id));
 });
 const form = useForm({
     pharmacy_name: props.lead?.pharmacy_name || '',
@@ -96,9 +103,6 @@ function submit() {
     const payload = { ...form.data() };
     if (!statusEditable.value) {
         delete payload.status;
-    }
-    if (!canAssign.value) {
-        delete payload.assigned_to;
     }
     if (props.lead) {
         form.transform(() => payload).put(`/platform/leads/${props.lead.id}`);

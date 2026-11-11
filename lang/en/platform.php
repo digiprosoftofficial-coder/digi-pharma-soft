@@ -797,6 +797,8 @@ return [
     'demo_delete_confirm' => 'Delete demo request for “:name”?',
     'requested_at' => 'Requested at',
     'assigned_to_admin_only' => 'Only a super admin can change assignment.',
+    'assigned_to_sales_only' => 'Sales can assign only to other sales staff, not to admins.',
+    'assigned_to_sales_hint' => 'You can assign to sales staff only. Admins cannot be selected.',
     'lead_status_locked' => 'This status is set by Convert or self-service registration — change it with Convert to customer, not the dropdown.',
     'lead_status_pipeline_hint' => 'Sales tracks pipeline only. Trial/customer access starts via Convert (admin) or /get-started.',
     'no_notifications' => 'No notifications yet.',

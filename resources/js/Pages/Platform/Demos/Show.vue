@@ -43,18 +43,18 @@
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">{{ t('platform.assigned_to') }}</label>
-                    <select v-if="canAssign" v-model="form.assigned_to" class="form-select">
+                    <select v-model="form.assigned_to" class="form-select">
                         <option :value="null">—</option>
+                        <option
+                            v-if="currentAssigneeOutsideList"
+                            :value="demo.assigned_to"
+                            disabled
+                        >
+                            {{ assigneeName }}
+                        </option>
                         <option v-for="u in salesStaff" :key="u.id" :value="u.id">{{ u.name }}</option>
                     </select>
-                    <input
-                        v-else
-                        class="form-control"
-                        :value="assigneeName"
-                        disabled
-                        readonly
-                    />
-                    <div v-if="!canAssign" class="form-text">{{ t('platform.assigned_to_admin_only') }}</div>
+                    <div v-if="!canAssignToAdmins" class="form-text">{{ t('platform.assigned_to_sales_hint') }}</div>
                 </div>
                 <div class="col-12">
                     <label class="form-label">{{ t('platform.meeting_notes') }}</label>
@@ -76,18 +76,25 @@ const props = defineProps({
     demo: { type: Object, required: true },
     statuses: { type: Array, required: true },
     salesStaff: { type: Array, default: () => [] },
+    canAssignToAdmins: { type: Boolean, default: false },
 });
 
 const { t } = useLocale();
 const page = usePage();
-const canAssign = computed(() => {
+const canDelete = computed(() => {
     const user = page.props.auth?.user;
     return Boolean(user?.is_platform_super_admin || (user?.roles || []).includes('super admin'));
 });
-const canDelete = canAssign;
 const assigneeName = computed(() => {
     const match = (props.salesStaff || []).find((u) => Number(u.id) === Number(props.demo.assigned_to));
     return match?.name || props.demo.assignee?.name || '—';
+});
+const currentAssigneeOutsideList = computed(() => {
+    const id = props.demo.assigned_to;
+    if (!id) {
+        return false;
+    }
+    return !(props.salesStaff || []).some((u) => Number(u.id) === Number(id));
 });
 const form = useForm({
     status: props.demo.status,

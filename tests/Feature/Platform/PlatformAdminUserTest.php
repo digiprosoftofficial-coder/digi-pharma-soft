@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Platform;
 
+use App\Domain\Crm\Models\DemoRequest;
 use App\Models\User;
 use App\Support\Permission\PlatformTeam;
 use Database\Seeders\DatabaseSeeder;
@@ -18,15 +19,13 @@ class PlatformAdminUserTest extends TestCase
         $this->seed(DatabaseSeeder::class);
         $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
 
-        $this->actingAs($admin)
-            ->post('/platform/admins', [
-                'name' => 'Sales Person',
-                'email' => 'sales@example.com',
-                'password' => 'password',
-                'password_confirmation' => 'password',
-                'role' => 'sales',
-            ])
-            ->assertRedirect(route('platform.admins.index'));
+        $this->actingAs($admin)->post('/platform/admins', [
+            'name' => 'Sales Person',
+            'email' => 'sales@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'role' => 'sales',
+        ])->assertRedirect(route('platform.admins.index'));
 
         $sales = User::query()->where('email', 'sales@example.com')->firstOrFail();
         $this->assertNull($sales->tenant_id);
@@ -65,7 +64,66 @@ class PlatformAdminUserTest extends TestCase
         $this->assertDatabaseHas('users', ['id' => $admin->getKey()]);
     }
 
-    public function test_sales_cannot_change_demo_assignment(): void
+    public function test_sales_can_assign_demo_to_other_sales_but_not_admin(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
+
+        $this->actingAs($admin)->post('/platform/admins', [
+            'name' => 'Sales One',
+            'email' => 'sales1@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'role' => 'sales',
+        ])->assertRedirect(route('platform.admins.index'));
+
+        $this->actingAs($admin)->post('/platform/admins', [
+            'name' => 'Sales Two',
+            'email' => 'sales2@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'role' => 'sales',
+        ])->assertRedirect(route('platform.admins.index'));
+
+        $sales1 = User::query()->where('email', 'sales1@example.com')->firstOrFail();
+        $sales2 = User::query()->where('email', 'sales2@example.com')->firstOrFail();
+
+        $demo = DemoRequest::query()->create([
+            'pharmacy_name' => 'Assign Pharmacy',
+            'owner_name' => 'Owner',
+            'mobile' => '01900000077',
+            'branch_count' => 1,
+            'status' => DemoRequest::STATUS_PENDING,
+            'assigned_to' => $sales1->getKey(),
+        ]);
+
+        $this->actingAs($sales1)
+            ->put("/platform/demos/{$demo->getKey()}", [
+                'status' => DemoRequest::STATUS_SCHEDULED,
+                'assigned_to' => $sales2->getKey(),
+                'meeting_notes' => 'handoff to sales two',
+            ])
+            ->assertRedirect();
+
+        $demo->refresh();
+        $this->assertSame($sales2->getKey(), (int) $demo->assigned_to);
+        $this->assertSame(DemoRequest::STATUS_SCHEDULED, $demo->status);
+
+        $this->actingAs($sales1)
+            ->from(route('platform.demos.show', $demo))
+            ->put("/platform/demos/{$demo->getKey()}", [
+                'status' => DemoRequest::STATUS_SCHEDULED,
+                'assigned_to' => $admin->getKey(),
+                'meeting_notes' => 'try assign admin',
+            ])
+            ->assertRedirect(route('platform.demos.show', $demo))
+            ->assertSessionHasErrors('assigned_to');
+
+        $demo->refresh();
+        $this->assertSame($sales2->getKey(), (int) $demo->assigned_to);
+    }
+
+    public function test_super_admin_can_assign_demo_to_sales(): void
     {
         $this->seed(DatabaseSeeder::class);
         $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
@@ -80,25 +138,23 @@ class PlatformAdminUserTest extends TestCase
 
         $sales = User::query()->where('email', 'sales@example.com')->firstOrFail();
 
-        $demo = \App\Domain\Crm\Models\DemoRequest::query()->create([
-            'pharmacy_name' => 'Assign Lock Pharmacy',
+        $demo = DemoRequest::query()->create([
+            'pharmacy_name' => 'Admin Assign Pharmacy',
             'owner_name' => 'Owner',
-            'mobile' => '01900000077',
+            'mobile' => '01900000088',
             'branch_count' => 1,
-            'status' => \App\Domain\Crm\Models\DemoRequest::STATUS_PENDING,
+            'status' => DemoRequest::STATUS_PENDING,
             'assigned_to' => $admin->getKey(),
         ]);
 
-        $this->actingAs($sales)
+        $this->actingAs($admin)
             ->put("/platform/demos/{$demo->getKey()}", [
-                'status' => \App\Domain\Crm\Models\DemoRequest::STATUS_SCHEDULED,
+                'status' => DemoRequest::STATUS_SCHEDULED,
                 'assigned_to' => $sales->getKey(),
-                'meeting_notes' => 'try reassign',
             ])
             ->assertRedirect();
 
         $demo->refresh();
-        $this->assertSame($admin->getKey(), (int) $demo->assigned_to);
-        $this->assertSame(\App\Domain\Crm\Models\DemoRequest::STATUS_SCHEDULED, $demo->status);
+        $this->assertSame($sales->getKey(), (int) $demo->assigned_to);
     }
 }

@@ -5,14 +5,12 @@ namespace App\Http\Controllers\Central;
 use App\Domain\Crm\Models\DemoRequest;
 use App\Domain\Crm\Services\DemoRequestService;
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Support\Permission\PlatformTeam;
+use App\Support\Platform\PlatformAssignableStaff;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Permission\PermissionRegistrar;
 
 final class PlatformDemoController extends Controller
 {
@@ -27,11 +25,11 @@ final class PlatformDemoController extends Controller
             'filters' => $request->only(['search', 'status']),
             'stats' => $this->demos->dashboardStats(),
             'statuses' => DemoRequest::STATUSES,
-            'salesStaff' => $this->salesStaff(),
+            'salesStaff' => PlatformAssignableStaff::optionsFor($request->user()),
         ]);
     }
 
-    public function show(DemoRequest $demo): Response
+    public function show(Request $request, DemoRequest $demo): Response
     {
         $this->authorize('view', $demo);
 
@@ -40,7 +38,8 @@ final class PlatformDemoController extends Controller
         return Inertia::render('Platform/Demos/Show', [
             'demo' => $demo,
             'statuses' => DemoRequest::STATUSES,
-            'salesStaff' => $this->salesStaff(),
+            'salesStaff' => PlatformAssignableStaff::optionsFor($request->user()),
+            'canAssignToAdmins' => $request->user()->isPlatformSuperAdminRole(),
         ]);
     }
 
@@ -55,8 +54,12 @@ final class PlatformDemoController extends Controller
             'meeting_notes' => ['nullable', 'string', 'max:5000'],
         ]);
 
-        if (! $request->user()->isPlatformSuperAdminRole()) {
-            unset($data['assigned_to']);
+        if (array_key_exists('assigned_to', $data)) {
+            $data['assigned_to'] = PlatformAssignableStaff::normalize(
+                $request->user(),
+                $data['assigned_to'],
+                $demo->assigned_to !== null ? (int) $demo->assigned_to : null,
+            );
         }
 
         $this->demos->update($demo, $data, $request->user());
@@ -75,23 +78,4 @@ final class PlatformDemoController extends Controller
             ->with('success', __('platform.demo_deleted'));
     }
 
-    /**
-     * @return list<\App\Models\User>
-     */
-    private function salesStaff(): array
-    {
-        $registrar = app(PermissionRegistrar::class);
-        $previous = $registrar->getPermissionsTeamId();
-        $registrar->setPermissionsTeamId(PlatformTeam::ID);
-
-        try {
-            return User::query()
-                ->whereNull('tenant_id')
-                ->orderBy('name')
-                ->get(['id', 'name', 'email'])
-                ->all();
-        } finally {
-            $registrar->setPermissionsTeamId($previous);
-        }
-    }
 }

@@ -9,14 +9,12 @@ use App\Domain\Crm\Services\LeadService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Platform\StoreLeadRequest;
 use App\Http\Requests\Platform\UpdateLeadRequest;
-use App\Models\User;
-use App\Support\Permission\PlatformTeam;
+use App\Support\Platform\PlatformAssignableStaff;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Permission\PermissionRegistrar;
 
 final class PlatformLeadController extends Controller
 {
@@ -32,12 +30,12 @@ final class PlatformLeadController extends Controller
             'stats' => $this->leads->dashboardStats(),
             'statuses' => Lead::STATUSES,
             'sources' => Lead::SOURCES,
-            'salesStaff' => $this->salesStaff(),
+            'salesStaff' => PlatformAssignableStaff::optionsFor($request->user()),
             'plans' => SubscriptionPlan::query()->orderBy('sort_order')->orderBy('name')->get(['id', 'name', 'slug']),
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         $this->authorize('create', Lead::class);
 
@@ -45,7 +43,8 @@ final class PlatformLeadController extends Controller
             'lead' => null,
             'statuses' => Lead::PIPELINE_STATUSES,
             'sources' => Lead::SOURCES,
-            'salesStaff' => $this->salesStaff(),
+            'salesStaff' => PlatformAssignableStaff::optionsFor($request->user()),
+            'canAssignToAdmins' => $request->user()->isPlatformSuperAdminRole(),
             'plans' => SubscriptionPlan::query()->active()->orderBy('sort_order')->get(['id', 'name', 'slug']),
         ]);
     }
@@ -55,8 +54,11 @@ final class PlatformLeadController extends Controller
         $this->authorize('create', Lead::class);
 
         $data = $request->validated();
-        if (! $request->user()->isPlatformSuperAdminRole()) {
-            unset($data['assigned_to']);
+        if (array_key_exists('assigned_to', $data)) {
+            $data['assigned_to'] = PlatformAssignableStaff::normalize(
+                $request->user(),
+                $data['assigned_to'],
+            );
         }
 
         $lead = $this->leads->create($data, $request->user());
@@ -83,21 +85,25 @@ final class PlatformLeadController extends Controller
             'statuses' => Lead::PIPELINE_STATUSES,
             'allStatuses' => Lead::STATUSES,
             'sources' => Lead::SOURCES,
-            'salesStaff' => $this->salesStaff(),
+            'salesStaff' => PlatformAssignableStaff::optionsFor($request->user()),
+            'canAssignToAdmins' => $request->user()?->isPlatformSuperAdminRole() ?? false,
             'canConvert' => $request->user()?->can('convert', $lead) ?? false,
             'plans' => SubscriptionPlan::query()->orderBy('sort_order')->get(['id', 'name', 'slug', 'trial_days']),
         ]);
     }
 
-    public function edit(Lead $lead): Response
+    public function edit(Request $request, Lead $lead): Response
     {
         $this->authorize('update', $lead);
+
+        $lead->load('assignee:id,name,email');
 
         return Inertia::render('Platform/Leads/Form', [
             'lead' => $lead,
             'statuses' => Lead::PIPELINE_STATUSES,
             'sources' => Lead::SOURCES,
-            'salesStaff' => $this->salesStaff(),
+            'salesStaff' => PlatformAssignableStaff::optionsFor($request->user()),
+            'canAssignToAdmins' => $request->user()->isPlatformSuperAdminRole(),
             'plans' => SubscriptionPlan::query()->orderBy('sort_order')->get(['id', 'name', 'slug']),
         ]);
     }
@@ -107,8 +113,12 @@ final class PlatformLeadController extends Controller
         $this->authorize('update', $lead);
 
         $data = $request->validated();
-        if (! $request->user()->isPlatformSuperAdminRole()) {
-            unset($data['assigned_to']);
+        if (array_key_exists('assigned_to', $data)) {
+            $data['assigned_to'] = PlatformAssignableStaff::normalize(
+                $request->user(),
+                $data['assigned_to'],
+                $lead->assigned_to !== null ? (int) $lead->assigned_to : null,
+            );
         }
 
         $this->leads->update($lead, $data, $request->user());
@@ -164,27 +174,4 @@ final class PlatformLeadController extends Controller
             ->with('success', __('platform.lead_converted'));
     }
 
-    /**
-     * @return list<array{id:int,name:string,email:string}>
-     */
-    private function salesStaff(): array
-    {
-        $registrar = app(PermissionRegistrar::class);
-        $previous = $registrar->getPermissionsTeamId();
-        $registrar->setPermissionsTeamId(PlatformTeam::ID);
-
-        try {
-            return User::query()
-                ->whereNull('tenant_id')
-                ->where(function ($q) {
-                    $q->where('is_platform_super_admin', true)
-                        ->orWhereHas('roles', fn ($r) => $r->whereIn('name', ['super admin', 'sales']));
-                })
-                ->orderBy('name')
-                ->get(['id', 'name', 'email'])
-                ->all();
-        } finally {
-            $registrar->setPermissionsTeamId($previous);
-        }
-    }
 }

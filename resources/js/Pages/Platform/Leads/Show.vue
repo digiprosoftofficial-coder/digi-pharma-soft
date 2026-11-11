@@ -73,14 +73,18 @@
                             <div class="form-text mb-2">{{ t('platform.lead_status_locked') }}</div>
                         </template>
                         <label class="form-label">{{ t('platform.assigned_to') }}</label>
-                        <select v-if="canAssign" v-model="statusForm.assigned_to" class="form-select form-select-sm mb-2">
+                        <select v-model="statusForm.assigned_to" class="form-select form-select-sm mb-2">
                             <option :value="null">—</option>
+                            <option
+                                v-if="currentAssigneeOutsideList"
+                                :value="lead.assigned_to"
+                                disabled
+                            >
+                                {{ lead.assignee?.name || '—' }}
+                            </option>
                             <option v-for="u in salesStaff" :key="u.id" :value="u.id">{{ u.name }}</option>
                         </select>
-                        <template v-else>
-                            <input class="form-control form-control-sm mb-1" :value="lead.assignee?.name || '—'" disabled readonly />
-                            <div class="form-text mb-2">{{ t('platform.assigned_to_admin_only') }}</div>
-                        </template>
+                        <div v-if="!canAssignToAdmins" class="form-text mb-2">{{ t('platform.assigned_to_sales_hint') }}</div>
                         <label class="form-label">{{ t('platform.follow_up_at') }}</label>
                         <input v-model="statusForm.follow_up_at" type="datetime-local" class="form-control form-control-sm mb-3" />
                         <button class="btn btn-sm btn-outline-primary">{{ t('common.save') }}</button>
@@ -105,16 +109,23 @@ const props = defineProps({
     salesStaff: { type: Array, default: () => [] },
     plans: { type: Array, default: () => [] },
     canConvert: { type: Boolean, default: false },
+    canAssignToAdmins: { type: Boolean, default: false },
 });
 
 const { t } = useLocale();
 const page = usePage();
-const canAssign = computed(() => {
+const canDelete = computed(() => {
     const user = page.props.auth?.user;
     return Boolean(user?.is_platform_super_admin || (user?.roles || []).includes('super admin'));
 });
-const canDelete = canAssign;
 const statusEditable = computed(() => props.statuses.includes(props.lead.status));
+const currentAssigneeOutsideList = computed(() => {
+    const id = props.lead.assigned_to;
+    if (!id) {
+        return false;
+    }
+    return !(props.salesStaff || []).some((u) => Number(u.id) === Number(id));
+});
 const note = ref('');
 const statusForm = useForm({
     status: statusEditable.value ? props.lead.status : props.statuses[0],
@@ -131,12 +142,10 @@ function addNote() {
 function updateStatus() {
     const payload = {
         follow_up_at: statusForm.follow_up_at || null,
+        assigned_to: statusForm.assigned_to,
     };
     if (statusEditable.value) {
         payload.status = statusForm.status;
-    }
-    if (canAssign.value) {
-        payload.assigned_to = statusForm.assigned_to;
     }
     statusForm.transform(() => payload).put(`/platform/leads/${props.lead.id}`);
 }

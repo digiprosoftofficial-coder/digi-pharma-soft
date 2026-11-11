@@ -27,6 +27,7 @@ return [
     'menu' => 'Menu',
     'close' => 'Close',
     'language' => 'Language',
+    'status' => 'Status',
     'english' => 'English',
     'bangla' => 'বাংলা',
     'yes' => 'Yes',
