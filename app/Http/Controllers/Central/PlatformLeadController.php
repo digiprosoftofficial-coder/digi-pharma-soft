@@ -29,8 +29,10 @@ final class PlatformLeadController extends Controller
             'filters' => $request->only(['search', 'status', 'source', 'assigned_to', 'follow_up']),
             'stats' => $this->leads->dashboardStats(),
             'statuses' => Lead::STATUSES,
+            'pipelineStatuses' => Lead::PIPELINE_STATUSES,
             'sources' => Lead::SOURCES,
             'salesStaff' => PlatformAssignableStaff::optionsFor($request->user()),
+            'canAssignToAdmins' => $request->user()?->isPlatformSuperAdminRole() ?? false,
             'plans' => SubscriptionPlan::query()->orderBy('sort_order')->orderBy('name')->get(['id', 'name', 'slug']),
         ]);
     }
@@ -124,7 +126,7 @@ final class PlatformLeadController extends Controller
         $this->leads->update($lead, $data, $request->user());
 
         return redirect()
-            ->route('platform.leads.show', $lead)
+            ->back()
             ->with('success', __('platform.lead_updated'));
     }
 
