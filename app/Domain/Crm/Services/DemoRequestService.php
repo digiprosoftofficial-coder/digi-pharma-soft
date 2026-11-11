@@ -23,7 +23,7 @@ final class DemoRequestService
     public function paginate(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = DemoRequest::query()
-            ->with(['assignee:id,name,email', 'lead:id,pharmacy_name,status', 'reviewer:id,name'])
+            ->with(['assignee:id,name,email', 'lead:id,pharmacy_name,status,email,address', 'reviewer:id,name'])
             ->orderByDesc('created_at');
 
         if (! empty($filters['status'])) {

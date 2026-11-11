@@ -42,6 +42,8 @@ return [
     'previous' => 'আগের',
     'submit' => 'জমা দিন',
     'no_results' => 'কোনো ফলাফল নেই।',
+    'filter' => 'ফিল্টার',
+    'reset' => 'রিসেট',
     'view' => 'দেখুন',
     'settings' => 'সেটিংস',
     'pharmacy_settings' => 'ফার্মেসি সেটিংস',

@@ -26,6 +26,7 @@ final class PlatformDemoController extends Controller
             'stats' => $this->demos->dashboardStats(),
             'statuses' => DemoRequest::STATUSES,
             'salesStaff' => PlatformAssignableStaff::optionsFor($request->user()),
+            'canAssignToAdmins' => $request->user()->isPlatformSuperAdminRole(),
         ]);
     }
 
@@ -64,7 +65,9 @@ final class PlatformDemoController extends Controller
 
         $this->demos->update($demo, $data, $request->user());
 
-        return back()->with('success', __('platform.demo_updated'));
+        return redirect()
+            ->route('platform.demos.index')
+            ->with('success', __('platform.demo_updated'));
     }
 
     public function destroy(DemoRequest $demo): RedirectResponse

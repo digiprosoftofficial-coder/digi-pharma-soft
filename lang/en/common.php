@@ -42,6 +42,8 @@ return [
     'previous' => 'Previous',
     'submit' => 'Submit',
     'no_results' => 'No results found.',
+    'filter' => 'Filter',
+    'reset' => 'Reset',
     'view' => 'View',
     'settings' => 'Settings',
     'pharmacy_settings' => 'Pharmacy settings',
