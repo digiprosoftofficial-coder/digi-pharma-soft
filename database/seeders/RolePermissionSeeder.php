@@ -43,7 +43,7 @@ class RolePermissionSeeder extends Seeder
             'sms.send',
             'promotions.view', 'promotions.manage',
             'notes.view', 'notes.manage',
-            'platform.tenants', 'platform.subscriptions', 'platform.analytics',
+            'platform.tenants', 'platform.tenants.create', 'platform.subscriptions', 'platform.analytics',
             'platform.leads', 'platform.demos', 'platform.payments.view', 'platform.payments.manage',
         ];
 
@@ -65,6 +65,7 @@ class RolePermissionSeeder extends Seeder
             'platform.demos',
             'platform.payments.view',
             'platform.analytics',
+            'platform.tenants.create',
         ])->get());
 
         foreach (Tenant::query()->cursor() as $tenant) {

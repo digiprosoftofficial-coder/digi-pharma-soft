@@ -115,9 +115,13 @@ final class PlatformTenantController extends Controller
             'tenant' => TenantPresenter::detail($tenant),
             'plans' => SubscriptionPlan::query()->orderBy('name')->get(['id', 'name']),
             'activities' => $activities,
-            'canAddOwner' => ! $this->attachOwner->tenantHasOwner($tenant),
-            'canImpersonate' => $tenant->users->isNotEmpty(),
-            'canResendOwnerInvite' => $this->canResendOwnerInvite($tenant),
+            'canAddOwner' => ($request->user()?->can('attachOwner', $tenant) ?? false)
+                && ! $this->attachOwner->tenantHasOwner($tenant),
+            'canManage' => $request->user()?->can('update', $tenant) ?? false,
+            'canImpersonate' => ($request->user()?->can('impersonate', $tenant) ?? false)
+                && $tenant->users->isNotEmpty(),
+            'canResendOwnerInvite' => ($request->user()?->can('attachOwner', $tenant) ?? false)
+                && $this->canResendOwnerInvite($tenant),
             'ownerInvitePending' => $this->ownerInvitePending($tenant),
             'canExportData' => $request->user()?->can('exportData', $tenant) ?? false,
             'canPurgeData' => $request->user()?->can('purgeData', $tenant) ?? false,

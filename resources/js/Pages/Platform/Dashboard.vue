@@ -10,8 +10,16 @@
                     <p class="text-secondary mb-0 small">{{ t('platform.dashboard_sub') }}</p>
                 </div>
                 <div class="col-lg-auto d-grid d-sm-flex flex-wrap gap-2">
-                    <Link href="/platform/tenants/create" class="btn btn-primary">{{ t('platform.add_pharmacy') }}</Link>
-                    <Link href="/platform/tenants" class="btn btn-outline-primary">{{ t('platform.manage_pharmacies') }}</Link>
+                    <Link
+                        v-if="canAddPharmacy"
+                        href="/platform/tenants/create"
+                        class="btn btn-primary"
+                    >{{ t('platform.add_pharmacy') }}</Link>
+                    <Link
+                        v-if="canManagePharmacies"
+                        href="/platform/tenants"
+                        class="btn btn-outline-primary"
+                    >{{ t('platform.manage_pharmacies') }}</Link>
                 </div>
             </div>
         </header>
@@ -257,7 +265,7 @@ import TenantStatusBadge from '@/Components/TenantStatusBadge.vue';
 import PlatformShellLayout from '@/Layouts/PlatformShellLayout.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useMoney } from '@/composables/useMoney';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const props = defineProps({
@@ -277,6 +285,14 @@ const props = defineProps({
 });
 
 const { t } = useLocale();
+const page = usePage();
+const isSuper = computed(() => {
+    const user = page.props.auth?.user;
+    return Boolean(user?.is_platform_super_admin || (user?.roles || []).includes('super admin'));
+});
+const permissions = computed(() => page.props.auth?.user?.permissions || []);
+const canAddPharmacy = computed(() => isSuper.value || permissions.value.includes('platform.tenants.create'));
+const canManagePharmacies = computed(() => isSuper.value || permissions.value.includes('platform.tenants'));
 
 const kpiCards = computed(() => [
     { key: 'total', label: t('platform.kpi_total'), value: props.tenantCount, border: 'border-primary' },

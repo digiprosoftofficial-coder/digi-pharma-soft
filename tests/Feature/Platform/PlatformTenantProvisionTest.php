@@ -5,8 +5,10 @@ namespace Tests\Feature\Platform;
 use App\Domain\Billing\Models\SubscriptionPlan;
 use App\Domain\Tenant\Models\Tenant;
 use App\Models\User;
+use App\Support\Permission\PlatformTeam;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class PlatformTenantProvisionTest extends TestCase
@@ -63,5 +65,74 @@ class PlatformTenantProvisionTest extends TestCase
 
         $this->assertDatabaseHas('tenants', ['slug' => 'later-owner']);
         $this->assertSame(0, User::query()->where('tenant_id', Tenant::query()->where('slug', 'later-owner')->value('id'))->count());
+    }
+
+    public function test_sales_can_provision_and_view_own_pharmacy_but_not_list_or_others(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
+        $plan = SubscriptionPlan::query()->firstOrFail();
+
+        $this->actingAs($admin)->post('/platform/admins', [
+            'name' => 'Sales Person',
+            'email' => 'sales-provision@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'role' => 'sales',
+        ])->assertRedirect();
+
+        $sales = User::query()->where('email', 'sales-provision@example.com')->firstOrFail();
+        $other = Tenant::query()->where('slug', 'demo-pharmacy')->first()
+            ?? Tenant::query()->orderBy('id')->firstOrFail();
+
+        $this->actingAs($sales)->get('/platform/tenants')->assertAppDialogRedirect();
+        $this->actingAs($sales)->get(route('platform.tenants.show', $other))->assertAppDialogRedirect();
+
+        $response = $this->actingAs($sales)->post('/platform/tenants', [
+            'name' => 'Sales Pharmacy',
+            'slug' => 'sales-pharmacy',
+            'subscription_plan_id' => $plan->getKey(),
+            'add_owner_later' => true,
+        ]);
+
+        $tenant = Tenant::query()->where('slug', 'sales-pharmacy')->first();
+        $this->assertNotNull($tenant);
+        $response->assertRedirect(route('platform.tenants.show', $tenant));
+
+        $this->actingAs($sales)
+            ->get(route('platform.tenants.show', $tenant))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Platform/Tenants/Show')
+                ->where('canManage', false)
+                ->where('canImpersonate', false)
+                ->where('canAddOwner', false));
+
+        $this->actingAs($sales)
+            ->get(route('platform.tenants.edit', $tenant))
+            ->assertAppDialogRedirect();
+    }
+
+    public function test_sales_role_includes_tenants_create_permission(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $registrar = app(PermissionRegistrar::class);
+        $previous = $registrar->getPermissionsTeamId();
+        $registrar->setPermissionsTeamId(PlatformTeam::ID);
+        try {
+            $sales = User::query()->create([
+                'name' => 'Sales Check',
+                'email' => 'sales-perm@example.com',
+                'password' => 'password',
+                'tenant_id' => null,
+            ]);
+            $sales->forceFill(['email_verified_at' => now()])->save();
+            $sales->assignRole('sales');
+            $this->assertTrue($sales->can('platform.tenants.create'));
+            $this->assertFalse($sales->can('platform.tenants'));
+        } finally {
+            $registrar->setPermissionsTeamId($previous);
+        }
     }
 }

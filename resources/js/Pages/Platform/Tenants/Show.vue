@@ -4,7 +4,10 @@
 
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
             <div>
-                <Link href="/platform/tenants" class="small text-decoration-none">← {{ t('platform.nav_pharmacies') }}</Link>
+                <Link
+                    :href="canManage ? '/platform/tenants' : '/platform/dashboard'"
+                    class="small text-decoration-none"
+                >← {{ canManage ? t('platform.nav_pharmacies') : t('platform.nav_overview') }}</Link>
                 <div class="d-flex align-items-center gap-2 mt-1">
                     <h1 class="page-heading mb-0">{{ tenant.name }}</h1>
                     <TenantStatusBadge :status="tenant.status" />
@@ -14,7 +17,7 @@
                     {{ t('platform.reseller_label') }}: {{ tenant.reseller_name }}
                 </p>
             </div>
-            <div class="d-flex gap-2">
+            <div v-if="canManage || canImpersonate" class="d-flex gap-2">
                 <button
                     v-if="canImpersonate"
                     type="button"
@@ -23,13 +26,15 @@
                 >
                     {{ t('platform.impersonate') }}
                 </button>
-                <Link :href="`/platform/tenants/${tenant.id}/edit`" class="btn btn-sm btn-outline-primary">{{ t('common.edit') }}</Link>
-                <button v-if="tenant.suspended_at" type="button" class="btn btn-sm btn-success" @click="openUnsuspendModal">
-                    {{ t('common.unsuspend') }}
-                </button>
-                <button v-else type="button" class="btn btn-sm btn-outline-danger" @click="openSuspendModal">
-                    {{ t('common.suspend') }}
-                </button>
+                <template v-if="canManage">
+                    <Link :href="`/platform/tenants/${tenant.id}/edit`" class="btn btn-sm btn-outline-primary">{{ t('common.edit') }}</Link>
+                    <button v-if="tenant.suspended_at" type="button" class="btn btn-sm btn-success" @click="openUnsuspendModal">
+                        {{ t('common.unsuspend') }}
+                    </button>
+                    <button v-else type="button" class="btn btn-sm btn-outline-danger" @click="openSuspendModal">
+                        {{ t('common.suspend') }}
+                    </button>
+                </template>
             </div>
         </div>
         <div v-if="tenant.internal_notes" class="alert alert-secondary small mb-3">
@@ -287,7 +292,7 @@
                 <p v-else class="text-muted mb-0">{{ t('platform.billing_no_invoices') }}</p>
             </div>
         </div>
-        <div class="card border-0 shadow-sm mt-3">
+        <div v-if="canManage" class="card border-0 shadow-sm mt-3">
             <div class="card-header bg-white fw-semibold">{{ t('platform.master_sync_title') }}</div>
             <div class="card-body small">
                 <p class="text-muted mb-2">{{ t('platform.master_sync_help') }}</p>
@@ -317,7 +322,7 @@
                 </button>
             </div>
         </div>
-        <div v-if="catalogTemplates?.length" class="card border-0 shadow-sm mt-3">
+        <div v-if="canManage && catalogTemplates?.length" class="card border-0 shadow-sm mt-3">
             <div class="card-header bg-white fw-semibold">{{ t('platform.catalog_apply_title') }}</div>
             <div class="card-body small">
                 <p class="text-muted mb-2">{{ t('platform.catalog_apply_help') }}</p>
@@ -495,6 +500,7 @@ const props = defineProps({
     tenant: { type: Object, required: true },
     activities: { type: Array, default: () => [] },
     canAddOwner: { type: Boolean, default: false },
+    canManage: { type: Boolean, default: false },
     canImpersonate: { type: Boolean, default: false },
     canResendOwnerInvite: { type: Boolean, default: false },
     ownerInvitePending: { type: Object, default: null },

@@ -247,7 +247,11 @@ const navItems = computed(() => [
     can('platform.leads') ? { href: '/platform/leads', label: t('platform.nav_leads') } : null,
     can('platform.demos') ? { href: '/platform/demos', label: t('platform.nav_demos') } : null,
     can('platform.payments.view') ? { href: '/platform/payments', label: t('platform.nav_payments') } : null,
-    isSuper.value ? { href: '/platform/tenants', label: t('platform.nav_pharmacies') } : null,
+    isSuper.value
+        ? { href: '/platform/tenants', label: t('platform.nav_pharmacies') }
+        : (can('platform.tenants.create')
+            ? { href: '/platform/tenants/create', label: t('platform.add_pharmacy') }
+            : null),
     isSuper.value ? { href: '/platform/plans', label: t('platform.nav_plans') } : null,
     isSuper.value ? { href: '/platform/resellers', label: t('platform.nav_resellers') } : null,
     isSuper.value ? { href: '/platform/master-catalog', label: t('platform.nav_master_catalog') } : null,
