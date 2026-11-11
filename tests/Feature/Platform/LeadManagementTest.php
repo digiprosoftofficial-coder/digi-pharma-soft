@@ -100,7 +100,7 @@ class LeadManagementTest extends TestCase
         $this->assertDatabaseMissing('leads', ['id' => $lead->getKey()]);
     }
 
-    public function test_sales_cannot_set_trial_started_or_convert(): void
+    public function test_sales_cannot_manually_set_trial_started_but_can_convert_with_trial(): void
     {
         $this->seed(DatabaseSeeder::class);
         $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
@@ -144,20 +144,22 @@ class LeadManagementTest extends TestCase
         $lead->refresh();
         $this->assertSame(Lead::STATUS_DEMO_COMPLETED, $lead->status);
 
-        $this->assertFalse($sales->fresh()->isPlatformSuperAdminRole());
-
         $this->actingAs($sales->fresh())
-            ->from(route('platform.leads.show', $lead))
             ->post("/platform/leads/{$lead->getKey()}/convert", [
                 'subscription_plan_id' => $plan->getKey(),
                 'owner_email' => 'pipeline@example.com',
                 'owner_invite' => true,
+                'trial_days' => 7,
+                'billing_interval' => 'monthly',
             ])
             ->assertRedirect();
 
         $lead->refresh();
-        $this->assertSame(Lead::STATUS_DEMO_COMPLETED, $lead->status);
-        $this->assertNull($lead->converted_tenant_id);
-        $this->assertFalse(Tenant::query()->where('lead_id', $lead->getKey())->exists());
+        $this->assertSame(Lead::STATUS_CONVERTED, $lead->status);
+        $this->assertNotNull($lead->converted_tenant_id);
+
+        $tenant = Tenant::query()->whereKey($lead->converted_tenant_id)->firstOrFail();
+        $this->assertTrue($tenant->trial_ends_at?->isAfter(now()->addDays(5)));
+        $this->assertTrue($tenant->trial_ends_at?->isBefore(now()->addDays(8)));
     }
 }

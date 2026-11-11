@@ -12,7 +12,7 @@
                     v-if="canConvert && lead.status !== 'converted'"
                     type="button"
                     class="btn btn-sm btn-success"
-                    @click="convert"
+                    @click="openConvert"
                 >
                     {{ t('platform.convert_lead') }}
                 </button>
@@ -92,6 +92,83 @@
                 </div>
             </div>
         </div>
+
+        <div
+            v-if="showConvert"
+            class="modal fade show d-block"
+            tabindex="-1"
+            style="background: rgba(0,0,0,.45)"
+            @click.self="showConvert = false"
+        >
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title h5 mb-0">{{ t('platform.convert_lead') }}</h2>
+                        <button type="button" class="btn-close" @click="showConvert = false" />
+                    </div>
+                    <form @submit.prevent="submitConvert">
+                        <div class="modal-body">
+                            <p class="small text-muted">{{ t('platform.convert_lead_help') }}</p>
+                            <div class="mb-3">
+                                <label class="form-label">{{ t('platform.interested_plan') }}</label>
+                                <select v-model="convertForm.subscription_plan_id" class="form-select form-select-sm" required @change="onPlanChange">
+                                    <option :value="null" disabled>{{ t('platform.convert_select_plan') }}</option>
+                                    <option v-for="p in plans" :key="p.id" :value="p.id">
+                                        {{ p.name }} ({{ p.trial_days }}d {{ t('platform.kpi_trial').toLowerCase() }})
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">{{ t('platform.convert_trial_days') }}</label>
+                                <div class="d-flex flex-wrap gap-2 mb-2">
+                                    <button
+                                        v-for="d in trialPresets"
+                                        :key="d"
+                                        type="button"
+                                        class="btn btn-sm"
+                                        :class="Number(convertForm.trial_days) === d ? 'btn-primary' : 'btn-outline-primary'"
+                                        @click="convertForm.trial_days = d"
+                                    >
+                                        {{ d }}d
+                                    </button>
+                                </div>
+                                <input
+                                    v-model.number="convertForm.trial_days"
+                                    type="number"
+                                    min="1"
+                                    max="365"
+                                    class="form-control form-control-sm"
+                                    required
+                                />
+                                <div class="form-text">{{ t('platform.convert_trial_days_help') }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">{{ t('platform.billing_interval') }}</label>
+                                <select v-model="convertForm.billing_interval" class="form-select form-select-sm">
+                                    <option value="monthly">{{ t('platform.monthly_price') }}</option>
+                                    <option value="yearly">{{ t('platform.yearly_price') }}</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Owner email</label>
+                                <input v-model="convertForm.owner_email" type="email" class="form-control form-control-sm" required />
+                            </div>
+                            <div class="form-check">
+                                <input id="convert-owner-invite" v-model="convertForm.owner_invite" type="checkbox" class="form-check-input" />
+                                <label class="form-check-label" for="convert-owner-invite">{{ t('platform.owner_invite_by_email') }}</label>
+                                <div class="form-text">{{ t('platform.owner_invite_help') }}</div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" @click="showConvert = false">{{ t('common.cancel') }}</button>
+                            <button type="submit" class="btn btn-success btn-sm" :disabled="convertForm.processing">
+                                {{ t('platform.convert_lead') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </PlatformShellLayout>
 </template>
 
@@ -127,11 +204,42 @@ const currentAssigneeOutsideList = computed(() => {
     return !(props.salesStaff || []).some((u) => Number(u.id) === Number(id));
 });
 const note = ref('');
+const showConvert = ref(false);
+const trialPresets = [7, 14, 30];
 const statusForm = useForm({
     status: statusEditable.value ? props.lead.status : props.statuses[0],
     assigned_to: props.lead.assigned_to,
     follow_up_at: props.lead.follow_up_at ? props.lead.follow_up_at.slice(0, 16) : '',
 });
+
+const defaultPlanId = props.lead.interested_plan_id || props.plans[0]?.id || null;
+const defaultPlan = props.plans.find((p) => Number(p.id) === Number(defaultPlanId));
+const convertForm = useForm({
+    subscription_plan_id: defaultPlanId,
+    trial_days: Number(defaultPlan?.trial_days || 7),
+    billing_interval: 'monthly',
+    owner_email: props.lead.email || '',
+    owner_invite: true,
+});
+
+function onPlanChange() {
+    const plan = props.plans.find((p) => Number(p.id) === Number(convertForm.subscription_plan_id));
+    if (plan?.trial_days) {
+        convertForm.trial_days = Number(plan.trial_days);
+    }
+}
+
+function openConvert() {
+    showConvert.value = true;
+}
+
+function submitConvert() {
+    convertForm.post(`/platform/leads/${props.lead.id}/convert`, {
+        onSuccess: () => {
+            showConvert.value = false;
+        },
+    });
+}
 
 function addNote() {
     router.post(`/platform/leads/${props.lead.id}/notes`, { body: note.value }, {
@@ -148,16 +256,6 @@ function updateStatus() {
         payload.status = statusForm.status;
     }
     statusForm.transform(() => payload).put(`/platform/leads/${props.lead.id}`);
-}
-
-function convert() {
-    if (!confirm(t('platform.convert_lead_confirm'))) return;
-    router.post(`/platform/leads/${props.lead.id}/convert`, {
-        subscription_plan_id: props.lead.interested_plan_id,
-        owner_email: props.lead.email,
-        owner_invite: true,
-        billing_interval: 'monthly',
-    });
 }
 
 function destroyLead() {

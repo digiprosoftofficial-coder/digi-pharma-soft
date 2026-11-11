@@ -259,7 +259,7 @@ const navItems = computed(() => [
     isSuper.value ? { href: '/platform/catalog-templates', label: t('platform.nav_catalog') } : null,
     isSuper.value ? { href: '/platform/product-types', label: t('platform.nav_product_types') } : null,
     isSuper.value ? { href: '/platform/announcements', label: t('platform.nav_announcements') } : null,
-    isSuper.value ? { href: '/platform/billing', label: t('platform.nav_billing') } : null,
+    can('platform.payments.manage') ? { href: '/platform/billing', label: t('platform.nav_billing') } : null,
     { href: '/platform/notifications', label: t('platform.nav_notifications') },
     isSuper.value ? { href: '/platform/admins', label: t('platform.nav_admins') } : null,
     isSuper.value ? { href: '/platform/audit', label: t('platform.nav_audit') } : null,

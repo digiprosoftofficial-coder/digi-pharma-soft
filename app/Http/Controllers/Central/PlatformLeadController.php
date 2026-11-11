@@ -155,7 +155,6 @@ final class PlatformLeadController extends Controller
     public function convert(Request $request, Lead $lead, ConvertLeadToTenantAction $convert): RedirectResponse
     {
         $this->authorize('convert', $lead);
-        abort_unless($request->user()?->isPlatformSuperAdminRole(), 403);
 
         $data = $request->validate([
             'slug' => ['nullable', 'string', 'max:64', 'alpha_dash', Rule::unique('tenants', 'slug')],
@@ -163,9 +162,15 @@ final class PlatformLeadController extends Controller
             'owner_email' => ['nullable', 'email', 'max:255'],
             'owner_invite' => ['boolean'],
             'billing_interval' => ['nullable', Rule::in(['monthly', 'yearly'])],
+            'trial_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'trial_ends_at' => ['nullable', 'date'],
             'subscription_ends_at' => ['nullable', 'date'],
         ]);
+
+        if (empty($data['trial_ends_at']) && ! empty($data['trial_days'])) {
+            $data['trial_ends_at'] = now()->addDays((int) $data['trial_days'])->toDateString();
+        }
+        unset($data['trial_days']);
 
         $tenant = $convert->execute($lead, $request->user(), $data);
 

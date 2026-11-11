@@ -106,7 +106,7 @@ class PlatformTenantProvisionTest extends TestCase
                 ->component('Platform/Tenants/Show')
                 ->where('canManage', false)
                 ->where('canImpersonate', false)
-                ->where('canAddOwner', false));
+                ->where('canAddOwner', true));
 
         $this->actingAs($sales)
             ->get(route('platform.tenants.edit', $tenant))
@@ -130,6 +130,7 @@ class PlatformTenantProvisionTest extends TestCase
             $sales->forceFill(['email_verified_at' => now()])->save();
             $sales->assignRole('sales');
             $this->assertTrue($sales->can('platform.tenants.create'));
+            $this->assertTrue($sales->can('platform.payments.manage'));
             $this->assertFalse($sales->can('platform.tenants'));
         } finally {
             $registrar->setPermissionsTeamId($previous);

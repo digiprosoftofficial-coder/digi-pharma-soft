@@ -39,7 +39,11 @@ final class TenantPolicy extends PlatformPolicy
 
     public function attachOwner(User $user, Tenant $tenant): bool
     {
-        return $this->isPlatformSuperAdmin($user);
+        if ($this->isPlatformSuperAdmin($user)) {
+            return true;
+        }
+
+        return $this->canCreatePharmacy($user) && $this->provisionedBy($user, $tenant);
     }
 
     public function impersonate(User $user, Tenant $tenant): bool

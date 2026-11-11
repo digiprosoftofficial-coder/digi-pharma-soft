@@ -23,6 +23,7 @@ final class PlatformPaymentController extends Controller
             'filters' => $request->only(['search', 'status', 'method']),
             'stats' => $this->payments->dashboardStats(),
             'methods' => PlatformPayment::METHODS,
+            'canManage' => $request->user()?->can('manage', new PlatformPayment()) ?? false,
         ]);
     }
 

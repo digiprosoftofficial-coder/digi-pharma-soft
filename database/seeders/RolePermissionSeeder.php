@@ -64,6 +64,7 @@ class RolePermissionSeeder extends Seeder
             'platform.leads',
             'platform.demos',
             'platform.payments.view',
+            'platform.payments.manage',
             'platform.analytics',
             'platform.tenants.create',
         ])->get());

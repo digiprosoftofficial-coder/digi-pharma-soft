@@ -134,4 +134,36 @@ class DemoAndPaymentTest extends TestCase
         $this->assertSame('active', $tenant->billing_status);
         $this->assertTrue($tenant->subscription_ends_at?->isFuture());
     }
+
+    public function test_sales_can_verify_payment(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
+        $tenant = Tenant::query()->where('slug', 'demo-pharmacy')->firstOrFail();
+        $plan = SubscriptionPlan::query()->where('slug', 'professional')->firstOrFail();
+
+        $this->actingAs($admin)->post('/platform/admins', [
+            'name' => 'Sales Pay',
+            'email' => 'sales-pay@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'role' => 'sales',
+        ])->assertRedirect();
+
+        $sales = User::query()->where('email', 'sales-pay@example.com')->firstOrFail();
+
+        $payment = app(\App\Domain\Billing\Services\PlatformPaymentService::class)->submit($tenant, [
+            'method' => PlatformPayment::METHOD_BKASH,
+            'transaction_reference' => 'TXN-SALES-001',
+            'billing_interval' => 'monthly',
+            'subscription_plan_id' => $plan->getKey(),
+            'idempotency_key' => 'idem-sales-1',
+        ], $admin);
+
+        $this->actingAs($sales)
+            ->post("/platform/payments/{$payment->getKey()}/verify")
+            ->assertRedirect();
+
+        $this->assertSame(PlatformPayment::STATUS_VERIFIED, $payment->fresh()->status);
+    }
 }

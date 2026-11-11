@@ -121,6 +121,46 @@ class PlatformBillingTest extends TestCase
             ->assertAppDialogRedirect();
     }
 
+    public function test_sales_can_create_and_mark_invoice_paid(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
+        $tenant = Tenant::query()->firstOrFail();
+
+        $this->actingAs($admin)->post('/platform/admins', [
+            'name' => 'Sales Billing',
+            'email' => 'sales-billing@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'role' => 'sales',
+        ])->assertRedirect();
+
+        $sales = User::query()->where('email', 'sales-billing@example.com')->firstOrFail();
+
+        $this->actingAs($sales)
+            ->get(route('platform.billing.index'))
+            ->assertOk();
+
+        $this->actingAs($sales)
+            ->post(route('platform.billing.invoices.store'), [
+                'tenant_id' => $tenant->getKey(),
+                'amount_cents' => 2500,
+            ])
+            ->assertRedirect(route('platform.billing.index'));
+
+        $invoice = PlatformInvoice::query()
+            ->where('tenant_id', $tenant->getKey())
+            ->where('amount_cents', 2500)
+            ->firstOrFail();
+
+        $this->actingAs($sales)
+            ->post(route('platform.billing.invoices.paid', $invoice))
+            ->assertRedirect();
+
+        $this->assertSame(PlatformInvoice::STATUS_PAID, $invoice->fresh()->status);
+    }
+
     public function test_super_admin_can_download_edit_and_void_open_invoice(): void
     {
         $this->seed(DatabaseSeeder::class);

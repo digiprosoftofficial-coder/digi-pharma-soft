@@ -43,7 +43,7 @@
                         <td>{{ (p.amount_cents / 100).toFixed(0) }} {{ p.currency }}</td>
                         <td><code>{{ p.transaction_reference || '—' }}</code></td>
                         <td>{{ p.status }}</td>
-                        <td class="text-end" v-if="p.status === 'pending'">
+                        <td class="text-end" v-if="canManage && p.status === 'pending'">
                             <button class="btn btn-sm btn-success me-1" @click="verify(p)">Verify</button>
                             <button class="btn btn-sm btn-outline-danger" @click="reject(p)">Reject</button>
                         </td>
@@ -66,6 +66,7 @@ const props = defineProps({
     filters: { type: Object, default: () => ({}) },
     stats: { type: Object, required: true },
     methods: { type: Array, required: true },
+    canManage: { type: Boolean, default: false },
 });
 
 const { t } = useLocale();
