@@ -156,11 +156,20 @@ final class PlatformLeadController extends Controller
     {
         $this->authorize('convert', $lead);
 
+        $invite = $request->boolean('owner_invite');
+
         $data = $request->validate([
             'slug' => ['nullable', 'string', 'max:64', 'alpha_dash', Rule::unique('tenants', 'slug')],
             'subscription_plan_id' => ['nullable', 'integer', 'exists:subscription_plans,id'],
             'owner_email' => ['nullable', 'email', 'max:255'],
             'owner_invite' => ['boolean'],
+            'owner_password' => [
+                Rule::requiredIf(! $invite && filled($request->input('owner_email'))),
+                'nullable',
+                'string',
+                'min:8',
+                'confirmed',
+            ],
             'billing_interval' => ['nullable', Rule::in(['monthly', 'yearly'])],
             'trial_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'trial_ends_at' => ['nullable', 'date'],
@@ -171,6 +180,7 @@ final class PlatformLeadController extends Controller
             $data['trial_ends_at'] = now()->addDays((int) $data['trial_days'])->toDateString();
         }
         unset($data['trial_days']);
+        $data['owner_invite'] = $invite;
 
         $tenant = $convert->execute($lead, $request->user(), $data);
 

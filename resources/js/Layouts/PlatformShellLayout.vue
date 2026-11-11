@@ -14,9 +14,12 @@
             :aria-label="t('common.menu', 'Menu')"
         >
             <div class="p-3 border-bottom d-flex align-items-center justify-content-between gap-2">
-                <Link href="/platform/dashboard" class="text-decoration-none text-dark min-w-0" @click="closeMobileNav">
-                    <div class="fw-bold">{{ t('platform.brand') }}</div>
-                    <div class="small text-muted">{{ t('platform.brand_sub') }}</div>
+                <Link href="/platform/dashboard" class="platform-brand-link text-decoration-none text-dark min-w-0" @click="closeMobileNav">
+                    <img class="platform-brand-logo" :src="brandLogo" :alt="brandName" />
+                    <span class="platform-brand-text">
+                        <span class="fw-bold d-block">{{ brandName }}</span>
+                        <span class="small text-muted">{{ brandSub }}</span>
+                    </span>
                 </Link>
                 <button
                     type="button"
@@ -39,9 +42,12 @@
         </aside>
         <aside class="platform-sidebar platform-sidebar--desktop border-end bg-white d-none d-lg-flex flex-column flex-shrink-0">
             <div class="p-3 border-bottom">
-                <Link href="/platform/dashboard" class="text-decoration-none text-dark">
-                    <div class="fw-bold">{{ t('platform.brand') }}</div>
-                    <div class="small text-muted">{{ t('platform.brand_sub') }}</div>
+                <Link href="/platform/dashboard" class="platform-brand-link text-decoration-none text-dark">
+                    <img class="platform-brand-logo" :src="brandLogo" :alt="brandName" />
+                    <span class="platform-brand-text">
+                        <span class="fw-bold d-block">{{ brandName }}</span>
+                        <span class="small text-muted">{{ brandSub }}</span>
+                    </span>
                 </Link>
             </div>
             <nav class="flex-grow-1 overflow-auto small p-2">
@@ -68,9 +74,12 @@
                         <path d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                 </button>
-                <div class="platform-mobile-brand d-lg-none me-auto min-w-0">
-                    <span class="platform-mobile-brand__name">{{ t('platform.brand') }}</span>
-                    <span class="platform-mobile-brand__page">{{ pageTitle }}</span>
+                <div class="platform-mobile-brand d-lg-none me-auto min-w-0 d-flex align-items-center gap-2">
+                    <img class="platform-mobile-brand__icon" :src="brandIcon" alt="" />
+                    <span class="min-w-0">
+                        <span class="platform-mobile-brand__name">{{ brandName }}</span>
+                        <span class="platform-mobile-brand__page">{{ pageTitle }}</span>
+                    </span>
                 </div>
                 <h1 class="h5 mb-0 text-primary me-auto d-none d-lg-block">{{ pageTitle }}</h1>
                 <div class="platform-bell dropdown">
@@ -154,6 +163,12 @@ defineProps({
 const { t } = useLocale();
 useTheme();
 const page = usePage();
+
+const branding = computed(() => page.props.branding || {});
+const brandName = computed(() => branding.value.site_name || t('platform.brand'));
+const brandSub = computed(() => branding.value.product_of || t('platform.brand_sub'));
+const brandLogo = computed(() => branding.value.logo_url || '/brand/softopharma-logo.png');
+const brandIcon = computed(() => branding.value.icon_url || '/brand/softopharma-icon.png');
 
 const userName = computed(() => page.props.auth?.user?.name ?? 'Admin');
 const mobileNavOpen = ref(false);
@@ -247,11 +262,9 @@ const navItems = computed(() => [
     can('platform.leads') ? { href: '/platform/leads', label: t('platform.nav_leads') } : null,
     can('platform.demos') ? { href: '/platform/demos', label: t('platform.nav_demos') } : null,
     can('platform.payments.view') ? { href: '/platform/payments', label: t('platform.nav_payments') } : null,
-    isSuper.value
+    (isSuper.value || can('platform.tenants.create'))
         ? { href: '/platform/tenants', label: t('platform.nav_pharmacies') }
-        : (can('platform.tenants.create')
-            ? { href: '/platform/tenants/create', label: t('platform.add_pharmacy') }
-            : null),
+        : null,
     isSuper.value ? { href: '/platform/plans', label: t('platform.nav_plans') } : null,
     isSuper.value ? { href: '/platform/resellers', label: t('platform.nav_resellers') } : null,
     isSuper.value ? { href: '/platform/master-catalog', label: t('platform.nav_master_catalog') } : null,
@@ -264,6 +277,7 @@ const navItems = computed(() => [
     isSuper.value ? { href: '/platform/admins', label: t('platform.nav_admins') } : null,
     isSuper.value ? { href: '/platform/audit', label: t('platform.nav_audit') } : null,
     isSuper.value ? { href: '/platform/health', label: t('platform.nav_health') } : null,
+    isSuper.value ? { href: '/platform/marketing-settings', label: t('platform.nav_marketing_settings') } : null,
     isSuper.value ? { href: '/platform/settings', label: t('platform.nav_settings') } : null,
 ].filter(Boolean));
 
@@ -310,6 +324,34 @@ function closeMobileNav() {
 
 .platform-sidebar--desktop {
     width: 260px;
+}
+
+.platform-brand-link {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+}
+
+.platform-brand-logo {
+    display: block;
+    height: 2.35rem;
+    width: auto;
+    max-width: 8.5rem;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.platform-brand-text {
+    min-width: 0;
+    line-height: 1.2;
+}
+
+.platform-mobile-brand__icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    object-fit: contain;
+    flex-shrink: 0;
 }
 
 .platform-content,

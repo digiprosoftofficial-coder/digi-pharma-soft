@@ -29,8 +29,19 @@ Public home / pricing / demo / get-started surfaces use a scoped palette in `res
 |-------|-------|
 | `--sp-radius` | `0.35rem` |
 
+## Logo & favicon
+
+| Asset | Path | Use |
+|-------|------|-----|
+| Full logo | `/brand/softopharma-logo.png` | Footer / OG fallback |
+| Brand icon | `/brand/softopharma-icon.png` | Favicon, nav mark, login |
+| Editable overrides | Super Admin → **Marketing site** | Uploads stored on `public` disk under `brand/` |
+
+Shared Inertia prop: `branding` (`MarketingSiteSettings`). SEO title/description/keywords and OG image are editable there.
+
 ## Source of truth
 
 - CSS variables: `resources/css/marketing.scss`
 - Layout: `resources/js/Layouts/MarketingLayout.vue`
 - Home: `resources/js/Pages/Marketing/Home.vue`
+- Settings: `app/Support/Platform/MarketingSiteSettings.php`

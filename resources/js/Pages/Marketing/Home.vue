@@ -11,7 +11,7 @@
             <div class="sp-container-wide sp-hero-grid">
                 <div class="sp-hero-copy sp-reveal">
                     <p class="sp-presents">
-                        DigiProSoft Presents <strong>SoftoPharma</strong>
+                        DigiProSoft Presents <strong>{{ branding.site_name || 'SoftoPharma' }}</strong>
                     </p>
                     <p class="sp-eyebrow">{{ t('platform.hero_eyebrow') }}</p>
                     <h1 class="sp-display">{{ t('platform.marketing_hero_title') }}</h1>
@@ -371,7 +371,7 @@ import SeoHead from '@/Components/Marketing/SeoHead.vue';
 import MarketingLayout from '@/Layouts/MarketingLayout.vue';
 import { useRegisterModal } from '@/composables/useRegisterModal';
 import { useLocale } from '@/composables/useLocale';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 const props = defineProps({
@@ -386,6 +386,8 @@ const props = defineProps({
 });
 
 const { t } = useLocale();
+const page = usePage();
+const branding = computed(() => page.props.branding || {});
 const { openRegisterModal } = useRegisterModal();
 const interval = ref('monthly');
 const activeModule = ref(0);

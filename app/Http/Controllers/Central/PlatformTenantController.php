@@ -39,9 +39,19 @@ final class PlatformTenantController extends Controller
     {
         $this->authorize('viewAny', Tenant::class);
 
+        $user = $request->user();
         $query = Tenant::query()
             ->withCount('users')
             ->with(['activeSubscription.plan', 'reseller']);
+
+        if ($user && ! $user->isPlatformSuperAdminRole()) {
+            $query->whereIn('id', Activity::query()
+                ->where('causer_id', $user->getKey())
+                ->where('causer_type', $user->getMorphClass())
+                ->where('subject_type', (new Tenant)->getMorphClass())
+                ->where('event', 'tenant.provisioned')
+                ->select('subject_id'));
+        }
 
         if ($search = $request->string('q')->trim()->toString()) {
             $query->where(function ($q) use ($search) {
@@ -61,6 +71,7 @@ final class PlatformTenantController extends Controller
                 'status' => $request->string('status')->toString() ?: 'all',
             ],
             'statusOptions' => $this->statusOptions(),
+            'canCreate' => $user?->can('create', Tenant::class) ?? false,
         ]);
     }
 
@@ -117,6 +128,7 @@ final class PlatformTenantController extends Controller
             'activities' => $activities,
             'canAddOwner' => ($request->user()?->can('attachOwner', $tenant) ?? false)
                 && ! $this->attachOwner->tenantHasOwner($tenant),
+            'canManageOwner' => $request->user()?->can('attachOwner', $tenant) ?? false,
             'canManage' => $request->user()?->can('update', $tenant) ?? false,
             'canImpersonate' => ($request->user()?->can('impersonate', $tenant) ?? false)
                 && $tenant->users->isNotEmpty(),
@@ -228,17 +240,63 @@ final class PlatformTenantController extends Controller
             ->with('success', __('platform.owner_invite_resent'));
     }
 
-    public function edit(Tenant $tenant): Response
+    public function edit(Request $request, Tenant $tenant): Response
     {
-        $this->authorize('update', $tenant);
+        $user = $request->user();
+        abort_unless(
+            ($user?->can('update', $tenant) ?? false) || ($user?->can('attachOwner', $tenant) ?? false),
+            403
+        );
 
         $tenant->load(['activeSubscription.plan']);
+        $owner = $this->attachOwner->findOwner($tenant);
 
         return Inertia::render('Platform/Tenants/Edit', [
             'tenant' => TenantPresenter::detail($tenant),
             'plans' => SubscriptionPlan::query()->orderBy('name')->get(['id', 'name', 'trial_days', 'features']),
             'resellers' => Reseller::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'canManage' => $user?->can('update', $tenant) ?? false,
+            'canManageOwner' => $user?->can('attachOwner', $tenant) ?? false,
+            'canAddOwner' => ($user?->can('attachOwner', $tenant) ?? false)
+                && ! $this->attachOwner->tenantHasOwner($tenant),
+            'owner' => $owner ? [
+                'id' => $owner->getKey(),
+                'name' => $owner->name,
+                'email' => $owner->email,
+                'email_verified_at' => $owner->email_verified_at?->toIso8601String(),
+            ] : null,
+            'canResendOwnerInvite' => ($user?->can('attachOwner', $tenant) ?? false)
+                && $this->canResendOwnerInvite($tenant),
         ]);
+    }
+
+    public function updateOwner(Request $request, Tenant $tenant): RedirectResponse
+    {
+        $this->authorize('attachOwner', $tenant);
+
+        $invite = $request->boolean('owner_invite');
+
+        $validated = $request->validate([
+            'owner_invite' => ['boolean'],
+            'owner_password' => [
+                Rule::requiredIf(! $invite),
+                'nullable',
+                'string',
+                'min:8',
+                'confirmed',
+            ],
+        ]);
+
+        $this->attachOwner->updateCredentials(
+            $tenant,
+            ['password' => $validated['owner_password'] ?? null],
+            $request->user(),
+            $invite,
+        );
+
+        return redirect()
+            ->route('platform.tenants.edit', $tenant)
+            ->with('success', __('platform.owner_credentials_updated'));
     }
 
     public function update(Request $request, Tenant $tenant): RedirectResponse

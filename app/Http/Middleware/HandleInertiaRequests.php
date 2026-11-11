@@ -7,6 +7,7 @@ use App\Domain\Tenant\Models\Tenant;
 use App\Models\User;
 use App\Support\Locale\TranslationLoader;
 use App\Support\Money\MoneyFormatter;
+use App\Support\Platform\MarketingSiteSettings;
 use App\Support\Platform\PlatformAnnouncementService;
 use App\Support\Platform\PlatformSettings;
 use App\Support\Tenant\BranchContext;
@@ -68,6 +69,7 @@ class HandleInertiaRequests extends Middleware
                 ? PlatformAnnouncementService::activeBanner()
                 : null,
             'registrationEnabled' => Features::enabled(Features::registration()),
+            'branding' => MarketingSiteSettings::get(),
             'onboarding' => $tenant && $authUser && ! $authUser->shouldUsePlatformDashboard()
                 ? TenantOnboarding::progress($tenant)
                 : null,

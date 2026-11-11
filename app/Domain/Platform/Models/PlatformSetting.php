@@ -34,6 +34,7 @@ class PlatformSetting extends Model
         'whatsapp_provider',
         'whatsapp_api_key',
         'notification_preferences',
+        'marketing_settings',
     ];
 
     protected function casts(): array
@@ -49,6 +50,7 @@ class PlatformSetting extends Model
             'self_service_requires_approval' => 'boolean',
             'show_try_live_demo' => 'boolean',
             'notification_preferences' => 'array',
+            'marketing_settings' => 'array',
         ];
     }
 

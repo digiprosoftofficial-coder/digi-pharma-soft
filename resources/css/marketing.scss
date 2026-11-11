@@ -187,14 +187,43 @@
 
 .sp-brand {
     display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.65rem;
+    color: var(--sp-forest);
+    text-decoration: none;
+}
+
+.sp-brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sp-brand-mark img {
+    display: block;
+    height: 2.4rem;
+    width: 2.4rem;
+    object-fit: contain;
+}
+
+.sp-footer .sp-brand-mark img,
+.sp-brand--footer .sp-brand-mark img {
+    height: 2.6rem;
+    width: 2.6rem;
+}
+
+.sp-brand-text {
+    display: inline-flex;
     flex-direction: column;
     gap: 0.05rem;
-    color: var(--sp-forest);
+    min-width: 0;
 }
 
 .sp-brand-name {
     font-family: var(--sp-display);
-    font-size: 1.35rem;
+    font-size: 1.2rem;
     font-weight: 700;
     letter-spacing: -0.02em;
     line-height: 1;
@@ -207,6 +236,7 @@
     color: var(--sp-muted);
     text-transform: uppercase;
 }
+
 
 .sp-nav-links {
     display: none;

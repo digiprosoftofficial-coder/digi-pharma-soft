@@ -2,9 +2,14 @@
     <div class="marketing-shell min-vh-100 d-flex flex-column">
         <header class="sp-nav">
             <div class="sp-container sp-nav-inner">
-                <Link href="/" class="sp-brand" aria-label="SoftoPharma home">
-                    <span class="sp-brand-name">SoftoPharma</span>
-                    <span class="sp-brand-sub">{{ t('platform.brand_product_of') }}</span>
+                <Link href="/" class="sp-brand" :aria-label="`${branding.site_name || 'SoftoPharma'} home`">
+                    <span class="sp-brand-mark">
+                        <img :src="branding.icon_url || '/brand/softopharma-icon.png'" alt="" />
+                    </span>
+                    <span class="sp-brand-text">
+                        <span class="sp-brand-name">{{ branding.site_name || 'SoftoPharma' }}</span>
+                        <span class="sp-brand-sub">{{ branding.product_of || t('platform.brand_product_of') }}</span>
+                    </span>
                 </Link>
 
                 <nav class="sp-nav-links" aria-label="Primary">
@@ -76,11 +81,16 @@
         <footer id="contact" class="sp-footer">
             <div class="sp-container sp-footer-grid">
                 <div>
-                    <div class="sp-brand">
-                        <span class="sp-brand-name">SoftoPharma</span>
-                        <span class="sp-brand-sub">{{ t('platform.brand_product_of') }}</span>
+                    <div class="sp-brand sp-brand--footer">
+                        <span class="sp-brand-mark">
+                            <img :src="branding.icon_url || '/brand/softopharma-icon.png'" alt="" />
+                        </span>
+                        <span class="sp-brand-text">
+                            <span class="sp-brand-name">{{ branding.site_name || 'SoftoPharma' }}</span>
+                            <span class="sp-brand-sub">{{ branding.product_of || t('platform.brand_product_of') }}</span>
+                        </span>
                     </div>
-                    <p class="sp-footer-tag">{{ t('platform.brand_tagline') }}</p>
+                    <p class="sp-footer-tag">{{ branding.tagline || t('platform.brand_tagline') }}</p>
                     <p class="sp-footer-tag" style="margin-top: 0.85rem;">{{ t('platform.company_blurb') }}</p>
                     <p v-if="support.email || support.phone" class="sp-footer-tag" style="margin-top: 1rem;">
                         <template v-if="support.phone">
@@ -135,7 +145,7 @@
 <script setup>
 import LocaleSwitcher from '@/Components/LocaleSwitcher.vue';
 import { useLocale } from '@/composables/useLocale';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 
 defineProps({
@@ -146,6 +156,8 @@ defineProps({
 });
 
 const { t } = useLocale();
+const page = usePage();
+const branding = computed(() => page.props.branding || {});
 const menuOpen = ref(false);
 const year = computed(() => new Date().getFullYear());
 

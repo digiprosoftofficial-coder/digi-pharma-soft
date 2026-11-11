@@ -162,4 +162,54 @@ class LeadManagementTest extends TestCase
         $this->assertTrue($tenant->trial_ends_at?->isAfter(now()->addDays(5)));
         $this->assertTrue($tenant->trial_ends_at?->isBefore(now()->addDays(8)));
     }
+
+    public function test_sales_can_convert_with_password_and_optional_invite(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
+        $plan = SubscriptionPlan::query()->where('slug', 'starter')->firstOrFail();
+        \Illuminate\Support\Facades\Notification::fake();
+
+        $this->actingAs($admin)->post('/platform/admins', [
+            'name' => 'Sales Password',
+            'email' => 'sales-pass@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'role' => 'sales',
+        ])->assertRedirect();
+
+        $sales = User::query()->where('email', 'sales-pass@example.com')->firstOrFail();
+
+        $lead = Lead::query()->create([
+            'pharmacy_name' => 'Password Pharmacy',
+            'owner_name' => 'Owner Pass',
+            'phone' => '01700000222',
+            'email' => 'owner-pass@example.com',
+            'branch_count' => 1,
+            'source' => 'website',
+            'interested_plan_id' => $plan->getKey(),
+            'status' => Lead::STATUS_DEMO_COMPLETED,
+            'created_by' => $admin->getKey(),
+        ]);
+
+        $this->actingAs($sales)
+            ->post("/platform/leads/{$lead->getKey()}/convert", [
+                'subscription_plan_id' => $plan->getKey(),
+                'owner_email' => 'owner-pass@example.com',
+                'owner_invite' => true,
+                'owner_password' => 'password123',
+                'owner_password_confirmation' => 'password123',
+                'trial_days' => 7,
+            ])
+            ->assertRedirect();
+
+        $owner = User::query()->where('email', 'owner-pass@example.com')->firstOrFail();
+        $this->assertNotNull($owner->tenant_id);
+        $this->assertNotNull($owner->email_verified_at);
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('password123', $owner->password));
+        \Illuminate\Support\Facades\Notification::assertSentTo(
+            $owner,
+            \App\Notifications\TenantOwnerInvitationNotification::class,
+        );
+    }
 }

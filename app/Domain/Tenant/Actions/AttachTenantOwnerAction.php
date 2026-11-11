@@ -28,22 +28,28 @@ final class AttachTenantOwnerAction
             ]);
         }
 
-        if (! $invite && empty($data['password'])) {
+        $hasPassword = filled($data['password'] ?? null);
+
+        if (! $invite && ! $hasPassword) {
             throw ValidationException::withMessages([
                 'owner_password' => [__('validation.required', ['attribute' => 'password'])],
             ]);
         }
 
-        return DB::transaction(function () use ($tenant, $data, $causer, $invite) {
+        return DB::transaction(function () use ($tenant, $data, $causer, $invite, $hasPassword) {
             TenantRoleProvisioner::provision((int) $tenant->getKey());
 
             $user = User::query()->create([
                 'name' => $data['name'],
                 'email' => $data['email'],
-                'password' => $invite ? Hash::make(Str::password(64)) : Hash::make($data['password']),
+                'password' => $hasPassword
+                    ? Hash::make($data['password'])
+                    : Hash::make(Str::password(64)),
                 'tenant_id' => $tenant->getKey(),
             ]);
-            if (! $invite) {
+
+            // Staff-set password → owner can log in immediately.
+            if ($hasPassword) {
                 $user->forceFill(['email_verified_at' => now()])->save();
             }
 
@@ -52,27 +58,77 @@ final class AttachTenantOwnerAction
             $user->assignRole('pharmacy owner');
             $registrar->setPermissionsTeamId(PlatformTeam::ID);
 
+            activity()
+                ->causedBy($causer)
+                ->performedOn($tenant)
+                ->tap(fn (Activity $activity) => $activity->tenant_id = $tenant->getKey())
+                ->withProperties([
+                    'owner_email' => $user->email,
+                    'password_set' => $hasPassword,
+                    'invited' => $invite,
+                ])
+                ->event($invite ? 'tenant.owner_invited' : 'tenant.owner_attached')
+                ->log($invite
+                    ? ($hasPassword
+                        ? 'Pharmacy owner created with password and invitation sent'
+                        : 'Pharmacy owner invitation sent')
+                    : 'Pharmacy owner account created');
+
             if ($invite) {
                 $this->sendInvitation->execute($user, $tenant);
-
-                activity()
-                    ->causedBy($causer)
-                    ->performedOn($tenant)
-                    ->tap(fn (Activity $activity) => $activity->tenant_id = $tenant->getKey())
-                    ->withProperties(['owner_email' => $user->email])
-                    ->event('tenant.owner_invited')
-                    ->log('Pharmacy owner invitation sent');
-            } else {
-                activity()
-                    ->causedBy($causer)
-                    ->performedOn($tenant)
-                    ->tap(fn (Activity $activity) => $activity->tenant_id = $tenant->getKey())
-                    ->withProperties(['owner_email' => $user->email])
-                    ->event('tenant.owner_attached')
-                    ->log('Pharmacy owner account created');
             }
 
             return $user;
+        });
+    }
+
+    public function updateCredentials(Tenant $tenant, array $data, User $causer, bool $invite = false): User
+    {
+        $owner = $this->findOwner($tenant);
+
+        if ($owner === null) {
+            throw ValidationException::withMessages([
+                'tenant' => [__('platform.owner_invite_resend_missing')],
+            ]);
+        }
+
+        $hasPassword = filled($data['password'] ?? null);
+
+        if (! $invite && ! $hasPassword) {
+            throw ValidationException::withMessages([
+                'owner_password' => [__('validation.required', ['attribute' => 'password'])],
+            ]);
+        }
+
+        return DB::transaction(function () use ($tenant, $owner, $data, $causer, $invite, $hasPassword) {
+            if ($hasPassword) {
+                $owner->forceFill([
+                    'password' => Hash::make($data['password']),
+                    'email_verified_at' => $owner->email_verified_at ?? now(),
+                ])->save();
+            }
+
+            if ($invite) {
+                $this->sendInvitation->execute($owner, $tenant);
+            }
+
+            activity()
+                ->causedBy($causer)
+                ->performedOn($tenant)
+                ->tap(fn (Activity $activity) => $activity->tenant_id = $tenant->getKey())
+                ->withProperties([
+                    'owner_email' => $owner->email,
+                    'password_set' => $hasPassword,
+                    'invited' => $invite,
+                ])
+                ->event('tenant.owner_credentials_updated')
+                ->log($invite && $hasPassword
+                    ? 'Pharmacy owner password updated and invitation sent'
+                    : ($hasPassword
+                        ? 'Pharmacy owner password updated'
+                        : 'Pharmacy owner invitation sent'));
+
+            return $owner->fresh();
         });
     }
 

@@ -4,7 +4,108 @@
 
         <Link href="/platform/tenants" class="small text-decoration-none">← {{ t('platform.nav_pharmacies') }}</Link>
         <h1 class="page-heading mt-2 mb-3">{{ t('common.edit') }}: {{ tenant.name }}</h1>
-        <form class="card border-0 shadow-sm card-body" @submit.prevent="submit">
+
+        <div v-if="canManageOwner" class="card border-0 shadow-sm card-body mb-3">
+            <h2 class="h6">{{ t('platform.owner_section_title') }}</h2>
+            <p class="small text-muted">{{ t('platform.owner_section_help') }}</p>
+
+            <template v-if="owner">
+                <p class="small mb-3">
+                    <span class="text-muted">{{ t('platform.owner_current_label') }}:</span>
+                    <strong class="ms-1">{{ owner.name }}</strong>
+                    <span class="text-muted"> · {{ owner.email }}</span>
+                </p>
+                <form @submit.prevent="submitOwnerAccess">
+                    <div class="mb-2">
+                        <label class="form-label">{{ t('platform.convert_owner_password') }}</label>
+                        <input
+                            v-model="ownerForm.owner_password"
+                            type="password"
+                            class="form-control"
+                            :class="{ 'is-invalid': ownerForm.errors.owner_password }"
+                            :required="!ownerForm.owner_invite"
+                            autocomplete="new-password"
+                        />
+                        <div v-if="ownerForm.errors.owner_password" class="invalid-feedback d-block">{{ ownerForm.errors.owner_password }}</div>
+                        <div class="form-text">{{ t('platform.owner_password_and_invite_help') }}</div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">{{ t('platform.convert_owner_password_confirm') }}</label>
+                        <input
+                            v-model="ownerForm.owner_password_confirmation"
+                            type="password"
+                            class="form-control"
+                            :required="!ownerForm.owner_invite"
+                            autocomplete="new-password"
+                        />
+                    </div>
+                    <div class="form-check mb-3">
+                        <input id="edit-owner-invite" v-model="ownerForm.owner_invite" type="checkbox" class="form-check-input" />
+                        <label class="form-check-label" for="edit-owner-invite">{{ t('platform.owner_invite_by_email') }}</label>
+                        <div class="form-text">{{ t('platform.owner_invite_optional_help') }}</div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm" :disabled="ownerForm.processing">
+                            {{ t('platform.owner_save_access') }}
+                        </button>
+                        <button
+                            v-if="canResendOwnerInvite"
+                            type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            :disabled="resendInviteForm.processing"
+                            @click="resendInvite"
+                        >
+                            {{ t('platform.owner_invite_resend') }}
+                        </button>
+                    </div>
+                </form>
+            </template>
+
+            <form v-else-if="canAddOwner" @submit.prevent="submitAddOwner">
+                <div class="mb-2">
+                    <label class="form-label">Owner name</label>
+                    <input v-model="addOwnerForm.owner_name" class="form-control" required />
+                    <div v-if="addOwnerForm.errors.owner_name" class="text-danger small">{{ addOwnerForm.errors.owner_name }}</div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Owner email</label>
+                    <input v-model="addOwnerForm.owner_email" type="email" class="form-control" required />
+                    <div v-if="addOwnerForm.errors.owner_email" class="text-danger small">{{ addOwnerForm.errors.owner_email }}</div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">{{ t('platform.convert_owner_password') }}</label>
+                    <input
+                        v-model="addOwnerForm.owner_password"
+                        type="password"
+                        class="form-control"
+                        :required="!addOwnerForm.owner_invite"
+                        autocomplete="new-password"
+                    />
+                    <div v-if="addOwnerForm.errors.owner_password" class="text-danger small">{{ addOwnerForm.errors.owner_password }}</div>
+                    <div class="form-text">{{ t('platform.owner_password_and_invite_help') }}</div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">{{ t('platform.convert_owner_password_confirm') }}</label>
+                    <input
+                        v-model="addOwnerForm.owner_password_confirmation"
+                        type="password"
+                        class="form-control"
+                        :required="!addOwnerForm.owner_invite"
+                        autocomplete="new-password"
+                    />
+                </div>
+                <div class="form-check mb-3">
+                    <input id="edit-add-owner-invite" v-model="addOwnerForm.owner_invite" type="checkbox" class="form-check-input" />
+                    <label class="form-check-label" for="edit-add-owner-invite">{{ t('platform.owner_invite_by_email') }}</label>
+                    <div class="form-text">{{ t('platform.owner_invite_optional_help') }}</div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm" :disabled="addOwnerForm.processing">
+                    {{ t('platform.add_owner_submit') }}
+                </button>
+            </form>
+        </div>
+
+        <form v-if="canManage" class="card border-0 shadow-sm card-body" @submit.prevent="submit">
             <div v-if="Object.keys(form.errors).length" class="alert alert-danger small" role="alert">
                 {{ t('platform.form_has_errors') }}
             </div>
@@ -231,6 +332,9 @@
             <button type="submit" class="btn btn-primary" :disabled="form.processing">{{ t('common.save') }}</button>
             <Link :href="`/platform/tenants/${tenant.id}`" class="btn btn-link">{{ t('common.cancel') }}</Link>
         </form>
+        <div v-else class="mt-2">
+            <Link :href="`/platform/tenants/${tenant.id}`" class="btn btn-link px-0">{{ t('common.cancel') }}</Link>
+        </div>
     </PlatformShellLayout>
 </template>
 
@@ -245,6 +349,11 @@ const props = defineProps({
     tenant: { type: Object, required: true },
     plans: { type: Array, required: true },
     resellers: { type: Array, default: () => [] },
+    canManage: { type: Boolean, default: true },
+    canManageOwner: { type: Boolean, default: false },
+    canAddOwner: { type: Boolean, default: false },
+    owner: { type: Object, default: null },
+    canResendOwnerInvite: { type: Boolean, default: false },
 });
 
 const { t } = useLocale();
@@ -290,6 +399,22 @@ const { subscriptionInputKey, onSubscriptionEndsChange, committedSubscriptionEnd
     initialSubscriptionEnds,
 );
 
+const ownerForm = useForm({
+    owner_password: '',
+    owner_password_confirmation: '',
+    owner_invite: false,
+});
+
+const addOwnerForm = useForm({
+    owner_name: '',
+    owner_email: '',
+    owner_password: '',
+    owner_password_confirmation: '',
+    owner_invite: true,
+});
+
+const resendInviteForm = useForm({});
+
 function submit() {
     form.put(`/platform/tenants/${props.tenant.id}`, {
         preserveScroll: true,
@@ -297,5 +422,23 @@ function submit() {
             committedSubscriptionEnds.value = form.subscription_ends_at;
         },
     });
+}
+
+function submitOwnerAccess() {
+    ownerForm.put(`/platform/tenants/${props.tenant.id}/owner`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            ownerForm.reset('owner_password', 'owner_password_confirmation');
+            ownerForm.owner_invite = false;
+        },
+    });
+}
+
+function submitAddOwner() {
+    addOwnerForm.post(`/platform/tenants/${props.tenant.id}/owner`, { preserveScroll: true });
+}
+
+function resendInvite() {
+    resendInviteForm.post(`/platform/tenants/${props.tenant.id}/owner/resend-invite`, { preserveScroll: true });
 }
 </script>

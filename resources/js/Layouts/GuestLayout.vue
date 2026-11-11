@@ -4,18 +4,15 @@
             <aside class="auth-brand d-none d-lg-flex flex-column text-white">
                 <div class="auth-brand__overlay"></div>
                 <div class="auth-brand__content position-relative d-flex flex-column h-100 p-4 p-xl-5">
-                    <div class="d-flex align-items-center gap-3 mb-auto">
-                        <span class="auth-brand__logo" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                                <path d="M12 3 4 7v6c0 4.4 3.6 8 8 8s8-3.6 8-8V7z" />
-                                <path d="M12 11v4M12 8h.01" />
-                            </svg>
+                    <Link href="/" class="d-flex align-items-center gap-3 mb-auto text-white text-decoration-none" :aria-label="`${brandName} home`">
+                        <span class="auth-brand__logo auth-brand__logo--image">
+                            <img :src="brandIcon" alt="" />
                         </span>
                         <div>
                             <div class="fw-bold fs-5 lh-sm">{{ brandName }}</div>
                             <div class="small opacity-75">{{ brandTagline }}</div>
                         </div>
-                    </div>
+                    </Link>
 
                     <div class="my-5">
                         <h1 class="display-6 fw-semibold mb-3">
@@ -54,15 +51,12 @@
 
             <main class="auth-main flex-grow-1 d-flex flex-column">
                 <div class="auth-main__top d-flex align-items-center justify-content-between gap-2 px-3 px-md-4 pt-3">
-                    <div class="d-lg-none d-flex align-items-center gap-2 text-primary">
-                        <span class="auth-main__mobile-logo" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                                <path d="M12 3 4 7v6c0 4.4 3.6 8 8 8s8-3.6 8-8V7z" />
-                                <path d="M12 11v4M12 8h.01" />
-                            </svg>
+                    <Link href="/" class="d-lg-none d-flex align-items-center gap-2 text-primary text-decoration-none" :aria-label="`${brandName} home`">
+                        <span class="auth-main__mobile-logo auth-main__mobile-logo--image">
+                            <img :src="brandIcon" alt="" />
                         </span>
                         <span class="fw-semibold small">{{ brandName }}</span>
-                    </div>
+                    </Link>
                     <div class="ms-auto">
                         <LocaleSwitcher />
                     </div>
@@ -98,7 +92,7 @@ import FlashToasts from '@/Components/FlashToasts.vue';
 import LocaleSwitcher from '@/Components/LocaleSwitcher.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useTheme } from '@/composables/useTheme';
-import { usePage } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 useTheme();
@@ -106,8 +100,10 @@ useTheme();
 const { t } = useLocale();
 const page = usePage();
 
-const brandName = computed(() => page.props.tenant?.name || t('auth.product_name'));
-const brandTagline = computed(() => t('auth.product_tagline'));
+const branding = computed(() => page.props.branding || {});
+const brandName = computed(() => page.props.tenant?.name || branding.value.site_name || t('auth.product_name'));
+const brandTagline = computed(() => branding.value.tagline || t('auth.product_tagline'));
+const brandIcon = computed(() => branding.value.icon_url || '/brand/softopharma-icon.png');
 
 const features = [
     {
@@ -166,6 +162,21 @@ const features = [
             transparent 14px
         );
     pointer-events: none;
+}
+
+.auth-brand__logo--image,
+.auth-main__mobile-logo--image {
+    background: rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+}
+
+.auth-brand__logo--image img,
+.auth-main__mobile-logo--image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    padding: 0.2rem;
 }
 
 .auth-brand__logo,

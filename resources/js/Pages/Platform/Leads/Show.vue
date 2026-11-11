@@ -6,8 +6,18 @@
                 <h1 class="page-heading mb-1">{{ lead.pharmacy_name }}</h1>
                 <div class="text-muted small">{{ lead.owner_name }} · {{ lead.phone }} · <span class="badge text-bg-light">{{ lead.status }}</span></div>
             </div>
-            <div class="d-flex gap-2">
-                <Link :href="`/platform/leads/${lead.id}/edit`" class="btn btn-sm btn-outline-primary">{{ t('common.edit') }}</Link>
+            <div class="d-flex gap-2 align-items-center">
+                <Link
+                    :href="`/platform/leads/${lead.id}/edit`"
+                    class="btn btn-sm btn-outline-primary"
+                    :title="t('common.edit')"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                    </svg>
+                    <span class="visually-hidden">{{ t('common.edit') }}</span>
+                </Link>
                 <button
                     v-if="canConvert && lead.status !== 'converted'"
                     type="button"
@@ -20,9 +30,15 @@
                     v-if="canDelete"
                     type="button"
                     class="btn btn-sm btn-outline-danger"
+                    :title="t('common.delete')"
                     @click="destroyLead"
                 >
-                    {{ t('common.delete') }}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M3 6h18" />
+                        <path d="M8 6V4h8v2" />
+                        <path d="M19 6l-1 14H6L5 6" />
+                    </svg>
+                    <span class="visually-hidden">{{ t('common.delete') }}</span>
                 </button>
             </div>
         </div>
@@ -153,10 +169,33 @@
                                 <label class="form-label">Owner email</label>
                                 <input v-model="convertForm.owner_email" type="email" class="form-control form-control-sm" required />
                             </div>
-                            <div class="form-check">
+                            <div class="mb-2">
+                                <label class="form-label">{{ t('platform.convert_owner_password') }}</label>
+                                <input
+                                    v-model="convertForm.owner_password"
+                                    type="password"
+                                    class="form-control form-control-sm"
+                                    :class="{ 'is-invalid': convertForm.errors.owner_password }"
+                                    :required="!convertForm.owner_invite"
+                                    autocomplete="new-password"
+                                />
+                                <div v-if="convertForm.errors.owner_password" class="invalid-feedback d-block">{{ convertForm.errors.owner_password }}</div>
+                                <div class="form-text">{{ t('platform.owner_password_and_invite_help') }}</div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">{{ t('platform.convert_owner_password_confirm') }}</label>
+                                <input
+                                    v-model="convertForm.owner_password_confirmation"
+                                    type="password"
+                                    class="form-control form-control-sm"
+                                    :required="!convertForm.owner_invite"
+                                    autocomplete="new-password"
+                                />
+                            </div>
+                            <div class="form-check mb-2">
                                 <input id="convert-owner-invite" v-model="convertForm.owner_invite" type="checkbox" class="form-check-input" />
                                 <label class="form-check-label" for="convert-owner-invite">{{ t('platform.owner_invite_by_email') }}</label>
-                                <div class="form-text">{{ t('platform.owner_invite_help') }}</div>
+                                <div class="form-text">{{ t('platform.owner_invite_optional_help') }}</div>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -220,6 +259,8 @@ const convertForm = useForm({
     billing_interval: 'monthly',
     owner_email: props.lead.email || '',
     owner_invite: true,
+    owner_password: '',
+    owner_password_confirmation: '',
 });
 
 function onPlanChange() {

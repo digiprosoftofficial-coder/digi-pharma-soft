@@ -1,38 +1,44 @@
 <template>
-    <Head :title="title">
-        <meta head-key="description" name="description" :content="description" />
-        <meta head-key="og:title" property="og:title" :content="title" />
-        <meta head-key="og:description" property="og:description" :content="description" />
+    <Head :title="resolvedTitle">
+        <meta head-key="description" name="description" :content="resolvedDescription" />
+        <meta v-if="keywords" head-key="keywords" name="keywords" :content="keywords" />
+        <meta head-key="og:title" property="og:title" :content="resolvedTitle" />
+        <meta head-key="og:description" property="og:description" :content="resolvedDescription" />
         <meta head-key="og:type" property="og:type" content="website" />
         <meta head-key="og:url" property="og:url" :content="canonical" />
         <meta head-key="og:image" property="og:image" :content="ogImage" />
-        <meta head-key="og:site_name" property="og:site_name" content="SoftoPharma" />
+        <meta head-key="og:site_name" property="og:site_name" :content="siteName" />
         <meta head-key="twitter:card" name="twitter:card" content="summary_large_image" />
-        <meta head-key="twitter:title" name="twitter:title" :content="title" />
-        <meta head-key="twitter:description" name="twitter:description" :content="description" />
+        <meta head-key="twitter:title" name="twitter:title" :content="resolvedTitle" />
+        <meta head-key="twitter:description" name="twitter:description" :content="resolvedDescription" />
         <meta head-key="twitter:image" name="twitter:image" :content="ogImage" />
         <link head-key="canonical" rel="canonical" :href="canonical" />
     </Head>
 </template>
 
 <script setup>
-import { Head } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
 
 const props = defineProps({
-    title: {
-        type: String,
-        default: 'SoftoPharma – Pharmacy Management Software | DigiProSoft',
-    },
-    description: {
-        type: String,
-        default:
-            'Manage pharmacy sales, medicine inventory, batch expiry, purchases and accounts with SoftoPharma, a pharmacy management solution by DigiProSoft.',
-    },
+    title: { type: String, default: '' },
+    description: { type: String, default: '' },
     path: { type: String, default: '/' },
     supportEmail: { type: String, default: '' },
     supportPhone: { type: String, default: '' },
 });
+
+const page = usePage();
+const branding = computed(() => page.props.branding || {});
+const siteName = computed(() => branding.value.site_name || 'SoftoPharma');
+const keywords = computed(() => branding.value.seo_keywords || '');
+const resolvedTitle = computed(() => props.title || branding.value.seo_title || `${siteName.value} – Pharmacy Management Software`);
+const resolvedDescription = computed(
+    () =>
+        props.description
+        || branding.value.seo_description
+        || 'Manage pharmacy sales, medicine inventory, batch expiry, purchases and accounts with SoftoPharma.',
+);
 
 const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
@@ -41,7 +47,13 @@ const canonical = computed(() => {
     return `${origin}${path}`;
 });
 
-const ogImage = computed(() => `${origin}/icons/icon-512.png`);
+const ogImage = computed(() => {
+    const path = branding.value.og_image_url || '/brand/softopharma-logo.png';
+    if (path.startsWith('http')) {
+        return path;
+    }
+    return `${origin}${path}`;
+});
 
 const schemaPayloads = computed(() => [
     {
@@ -51,7 +63,8 @@ const schemaPayloads = computed(() => [
             '@type': 'Organization',
             name: 'DigiProSoft',
             url: origin || undefined,
-            brand: { '@type': 'Brand', name: 'SoftoPharma' },
+            logo: ogImage.value || undefined,
+            brand: { '@type': 'Brand', name: siteName.value },
             email: props.supportEmail || undefined,
             telephone: props.supportPhone || undefined,
         },
@@ -61,16 +74,18 @@ const schemaPayloads = computed(() => [
         data: {
             '@context': 'https://schema.org',
             '@type': 'SoftwareApplication',
-            name: 'SoftoPharma',
+            name: siteName.value,
             applicationCategory: 'BusinessApplication',
             operatingSystem: 'Web',
-            description: props.description,
+            description: resolvedDescription.value,
+            image: ogImage.value || undefined,
             offers: {
                 '@type': 'Offer',
                 priceCurrency: 'BDT',
                 availability: 'https://schema.org/InStock',
             },
             provider: { '@type': 'Organization', name: 'DigiProSoft' },
+            keywords: keywords.value || undefined,
         },
     },
 ]);

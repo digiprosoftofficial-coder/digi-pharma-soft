@@ -10,7 +10,7 @@ final class TenantPolicy extends PlatformPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->isPlatformSuperAdmin($user);
+        return $this->isPlatformSuperAdmin($user) || $this->canCreatePharmacy($user);
     }
 
     public function view(User $user, Tenant $tenant): bool

@@ -21,6 +21,7 @@ use App\Http\Controllers\Central\PlatformPaymentController;
 use App\Http\Controllers\Central\PlatformPlanController;
 use App\Http\Controllers\Central\PlatformProductTypeController;
 use App\Http\Controllers\Central\PlatformResellerController;
+use App\Http\Controllers\Central\PlatformMarketingSettingsController;
 use App\Http\Controllers\Central\PlatformSettingsController;
 use App\Http\Controllers\Central\PlatformTenantComplianceController;
 use App\Http\Controllers\Central\PlatformTenantController;
@@ -322,6 +323,7 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
         Route::get('/tenants/{tenant}/edit', [PlatformTenantController::class, 'edit'])->name('tenants.edit');
         Route::put('/tenants/{tenant}', [PlatformTenantController::class, 'update'])->name('tenants.update');
         Route::post('/tenants/{tenant}/owner', [PlatformTenantController::class, 'storeOwner'])->name('tenants.owner.store');
+        Route::put('/tenants/{tenant}/owner', [PlatformTenantController::class, 'updateOwner'])->name('tenants.owner.update');
         Route::post('/tenants/{tenant}/owner/resend-invite', [PlatformTenantController::class, 'resendOwnerInvite'])
             ->name('tenants.owner.resend-invite');
         Route::post('/tenants/{tenant}/suspend', [PlatformTenantController::class, 'suspend'])->name('tenants.suspend');
@@ -352,6 +354,8 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
         Route::post('/billing/invoices/{invoice}/failed', [PlatformBillingController::class, 'markFailed'])->name('billing.invoices.failed');
         Route::get('/settings', [PlatformSettingsController::class, 'edit'])->name('settings.edit');
         Route::put('/settings', [PlatformSettingsController::class, 'update'])->name('settings.update');
+        Route::get('/marketing-settings', [PlatformMarketingSettingsController::class, 'edit'])->name('marketing-settings.edit');
+        Route::post('/marketing-settings', [PlatformMarketingSettingsController::class, 'update'])->name('marketing-settings.update');
         Route::resource('resellers', PlatformResellerController::class)->except(['show']);
         Route::resource('product-types', PlatformProductTypeController::class)->except(['show']);
 

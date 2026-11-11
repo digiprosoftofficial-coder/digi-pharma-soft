@@ -4,10 +4,7 @@
 
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
             <div>
-                <Link
-                    :href="canManage ? '/platform/tenants' : '/platform/dashboard'"
-                    class="small text-decoration-none"
-                >← {{ canManage ? t('platform.nav_pharmacies') : t('platform.nav_overview') }}</Link>
+                <Link href="/platform/tenants" class="small text-decoration-none">← {{ t('platform.nav_pharmacies') }}</Link>
                 <div class="d-flex align-items-center gap-2 mt-1">
                     <h1 class="page-heading mb-0">{{ tenant.name }}</h1>
                     <TenantStatusBadge :status="tenant.status" />
@@ -17,7 +14,7 @@
                     {{ t('platform.reseller_label') }}: {{ tenant.reseller_name }}
                 </p>
             </div>
-            <div v-if="canManage || canImpersonate" class="d-flex gap-2">
+            <div v-if="canManage || canImpersonate || canManageOwner" class="d-flex gap-2">
                 <button
                     v-if="canImpersonate"
                     type="button"
@@ -26,8 +23,12 @@
                 >
                     {{ t('platform.impersonate') }}
                 </button>
+                <Link
+                    v-if="canManage || canManageOwner"
+                    :href="`/platform/tenants/${tenant.id}/edit`"
+                    class="btn btn-sm btn-outline-primary"
+                >{{ t('common.edit') }}</Link>
                 <template v-if="canManage">
-                    <Link :href="`/platform/tenants/${tenant.id}/edit`" class="btn btn-sm btn-outline-primary">{{ t('common.edit') }}</Link>
                     <button v-if="tenant.suspended_at" type="button" class="btn btn-sm btn-success" @click="openUnsuspendModal">
                         {{ t('common.unsuspend') }}
                     </button>
@@ -200,6 +201,31 @@
                                 {{ ownerForm.errors.owner_email }}
                             </div>
                         </div>
+                        <div class="mb-2">
+                            <label class="form-label small">{{ t('platform.convert_owner_password') }}</label>
+                            <input
+                                v-model="ownerForm.owner_password"
+                                type="password"
+                                class="form-control form-control-sm"
+                                :class="{ 'is-invalid': ownerForm.errors.owner_password }"
+                                :required="!ownerForm.owner_invite"
+                                autocomplete="new-password"
+                            />
+                            <div v-if="ownerForm.errors.owner_password" class="invalid-feedback d-block">
+                                {{ ownerForm.errors.owner_password }}
+                            </div>
+                            <div class="form-text">{{ t('platform.owner_password_and_invite_help') }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small">{{ t('platform.convert_owner_password_confirm') }}</label>
+                            <input
+                                v-model="ownerForm.owner_password_confirmation"
+                                type="password"
+                                class="form-control form-control-sm"
+                                :required="!ownerForm.owner_invite"
+                                autocomplete="new-password"
+                            />
+                        </div>
                         <div class="form-check mb-3">
                             <input
                                 id="owner-invite"
@@ -210,38 +236,10 @@
                             <label class="form-check-label small" for="owner-invite">
                                 {{ t('platform.owner_invite_by_email') }}
                             </label>
-                            <div class="form-text">{{ t('platform.owner_invite_help') }}</div>
+                            <div class="form-text">{{ t('platform.owner_invite_optional_help') }}</div>
                         </div>
-                        <template v-if="!ownerForm.owner_invite">
-                            <div class="mb-2">
-                                <label class="form-label small">Password</label>
-                                <input
-                                    v-model="ownerForm.owner_password"
-                                    type="password"
-                                    class="form-control form-control-sm"
-                                    :class="{ 'is-invalid': ownerForm.errors.owner_password }"
-                                    required
-                                />
-                                <div v-if="ownerForm.errors.owner_password" class="invalid-feedback d-block">
-                                    {{ ownerForm.errors.owner_password }}
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label small">Confirm password</label>
-                                <input
-                                    v-model="ownerForm.owner_password_confirmation"
-                                    type="password"
-                                    class="form-control form-control-sm"
-                                    required
-                                />
-                            </div>
-                        </template>
                         <button type="submit" class="btn btn-primary btn-sm" :disabled="ownerForm.processing">
-                            {{
-                                ownerForm.owner_invite
-                                    ? t('platform.add_owner_invite_submit')
-                                    : t('platform.add_owner_submit')
-                            }}
+                            {{ t('platform.add_owner_submit') }}
                         </button>
                     </form>
                 </div>
@@ -500,6 +498,7 @@ const props = defineProps({
     tenant: { type: Object, required: true },
     activities: { type: Array, default: () => [] },
     canAddOwner: { type: Boolean, default: false },
+    canManageOwner: { type: Boolean, default: false },
     canManage: { type: Boolean, default: false },
     canImpersonate: { type: Boolean, default: false },
     canResendOwnerInvite: { type: Boolean, default: false },

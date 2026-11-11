@@ -292,7 +292,9 @@ const isSuper = computed(() => {
 });
 const permissions = computed(() => page.props.auth?.user?.permissions || []);
 const canAddPharmacy = computed(() => isSuper.value || permissions.value.includes('platform.tenants.create'));
-const canManagePharmacies = computed(() => isSuper.value || permissions.value.includes('platform.tenants'));
+const canManagePharmacies = computed(() => isSuper.value
+    || permissions.value.includes('platform.tenants')
+    || permissions.value.includes('platform.tenants.create'));
 
 const kpiCards = computed(() => [
     { key: 'total', label: t('platform.kpi_total'), value: props.tenantCount, border: 'border-primary' },

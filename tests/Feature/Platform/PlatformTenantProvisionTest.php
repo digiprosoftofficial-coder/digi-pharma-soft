@@ -85,8 +85,15 @@ class PlatformTenantProvisionTest extends TestCase
         $other = Tenant::query()->where('slug', 'demo-pharmacy')->first()
             ?? Tenant::query()->orderBy('id')->firstOrFail();
 
-        $this->actingAs($sales)->get('/platform/tenants')->assertAppDialogRedirect();
         $this->actingAs($sales)->get(route('platform.tenants.show', $other))->assertAppDialogRedirect();
+
+        $this->actingAs($sales)
+            ->get('/platform/tenants')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Platform/Tenants/Index')
+                ->where('canCreate', true)
+                ->where('tenants.data', []));
 
         $response = $this->actingAs($sales)->post('/platform/tenants', [
             'name' => 'Sales Pharmacy',
@@ -100,6 +107,14 @@ class PlatformTenantProvisionTest extends TestCase
         $response->assertRedirect(route('platform.tenants.show', $tenant));
 
         $this->actingAs($sales)
+            ->get('/platform/tenants')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Platform/Tenants/Index')
+                ->has('tenants.data', 1)
+                ->where('tenants.data.0.slug', 'sales-pharmacy'));
+
+        $this->actingAs($sales)
             ->get(route('platform.tenants.show', $tenant))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
@@ -110,7 +125,12 @@ class PlatformTenantProvisionTest extends TestCase
 
         $this->actingAs($sales)
             ->get(route('platform.tenants.edit', $tenant))
-            ->assertAppDialogRedirect();
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Platform/Tenants/Edit')
+                ->where('canManage', false)
+                ->where('canManageOwner', true)
+                ->where('canAddOwner', true));
     }
 
     public function test_sales_role_includes_tenants_create_permission(): void

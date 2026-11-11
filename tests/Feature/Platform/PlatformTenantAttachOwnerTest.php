@@ -62,4 +62,31 @@ class PlatformTenantAttachOwnerTest extends TestCase
             ])
             ->assertSessionHasErrors('owner_email');
     }
+
+    public function test_edit_page_can_reset_owner_password(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
+        $tenant = Tenant::query()->where('slug', 'demo-pharmacy')->firstOrFail();
+        $owner = User::query()->where('email', 'owner@example.com')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->get(route('platform.tenants.edit', $tenant))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Platform/Tenants/Edit')
+                ->where('canManageOwner', true)
+                ->where('owner.email', 'owner@example.com'));
+
+        $this->actingAs($admin)
+            ->put(route('platform.tenants.owner.update', $tenant), [
+                'owner_password' => 'new-pass-456',
+                'owner_password_confirmation' => 'new-pass-456',
+                'owner_invite' => false,
+            ])
+            ->assertRedirect(route('platform.tenants.edit', $tenant));
+
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('new-pass-456', $owner->fresh()->password));
+    }
 }

@@ -41,28 +41,34 @@
                         <input v-model="form.owner_email" type="email" class="form-control" :class="{ 'is-invalid': form.errors.owner_email }" :required="!form.add_owner_later" />
                         <div v-if="form.errors.owner_email" class="invalid-feedback d-block">{{ form.errors.owner_email }}</div>
                     </div>
+                    <div class="mb-2">
+                        <label class="form-label">{{ t('platform.convert_owner_password') }}</label>
+                        <input
+                            v-model="form.owner_password"
+                            type="password"
+                            class="form-control"
+                            :class="{ 'is-invalid': form.errors.owner_password }"
+                            :required="!form.add_owner_later && !form.owner_invite"
+                            autocomplete="new-password"
+                        />
+                        <div v-if="form.errors.owner_password" class="invalid-feedback d-block">{{ form.errors.owner_password }}</div>
+                        <div class="form-text">{{ t('platform.owner_password_and_invite_help') }}</div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">{{ t('platform.convert_owner_password_confirm') }}</label>
+                        <input
+                            v-model="form.owner_password_confirmation"
+                            type="password"
+                            class="form-control"
+                            :required="!form.add_owner_later && !form.owner_invite"
+                            autocomplete="new-password"
+                        />
+                    </div>
                     <div class="form-check mb-3">
                         <input id="owner-invite-create" v-model="form.owner_invite" type="checkbox" class="form-check-input" />
                         <label class="form-check-label" for="owner-invite-create">{{ t('platform.owner_invite_by_email') }}</label>
-                        <div class="form-text">{{ t('platform.owner_invite_help') }}</div>
+                        <div class="form-text">{{ t('platform.owner_invite_optional_help') }}</div>
                     </div>
-                    <template v-if="!form.owner_invite">
-                        <div class="mb-2">
-                            <label class="form-label">Password</label>
-                            <input
-                                v-model="form.owner_password"
-                                type="password"
-                                class="form-control"
-                                :class="{ 'is-invalid': form.errors.owner_password }"
-                                :required="!form.add_owner_later && !form.owner_invite"
-                            />
-                            <div v-if="form.errors.owner_password" class="invalid-feedback d-block">{{ form.errors.owner_password }}</div>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Confirm password</label>
-                            <input v-model="form.owner_password_confirmation" type="password" class="form-control" />
-                        </div>
-                    </template>
                 </template>
             </div>
             <div v-show="step === 3">

@@ -4,12 +4,9 @@
 
 
         <div class="text-center mb-4">
-            <div class="auth-form-icon mx-auto mb-3 text-primary" aria-hidden="true">
-                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                    <path d="M12 3 4 7v6c0 4.4 3.6 8 8 8s8-3.6 8-8V7z" />
-                    <path d="M12 11v4M12 8h.01" />
-                </svg>
-            </div>
+            <Link href="/" class="auth-form-icon mx-auto mb-3 d-inline-flex" :aria-label="`${brandName} home`">
+                <img :src="brandIcon" :alt="brandName" />
+            </Link>
             <h1 class="page-heading mb-1">{{ title }}</h1>
             <p class="text-muted small mb-0">{{ subtitle }}</p>
         </div>
@@ -120,6 +117,9 @@ const { withTenant } = useAuthLinks();
 const page = usePage();
 const showPassword = ref(false);
 const registrationEnabled = computed(() => Boolean(page.props.registrationEnabled));
+const branding = computed(() => page.props.branding || {});
+const brandName = computed(() => branding.value.site_name || t('auth.product_name'));
+const brandIcon = computed(() => branding.value.icon_url || '/brand/softopharma-icon.png');
 
 const title = computed(() => (props.platformOnly ? t('auth.platform_welcome') : t('auth.welcome_back')));
 const subtitle = computed(() => (props.platformOnly ? t('auth.platform_subtitle') : t('auth.sign_in_subtitle')));
@@ -143,9 +143,19 @@ function submit() {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 3.25rem;
-    height: 3.25rem;
-    border-radius: 999px;
-    background: rgba(var(--bs-primary-rgb), 0.12);
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 0.9rem;
+    background: rgba(var(--bs-primary-rgb), 0.08);
+    overflow: hidden;
+    text-decoration: none;
+}
+
+.auth-form-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    padding: 0.25rem;
 }
 </style>

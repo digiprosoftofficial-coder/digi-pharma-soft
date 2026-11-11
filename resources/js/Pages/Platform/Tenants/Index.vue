@@ -4,7 +4,11 @@
 
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <p class="text-muted small mb-0">{{ t('platform.dashboard_sub') }}</p>
-            <Link href="/platform/tenants/create" class="btn btn-primary btn-sm">{{ t('platform.add_pharmacy') }}</Link>
+            <Link
+                v-if="canCreate"
+                href="/platform/tenants/create"
+                class="btn btn-primary btn-sm"
+            >{{ t('platform.add_pharmacy') }}</Link>
         </div>
         <form class="card border-0 shadow-sm card-body mb-3" @submit.prevent="applyFilters">
             <div class="row g-2 align-items-end">
@@ -25,7 +29,11 @@
         </form>
         <div v-if="!tenants.data.length" class="card border-0 shadow-sm card-body text-center py-5">
             <p class="text-muted mb-3">{{ t('platform.empty_pharmacies') }}</p>
-            <Link href="/platform/tenants/create" class="btn btn-primary">{{ t('platform.add_pharmacy') }}</Link>
+            <Link
+                v-if="canCreate"
+                href="/platform/tenants/create"
+                class="btn btn-primary"
+            >{{ t('platform.add_pharmacy') }}</Link>
         </div>
         <div v-else class="card border-0 shadow-sm table-responsive">
             <table class="table table-hover table-sm mb-0 align-middle">
@@ -67,6 +75,7 @@ const props = defineProps({
     tenants: { type: Object, required: true },
     filters: { type: Object, required: true },
     statusOptions: { type: Array, required: true },
+    canCreate: { type: Boolean, default: true },
 });
 
 const { t } = useLocale();
