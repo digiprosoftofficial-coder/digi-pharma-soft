@@ -43,11 +43,8 @@
             <div class="tenant-sidebar-brand p-3 border-bottom">
                 <div class="d-flex align-items-center justify-content-between gap-2">
                     <Link href="/dashboard" class="text-decoration-none text-dark d-flex align-items-center gap-2 min-w-0" @click="closeMobileNav">
-                        <span class="tenant-sidebar-brand__icon text-primary">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-                                <path d="M12 3 4 7v6c0 4.4 3.6 8 8 8s8-3.6 8-8V7z" />
-                                <path d="M12 11v4M12 8h.01" />
-                            </svg>
+                        <span class="tenant-sidebar-brand__icon">
+                            <img :src="brandIcon" :alt="brandSiteName" />
                         </span>
                         <span class="min-w-0">
                             <div class="fw-bold lh-sm text-truncate">{{ tenantName }}</div>
@@ -93,11 +90,8 @@
             <aside class="tenant-sidebar tenant-sidebar--desktop border-end bg-white d-none d-lg-flex flex-column flex-shrink-0">
                 <div class="tenant-sidebar-brand p-3 border-bottom">
                     <Link href="/dashboard" class="text-decoration-none text-dark d-flex align-items-center gap-2 min-w-0">
-                        <span class="tenant-sidebar-brand__icon text-primary">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-                                <path d="M12 3 4 7v6c0 4.4 3.6 8 8 8s8-3.6 8-8V7z" />
-                                <path d="M12 11v4M12 8h.01" />
-                            </svg>
+                        <span class="tenant-sidebar-brand__icon">
+                            <img :src="brandIcon" :alt="brandSiteName" />
                         </span>
                         <span class="min-w-0">
                             <div class="fw-bold lh-sm text-truncate">{{ tenantName }}</div>
@@ -110,11 +104,8 @@
             <div class="tenant-content flex-grow-1 d-flex flex-column min-vh-100 min-w-0">
                 <header class="tenant-topbar border-bottom bg-white px-3 py-2 d-flex flex-wrap align-items-center gap-2">
                     <Link href="/dashboard" class="tenant-mobile-brand d-lg-none text-decoration-none text-dark me-auto">
-                        <span class="tenant-mobile-brand__icon text-primary">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-                                <path d="M12 3 4 7v6c0 4.4 3.6 8 8 8s8-3.6 8-8V7z" />
-                                <path d="M12 11v4M12 8h.01" />
-                            </svg>
+                        <span class="tenant-mobile-brand__icon">
+                            <img :src="brandIcon" :alt="brandSiteName" />
                         </span>
                         <span class="tenant-mobile-brand__text">
                             <span class="tenant-mobile-brand__name">{{ tenantName }}</span>
@@ -302,6 +293,9 @@ defineProps({
 const page = usePage();
 const { can } = usePermissions();
 
+const branding = computed(() => page.props.branding || {});
+const brandIcon = computed(() => branding.value.icon_url || '/brand/softopharma-icon.png');
+const brandSiteName = computed(() => branding.value.site_name || 'SoftoPharma');
 const tenantName = computed(() => page.props.tenant?.name ?? 'Pharmacy');
 const userName = computed(() => page.props.auth?.user?.name ?? 'User');
 const impersonation = computed(() => page.props.impersonation);
@@ -437,10 +431,20 @@ const announcementAlertClass = computed(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    border-radius: 0.5rem;
-    background: rgba(var(--bs-primary-rgb), 0.1);
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 0.55rem;
+    background: rgba(var(--bs-primary-rgb), 0.08);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.tenant-sidebar-brand__icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    padding: 0.15rem;
 }
 
 .tenant-mobile-brand {
@@ -458,7 +462,16 @@ const announcementAlertClass = computed(() => {
     width: 2rem;
     height: 2rem;
     border-radius: 0.5rem;
-    background: rgba(var(--bs-primary-rgb), 0.1);
+    background: rgba(var(--bs-primary-rgb), 0.08);
+    overflow: hidden;
+}
+
+.tenant-mobile-brand__icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    padding: 0.12rem;
 }
 
 .tenant-mobile-brand__text {
