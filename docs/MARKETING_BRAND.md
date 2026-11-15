@@ -45,3 +45,4 @@ Shared Inertia prop: `branding` (`MarketingSiteSettings`). SEO title/description
 - Layout: `resources/js/Layouts/MarketingLayout.vue`
 - Home: `resources/js/Pages/Marketing/Home.vue`
 - Settings: `app/Support/Platform/MarketingSiteSettings.php`
+- SEO / AI growth checklist: `docs/SEO_GROWTH.md`

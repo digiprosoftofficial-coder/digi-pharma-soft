@@ -1,6 +1,10 @@
 <template>
     <MarketingLayout>
-        <Head :title="t('platform.get_started')" />
+        <SeoHead
+            :title="t('platform.seo_register_title')"
+            :description="t('platform.seo_register_description')"
+            path="/get-started"
+        />
         <section class="sp-section">
             <div class="sp-container" style="max-width: 720px">
                 <p class="sp-eyebrow">SoftoPharma</p>
@@ -20,9 +24,9 @@
 
 <script setup>
 import RegisterForm from '@/Components/Marketing/RegisterForm.vue';
+import SeoHead from '@/Components/Marketing/SeoHead.vue';
 import MarketingLayout from '@/Layouts/MarketingLayout.vue';
 import { useLocale } from '@/composables/useLocale';
-import { Head } from '@inertiajs/vue3';
 
 defineProps({
     plans: { type: Array, required: true },

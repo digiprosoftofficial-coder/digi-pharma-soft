@@ -95,8 +95,8 @@ final class MarketingSiteSettings
             'tagline' => 'Your Pharmacy. Smarter Management.',
             'product_of' => 'A Product of DigiProSoft',
             'seo_title' => 'SoftoPharma – Pharmacy Management Software Bangladesh | DigiProSoft',
-            'seo_description' => 'SoftoPharma is pharmacy management software for Bangladesh: POS sales, medicine inventory, batch expiry, purchases, multi-branch, and accounts — built by DigiProSoft.',
-            'seo_keywords' => 'pharmacy management software, pharmacy POS Bangladesh, medicine inventory software, pharmacy billing software, expiry management, DigiProSoft, SoftoPharma',
+            'seo_description' => 'SoftoPharma is pharmacy management software by DigiProSoft for Bangladesh pharmacies: POS, medicine inventory, batch expiry, purchases, multi-branch, and accounts.',
+            'seo_keywords' => 'pharmacy management software, pharmacy management software Bangladesh, pharmacy POS Bangladesh, medicine inventory software, pharmacy billing software, SoftoPharma, DigiProSoft',
         ];
     }
 

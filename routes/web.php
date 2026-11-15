@@ -94,6 +94,8 @@ Route::post('/demo', [MarketingController::class, 'storeDemo'])
     ->name('marketing.demo.store');
 Route::get('/privacy', [MarketingController::class, 'privacy'])->name('marketing.privacy');
 Route::get('/terms', [MarketingController::class, 'terms'])->name('marketing.terms');
+Route::get('/robots.txt', [MarketingController::class, 'robots'])->name('marketing.robots');
+Route::get('/llms.txt', [MarketingController::class, 'llmsTxt'])->name('marketing.llms');
 Route::get('/sitemap.xml', [MarketingController::class, 'sitemap'])->name('marketing.sitemap');
 
 Route::get('/get-started', [RegisterController::class, 'create'])->name('marketing.register');

@@ -7,3 +7,12 @@ docker build
 docker compose up -d --build web app
 
 নিজে করতে চাইলে (Docker হলে docker compose exec app দিয়ে):
+
+---- production subdomain (softopharma.digiprosoft.com) ---
+# Hosting .env → copy from .env.production.example
+# APP_URL=https://softopharma.digiprosoft.com
+# SANCTUM_STATEFUL_DOMAINS=softopharma.digiprosoft.com
+# SESSION_DOMAIN=softopharma.digiprosoft.com
+# php artisan config:cache
+# Verify: /robots.txt  /sitemap.xml  /llms.txt
+# SEO checklist: docs/SEO_GROWTH.md

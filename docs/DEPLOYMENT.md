@@ -40,6 +40,27 @@ stdout_logfile=/var/log/supervisor/saas-pharmacy-worker.log
 
 - Set `SANCTUM_STATEFUL_DOMAINS` to your SPA host(s) (comma-separated) so cookie auth works for first-party XHR from the Vue app.
 
+### Current production subdomain
+
+Live marketing/app host: **https://softopharma.digiprosoft.com/**
+
+```env
+APP_URL=https://softopharma.digiprosoft.com
+SESSION_DOMAIN=softopharma.digiprosoft.com
+SESSION_SECURE_COOKIE=true
+SANCTUM_STATEFUL_DOMAINS=softopharma.digiprosoft.com
+```
+
+Copy from `.env.production.example`. After changing `.env` on the server:
+
+```bash
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+Confirm SEO endpoints: `/robots.txt`, `/sitemap.xml`, `/llms.txt`.
+
 ## Backups
 
 - Back up MySQL on a schedule; verify restores periodically.

@@ -70,6 +70,7 @@ class HandleInertiaRequests extends Middleware
                 : null,
             'registrationEnabled' => Features::enabled(Features::registration()),
             'branding' => MarketingSiteSettings::get(),
+            'appUrl' => rtrim((string) config('app.url'), '/'),
             'onboarding' => $tenant && $authUser && ! $authUser->shouldUsePlatformDashboard()
                 ? TenantOnboarding::progress($tenant)
                 : null,
