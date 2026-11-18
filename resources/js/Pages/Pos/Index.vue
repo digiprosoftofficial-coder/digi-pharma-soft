@@ -523,8 +523,20 @@ import {
     unitSalePrice,
 } from '@/composables/useProductUnits';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { Html5Qrcode } from 'html5-qrcode';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+
+// Heavy barcode library is loaded on demand (only when the camera scanner opens)
+// so it does not bloat the initial POS bundle / slow the first paint.
+let Html5QrcodeCtor = null;
+
+async function loadHtml5Qrcode() {
+    if (!Html5QrcodeCtor) {
+        const module = await import('html5-qrcode');
+        Html5QrcodeCtor = module.Html5Qrcode;
+    }
+
+    return Html5QrcodeCtor;
+}
 
 const props = defineProps({
     lastSaleId: { type: Number, default: null },
@@ -887,6 +899,7 @@ async function startBarcodeScanner() {
     await nextTick();
 
     try {
+        const Html5Qrcode = await loadHtml5Qrcode();
         barcodeScanner = new Html5Qrcode(barcodeScannerElementId);
         await barcodeScanner.start(
             { facingMode: 'environment' },

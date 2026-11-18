@@ -1,0 +1,1 @@
+import{u as r}from"./vendor-BTw-j1TU.js";function c(){const o=r();function u(n){var e;const t=(e=o.props.tenant)==null?void 0:e.slug;if(!t)return n;const s=n.includes("?")?"&":"?";return`${n}${s}tenant=${encodeURIComponent(t)}`}return{withTenant:u}}export{c as u};

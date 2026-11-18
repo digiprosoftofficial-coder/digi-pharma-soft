@@ -1,5 +1,31 @@
 # Production deployment (reference)
 
+## Capacity — how many users is it safe for?
+
+These are practical guidelines, not hard limits. "Active users" = people clicking
+around at the same time, not total registered accounts.
+
+| Hosting | Safe concurrent active users | Total pharmacies (rough) | Notes |
+|---------|------------------------------|--------------------------|-------|
+| Basic shared cPanel (DB sessions + DB cache + `sync` queue) | ~30–50 | up to ~50–100 light pharmacies | Every request writes session+cache to MySQL; email sends inside the request. OK for pilot/demo. |
+| Good shared cPanel (DB queue + cron worker, tuned MySQL) | ~100–300 | a few hundred | Email/invites moved to background via `QUEUE_CONNECTION=database` + cron. Still single MySQL. |
+| VPS / cloud + Redis + Supervisor worker | 1,000s | thousands | `CACHE_STORE=redis`, `SESSION_DRIVER=redis`, `QUEUE_CONNECTION=redis`. This is the target for scale. |
+
+Why shared hosting caps out:
+
+- `SESSION_DRIVER=database` + `CACHE_STORE=database` → **every request** hits MySQL
+  for session and cache reads/writes. A few hundred concurrent users saturate the
+  shared DB before PHP is the bottleneck.
+- `QUEUE_CONNECTION=sync` → OTP/invite/notification emails run **inside** the web
+  request, holding a PHP-FPM worker until SMTP responds.
+- Shared hosting limits PHP workers and MySQL `max_connections`.
+
+Rule of thumb: **plan the move to a VPS + Redis before ~300 concurrent users** (or
+earlier if POS is used heavily all day across many branches). For "thousands of
+users" you must be on Tier B.
+
+See `.env.production.example` for the Tier A / Tier B switch.
+
 ## PHP / app
 
 - Set `APP_ENV=production`, `APP_DEBUG=false`, and a strong `APP_KEY`.

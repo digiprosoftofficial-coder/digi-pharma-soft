@@ -70,14 +70,32 @@ export default defineConfig({
             workbox: {
                 globPatterns: ['**/*.{js,css,ico,png,svg,woff2}'],
                 navigateFallback: null,
+                cleanupOutdatedCaches: true,
                 runtimeCaching: [
+                    {
+                        // App shell assets: serve instantly from cache, refresh in the
+                        // background. This is what removes the cold-start network wait
+                        // in the Capacitor / installed PWA.
+                        urlPattern: ({ url }) => url.pathname.startsWith('/build/'),
+                        handler: 'StaleWhileRevalidate',
+                        options: {
+                            cacheName: 'app-shell',
+                            expiration: {
+                                maxEntries: 120,
+                                maxAgeSeconds: 60 * 60 * 24 * 30,
+                            },
+                            cacheableResponse: {
+                                statuses: [0, 200],
+                            },
+                        },
+                    },
                     {
                         urlPattern: ({ request, url }) =>
                             request.mode === 'navigate' && url.pathname.startsWith('/pos'),
                         handler: 'NetworkFirst',
                         options: {
                             cacheName: 'pos-pages',
-                            networkTimeoutSeconds: 4,
+                            networkTimeoutSeconds: 2,
                             expiration: {
                                 maxEntries: 8,
                                 maxAgeSeconds: 60 * 60 * 24,
@@ -127,6 +145,18 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': '/resources/js',
+        },
+    },
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    // Keep heavy, rarely-changing vendors in their own cacheable chunks
+                    // so the core app bundle stays small and first paint is faster.
+                    vendor: ['vue', '@inertiajs/vue3', 'axios'],
+                    barcode: ['html5-qrcode'],
+                },
+            },
         },
     },
 });

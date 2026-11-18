@@ -3,11 +3,14 @@
 namespace App\Notifications;
 
 use App\Domain\Tenant\Models\Tenant;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-final class TenantOwnerInvitationNotification extends Notification
+final class TenantOwnerInvitationNotification extends Notification implements ShouldQueue
 {
+    use Queueable;
 
     public function __construct(
         private readonly Tenant $tenant,
