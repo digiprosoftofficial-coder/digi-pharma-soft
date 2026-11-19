@@ -16,3 +16,6 @@ docker compose up -d --build web app
 # php artisan config:cache
 # Verify: /robots.txt  /sitemap.xml  /llms.txt
 # SEO checklist: docs/SEO_GROWTH.md
+# POS barcode + photo search: docs/POS_SCAN_AND_PHOTO_SEARCH.md
+# GEMINI_API_KEY=...  then: php artisan config:cache
+# php artisan test --filter=ProductImageSearchTest

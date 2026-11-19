@@ -46,5 +46,19 @@ return [
         'api_key' => env('WHATSAPP_API_KEY'),
     ],
 
+    /*
+    | Gemini Vision (POS photo medicine search). Get a key from
+    | https://aistudio.google.com/apikey — leave blank to disable.
+    */
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.0-flash'),
+        'endpoint' => env(
+            'GEMINI_ENDPOINT',
+            'https://generativelanguage.googleapis.com/v1beta/models',
+        ),
+        'timeout' => (int) env('GEMINI_TIMEOUT', 20),
+    ],
+
 ];
 

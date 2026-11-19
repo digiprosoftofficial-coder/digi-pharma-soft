@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Catalog\ProductImageSearchController;
 use App\Http\Controllers\Api\Catalog\ProductLastPurchaseController;
 use App\Http\Controllers\Api\Catalog\ProductSearchController;
 use App\Http\Controllers\Api\Purchasing\SupplierSearchController;
@@ -282,6 +283,9 @@ Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function (
             Route::patch('/hr/leave-requests/{leaveRequest}', [LeaveRequestController::class, 'update'])->name('hr.leave-requests.update');
 
             Route::get('/catalog/product-search', ProductSearchController::class)->name('catalog.product-search');
+            Route::post('/catalog/product-image-search', ProductImageSearchController::class)
+                ->middleware('throttle:20,1')
+                ->name('catalog.product-image-search');
             Route::get('/catalog/products/{product}/last-purchase', ProductLastPurchaseController::class)->name('catalog.products.last-purchase');
             Route::get('/sales/customer-search', CustomerSearchController::class)->name('sales.customer-search');
 

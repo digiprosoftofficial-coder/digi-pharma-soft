@@ -67,11 +67,29 @@
                                 type="button"
                                 class="btn btn-sm"
                                 :class="cameraScanActive ? 'btn-outline-danger' : 'btn-outline-primary'"
-                                :disabled="cameraScanStarting"
+                                :disabled="cameraScanStarting || photoSearchWorking"
                                 @click="cameraScanActive ? stopBarcodeScanner() : startBarcodeScanner()"
                             >
                                 {{ cameraScanActive ? t('sales.pos_camera_scan_stop') : t('sales.pos_camera_scan_start') }}
                             </button>
+                            <button
+                                v-if="photoSearchEnabled"
+                                type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                :disabled="photoSearchWorking || cameraScanStarting"
+                                @click="openPhotoSearchPicker"
+                            >
+                                {{ photoSearchWorking ? t('sales.pos_photo_search_working') : t('sales.pos_photo_search_start') }}
+                            </button>
+                            <input
+                                v-if="photoSearchEnabled"
+                                ref="photoSearchInput"
+                                type="file"
+                                class="d-none"
+                                accept="image/jpeg,image/png,image/webp,image/*"
+                                capture="environment"
+                                @change="onPhotoSearchSelected"
+                            />
                         </div>
                     </div>
                     <div class="pos-search-box input-group input-group-lg">
@@ -94,6 +112,7 @@
                         />
                     </div>
                     <p class="form-text small mb-0 mt-2">{{ t('sales.pos_scan_hint') }}</p>
+                    <p v-if="photoSearchEnabled" class="form-text small mb-0 mt-1">{{ t('sales.pos_photo_search_hint') }}</p>
                     <div v-if="barcodeCameraScanEnabled && (cameraScanActive || cameraScanError)" class="pos-barcode-scanner mt-2">
                         <div v-if="cameraScanError" class="alert alert-warning py-2 mb-2 small">{{ cameraScanError }}</div>
                         <div v-if="cameraScanActive" class="border rounded bg-dark p-2">
@@ -102,6 +121,9 @@
                                 {{ cameraScanStarting ? t('sales.pos_camera_scan_starting') : t('sales.pos_camera_scan_hint') }}
                             </p>
                         </div>
+                    </div>
+                    <div v-if="photoSearchEnabled && photoSearchError" class="alert alert-warning py-2 mt-2 mb-0 small">
+                        {{ photoSearchError }}
                     </div>
                     <ul class="list-group mt-2 small">
                         <li
@@ -550,6 +572,7 @@ const { formatQty } = useQuantity();
 const page = usePage();
 const markupPricingEnabled = computed(() => page.props.features?.markup_pricing ?? false);
 const barcodeCameraScanEnabled = computed(() => page.props.features?.barcode_camera_scan ?? false);
+const photoSearchEnabled = computed(() => page.props.features?.photo_search ?? false);
 const checkoutError = computed(() => page.props.errors?.checkout ?? null);
 const localSuccessMessage = ref('');
 const saleSuccessMessage = computed(() => page.props.flash?.success || localSuccessMessage.value || 'Sale completed.');
@@ -603,6 +626,9 @@ const barcodeScannerElementId = 'pos-barcode-scanner-reader';
 const cameraScanActive = ref(false);
 const cameraScanStarting = ref(false);
 const cameraScanError = ref('');
+const photoSearchInput = ref(null);
+const photoSearchWorking = ref(false);
+const photoSearchError = ref('');
 let barcodeScanner = null;
 let handlingScannedBarcode = false;
 let timer;
@@ -779,6 +805,7 @@ function toggleNewCustomerForm() {
 }
 
 function debouncedSearch() {
+    photoSearchError.value = '';
     clearTimeout(timer);
     timer = setTimeout(runSearch, 250);
 }
@@ -966,6 +993,162 @@ async function onBarcodeScanned(decodedText) {
     } finally {
         handlingScannedBarcode = false;
     }
+}
+
+function openPhotoSearchPicker() {
+    if (!photoSearchEnabled.value || photoSearchWorking.value) {
+        return;
+    }
+
+    photoSearchError.value = '';
+    if (cameraScanActive.value) {
+        void stopBarcodeScanner();
+    }
+    photoSearchInput.value?.click();
+}
+
+async function onPhotoSearchSelected(event) {
+    const input = event?.target;
+    const file = input?.files?.[0] ?? null;
+    if (input) {
+        input.value = '';
+    }
+
+    if (!file || !photoSearchEnabled.value || photoSearchWorking.value) {
+        return;
+    }
+
+    if (!file.type.startsWith('image/') || file.size > 8 * 1024 * 1024) {
+        photoSearchError.value = t('sales.pos_photo_search_invalid_image');
+        return;
+    }
+
+    photoSearchWorking.value = true;
+    photoSearchError.value = '';
+
+    try {
+        const blob = await compressPhotoForSearch(file);
+        const formData = new FormData();
+        formData.append('image', blob, 'medicine.jpg');
+
+        const { data } = await window.axios.post('/catalog/product-image-search', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            timeout: 45000,
+        });
+
+        const query = String(data?.query || data?.recognition?.query || '').trim();
+        const products = Array.isArray(data?.data) ? data.data : [];
+        results.value = products;
+
+        if (products.length) {
+            await cacheProducts(products);
+        }
+
+        q.value = query;
+
+        if (!query) {
+            photoSearchError.value = t('sales.pos_photo_search_unavailable');
+            return;
+        }
+
+        // Safety: never auto-add from a photo name guess — pharmacist must confirm.
+        // Exception: exact barcode match with a single product is unambiguous.
+        const barcode = String(data?.recognition?.barcode || '').trim();
+        const exactBarcode = barcode
+            ? products.find((p) => String(p.barcode || '') === barcode)
+            : null;
+        const confidence = Number(data?.recognition?.confidence ?? 0);
+
+        if (exactBarcode && products.length === 1 && confidence >= 0.7) {
+            addLine(exactBarcode);
+            q.value = '';
+            results.value = [];
+            photoSearchError.value = '';
+            searchInput.value?.focus();
+            return;
+        }
+
+        photoSearchError.value = products.length
+            ? t('sales.pos_photo_search_select_result', { query })
+            : t('sales.pos_photo_search_not_found', { query });
+        searchInput.value?.focus();
+    } catch (error) {
+        const status = error?.response?.status;
+        const message = error?.response?.data?.message;
+        if (status === 403) {
+            photoSearchError.value = message || t('sales.pos_photo_search_forbidden');
+        } else if (status === 422) {
+            photoSearchError.value = message || t('sales.pos_photo_search_invalid_image');
+        } else if (status === 503) {
+            photoSearchError.value = message || t('sales.pos_photo_search_not_configured');
+        } else {
+            photoSearchError.value = message || t('sales.pos_photo_search_unavailable');
+        }
+    } finally {
+        photoSearchWorking.value = false;
+    }
+}
+
+/**
+ * Shrink / recompress the capture so Gemini uploads stay small and reliable on mobile.
+ * Falls back to the original file if canvas compression fails.
+ */
+async function compressPhotoForSearch(file) {
+    const maxEdge = 1280;
+    const quality = 0.82;
+
+    try {
+        const bitmap = typeof createImageBitmap === 'function'
+            ? await createImageBitmap(file)
+            : await loadImageElement(file);
+
+        const width = bitmap.width || 0;
+        const height = bitmap.height || 0;
+        if (!width || !height) {
+            bitmap.close?.();
+            return file;
+        }
+
+        const scale = Math.min(1, maxEdge / Math.max(width, height));
+        const targetW = Math.max(1, Math.round(width * scale));
+        const targetH = Math.max(1, Math.round(height * scale));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            bitmap.close?.();
+            return file;
+        }
+
+        ctx.drawImage(bitmap, 0, 0, targetW, targetH);
+        bitmap.close?.();
+
+        const blob = await new Promise((resolve) => {
+            canvas.toBlob((b) => resolve(b), 'image/jpeg', quality);
+        });
+
+        return blob && blob.size > 0 ? blob : file;
+    } catch (error) {
+        return file;
+    }
+}
+
+function loadImageElement(file) {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve(img);
+        };
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('image load failed'));
+        };
+        img.src = url;
+    });
 }
 
 function shelfHint(item) {
@@ -1178,6 +1361,7 @@ function removeCartLine(index) {
 }
 
 function addLine(item) {
+    photoSearchError.value = '';
     const batches = batchesWithStock(item);
     const batch = batches[0];
     if (!batch) {

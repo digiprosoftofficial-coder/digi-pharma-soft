@@ -64,6 +64,7 @@
                             <li v-if="plan.features?.reports">{{ t('platform.feature_reports') }}</li>
                             <li v-if="plan.features?.multi_branch">{{ t('platform.feature_multi_branch') }}</li>
                             <li v-if="plan.features?.barcode_camera_scan">{{ t('platform.feature_barcode') }}</li>
+                            <li v-if="plan.features?.photo_search">{{ t('platform.feature_photo') }}</li>
                             <li v-if="plan.features?.hr_payroll">{{ t('platform.feature_payroll') }}</li>
                         </ul>
                         <a href="/#demo" class="sp-btn sp-btn-primary">

@@ -20,6 +20,7 @@ _Last updated: 2026-07-18_
 | PDF | barryvdh/laravel-dompdf (invoices) |
 | Excel/CSV | maatwebsite/excel (imports & report exports) |
 | Barcodes | picqer/php-barcode-generator + html5-qrcode (camera scan) |
+| Photo search | Google Gemini Vision (`GEMINI_API_KEY`) — see [POS_SCAN_AND_PHOTO_SEARCH.md](./POS_SCAN_AND_PHOTO_SEARCH.md) |
 | Offline | PWA (vite-plugin-pwa, service worker) + IndexedDB queue |
 | Database | SQLite (dev) / MySQL (production) |
 
@@ -63,6 +64,8 @@ Network-level management for SaaS operators.
 
 - Fast product search (name, generic, strength, SKU, exact barcode)
 - Barcode scanning via search box **and** live camera scanning (html5-qrcode)
+- **Photo medicine search** (Gemini Vision) — plan flag `photo_search`; photograph pack → AI name → confirm product
+- Full guide: [POS_SCAN_AND_PHOTO_SEARCH.md](./POS_SCAN_AND_PHOTO_SEARCH.md)
 - Quick-product tabs: Popular, Latest, Last sold
 - Cart with per-line unit selection, quantity, price, discount
 - FEFO batch allocation (first-expiry-first-out), auto stock deduction
@@ -209,6 +212,7 @@ Managed via `TenantFeatures`; can be set at the subscription-plan level and over
 | `attendance` | Attendance tracking |
 | `hr_payroll` | Payroll module |
 | `barcode_camera_scan` | Camera barcode scanning in POS |
+| `photo_search` | Photograph medicine pack → AI search in POS (needs `GEMINI_API_KEY`) |
 | `package_sales` | Package/bundle sales |
 
 ---

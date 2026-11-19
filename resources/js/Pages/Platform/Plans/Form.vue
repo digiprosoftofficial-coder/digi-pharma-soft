@@ -115,6 +115,11 @@
                 </div>
                 <p class="form-text small mb-2">{{ t('platform.feature_barcode_camera_scan_help') }}</p>
                 <div class="form-check">
+                    <input id="fphotosearch" v-model="form.features.photo_search" type="checkbox" class="form-check-input" />
+                    <label class="form-check-label" for="fphotosearch">{{ t('platform.feature_photo_search') }}</label>
+                </div>
+                <p class="form-text small mb-2">{{ t('platform.feature_photo_search_help') }}</p>
+                <div class="form-check">
                     <input id="fpharmacynotes" v-model="form.features.pharmacy_notes" type="checkbox" class="form-check-input" />
                     <label class="form-check-label" for="fpharmacynotes">{{ t('platform.feature_pharmacy_notes') }}</label>
                 </div>
@@ -253,6 +258,7 @@ const form = useForm({
         attendance: props.plan?.features?.attendance ?? false,
         hr_payroll: props.plan?.features?.hr_payroll ?? false,
         barcode_camera_scan: props.plan?.features?.barcode_camera_scan ?? false,
+        photo_search: props.plan?.features?.photo_search ?? false,
         pharmacy_notes: props.plan?.features?.pharmacy_notes ?? false,
         package_sales: props.plan?.features?.package_sales ?? false,
         allow_custom_primary: props.plan?.features?.allow_custom_primary ?? false,

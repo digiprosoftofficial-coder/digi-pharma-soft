@@ -87,6 +87,8 @@ php artisan view:cache
 
 Confirm SEO endpoints: `/robots.txt`, `/sitemap.xml`, `/llms.txt`.
 
+If any plan enables **photo search**, set `GEMINI_API_KEY` (see `.env.production.example` and `docs/POS_SCAN_AND_PHOTO_SEARCH.md`).
+
 ## Backups
 
 - Back up MySQL on a schedule; verify restores periodically.
