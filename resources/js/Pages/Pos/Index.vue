@@ -59,27 +59,63 @@
                             <label class="form-label mb-0 fw-semibold" for="pos-product-search">{{ t('sales.pos_search_product') }}</label>
                         </div>
                         <div class="pos-product-search-actions d-flex flex-wrap gap-2">
-                            <a href="/products" class="btn btn-sm btn-outline-secondary pos-all-products-button">
-                                {{ t('tenant_nav.product_list', 'All Products') }}
+                            <a
+                                href="/products"
+                                class="btn btn-sm btn-outline-secondary pos-action-icon-btn"
+                                :aria-label="t('tenant_nav.product_list', 'All Products')"
+                                :title="t('tenant_nav.product_list', 'All Products')"
+                            >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <line x1="8" y1="6" x2="21" y2="6" />
+                                    <line x1="8" y1="12" x2="21" y2="12" />
+                                    <line x1="8" y1="18" x2="21" y2="18" />
+                                    <circle cx="4" cy="6" r="1.2" fill="currentColor" stroke="none" />
+                                    <circle cx="4" cy="12" r="1.2" fill="currentColor" stroke="none" />
+                                    <circle cx="4" cy="18" r="1.2" fill="currentColor" stroke="none" />
+                                </svg>
                             </a>
                             <button
                                 v-if="barcodeCameraScanEnabled"
                                 type="button"
-                                class="btn btn-sm"
+                                class="btn btn-sm pos-action-icon-btn"
                                 :class="cameraScanActive ? 'btn-outline-danger' : 'btn-outline-primary'"
                                 :disabled="cameraScanStarting || photoSearchWorking"
+                                :aria-label="cameraScanActive ? t('sales.pos_camera_scan_stop') : t('sales.pos_camera_scan_start')"
+                                :title="cameraScanActive ? t('sales.pos_camera_scan_stop') : t('sales.pos_camera_scan_start')"
                                 @click="cameraScanActive ? stopBarcodeScanner() : startBarcodeScanner()"
                             >
-                                {{ cameraScanActive ? t('sales.pos_camera_scan_stop') : t('sales.pos_camera_scan_start') }}
+                                <svg v-if="!cameraScanActive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                                    <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                                    <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                                    <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                                    <line x1="7" y1="8" x2="7" y2="16" />
+                                    <line x1="10" y1="8" x2="10" y2="16" />
+                                    <line x1="13" y1="8" x2="13" y2="14" />
+                                    <line x1="16" y1="8" x2="16" y2="16" />
+                                    <line x1="19" y1="8" x2="19" y2="12" />
+                                </svg>
+                                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                </svg>
                             </button>
                             <button
                                 v-if="photoSearchEnabled"
                                 type="button"
-                                class="btn btn-sm btn-outline-primary"
+                                class="btn btn-sm btn-outline-primary pos-action-icon-btn"
                                 :disabled="photoSearchWorking || cameraScanStarting"
+                                :aria-label="photoSearchWorking ? t('sales.pos_photo_search_working') : t('sales.pos_photo_search_start')"
+                                :title="photoSearchWorking ? t('sales.pos_photo_search_working') : t('sales.pos_photo_search_start')"
                                 @click="openPhotoSearchPicker"
                             >
-                                {{ photoSearchWorking ? t('sales.pos_photo_search_working') : t('sales.pos_photo_search_start') }}
+                                <svg v-if="!photoSearchWorking" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h8l2 3h3a2 2 0 0 1 2 2z" />
+                                    <circle cx="12" cy="13" r="4" />
+                                </svg>
+                                <svg v-else class="pos-action-icon-btn__spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                                    <path d="M12 3a9 9 0 1 1-9 9" />
+                                </svg>
                             </button>
                             <input
                                 v-if="photoSearchEnabled"
@@ -1565,6 +1601,32 @@ async function submitSale() {
 
 .pos-product-search-actions {
     justify-content: flex-end;
+    align-items: center;
+}
+
+.pos-action-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    flex: 0 0 auto;
+}
+
+.pos-action-icon-btn svg {
+    width: 1.15rem;
+    height: 1.15rem;
+}
+
+.pos-action-icon-btn__spin {
+    animation: pos-action-spin 0.8s linear infinite;
+}
+
+@keyframes pos-action-spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .pos-cart-card {
@@ -2006,11 +2068,14 @@ async function submitSale() {
     }
 
     .pos-product-search-actions {
-        width: 100%;
+        width: auto;
+        margin-left: auto;
     }
 
-    .pos-product-search-actions .btn {
-        flex: 1 1 auto;
+    .pos-product-search-actions .pos-action-icon-btn {
+        flex: 0 0 auto;
+        width: 2.4rem;
+        height: 2.4rem;
     }
 
     .pos-product-card {

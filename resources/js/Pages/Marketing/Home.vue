@@ -11,12 +11,11 @@
             <div class="sp-container-wide sp-hero-grid">
                 <div class="sp-hero-copy sp-reveal">
                     <p class="sp-presents">
-                        DigiProSoft Presents <strong>{{ branding.site_name || 'SoftoPharma' }}</strong>
+                        {{ t('platform.brand_presents', { name: branding.site_name || 'SoftoPharma' }) }}
                     </p>
                     <p class="sp-eyebrow">{{ t('platform.hero_eyebrow') }}</p>
                     <h1 class="sp-display">{{ t('platform.marketing_hero_title') }}</h1>
                     <p class="sp-lead">{{ t('platform.marketing_hero_sub') }}</p>
-                    <p class="sp-bn">{{ t('platform.marketing_hero_bn') }}</p>
                     <div class="sp-hero-ctas">
                         <button
                             v-if="showTryLiveDemo && selfServiceEnabled"
@@ -167,19 +166,19 @@
                 </div>
                 <div class="sp-device-grid">
                     <div class="sp-device">
-                        <div class="sp-device-label">Desktop</div>
+                        <div class="sp-device-label">{{ t('platform.device_desktop') }}</div>
                         <div class="sp-device-screen">
                             <ProductPreview :label="t('platform.module_reports')" variant="cards" />
                         </div>
                     </div>
                     <div class="sp-device">
-                        <div class="sp-device-label">Tablet</div>
+                        <div class="sp-device-label">{{ t('platform.device_tablet') }}</div>
                         <div class="sp-device-screen">
                             <ProductPreview :label="t('platform.module_inventory')" />
                         </div>
                     </div>
                     <div class="sp-device phone">
-                        <div class="sp-device-label">Mobile</div>
+                        <div class="sp-device-label">{{ t('platform.device_mobile') }}</div>
                         <div class="sp-device-screen">
                             <ProductPreview :label="t('platform.module_pos')" variant="cards" />
                         </div>
@@ -276,7 +275,9 @@
                         <DemoLeadForm />
                     </div>
                     <div>
-                        <p class="sp-bn" style="margin-bottom: 1rem;">{{ t('platform.brand_presents_bn') }}</p>
+                        <p class="sp-lead" style="margin-bottom: 1rem; font-size: 0.95rem;">
+                            {{ t('platform.brand_presents', { name: branding.site_name || 'SoftoPharma' }) }}
+                        </p>
                         <ProductPreview
                             :label="t('platform.module_dashboard')"
                             :src="shot('dashboard')"
@@ -312,7 +313,7 @@
         <section id="faq" class="sp-section">
             <div class="sp-container" style="max-width: 760px;">
                 <div class="sp-section-head">
-                    <p class="sp-eyebrow">FAQ</p>
+                    <p class="sp-eyebrow">{{ t('platform.faq_eyebrow') }}</p>
                     <h2 class="sp-display">{{ t('platform.faq_title') }}</h2>
                 </div>
                 <div class="sp-faq">

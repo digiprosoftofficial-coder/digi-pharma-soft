@@ -25,7 +25,7 @@
             class="alert alert-primary border-0 rounded-0 mb-0 small py-2 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2"
         >
             <span>{{ t('platform.onboarding_title') }} — {{ onboarding.percent }}%</span>
-            <Link href="/onboarding" class="btn btn-sm btn-outline-primary">{{ t('common.continue') || 'Continue' }}</Link>
+            <Link href="/onboarding" class="btn btn-sm btn-outline-primary">{{ t('platform.onboarding_resume') }}</Link>
         </div>
         <div
             v-if="mobileNavOpen"

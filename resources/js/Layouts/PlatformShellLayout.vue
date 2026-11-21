@@ -30,14 +30,25 @@
                     &times;
                 </button>
             </div>
-            <nav class="flex-grow-1 overflow-auto small p-2">
-                <ul class="nav flex-column gap-1">
-                    <li v-for="item in navItems" :key="item.href" class="nav-item">
-                        <Link :href="item.href" class="nav-link rounded py-2" :class="navActive(item.href)" @click="closeMobileNav">
-                            {{ item.label }}
-                        </Link>
-                    </li>
-                </ul>
+            <nav class="platform-nav flex-grow-1 overflow-auto p-2" :aria-label="t('common.menu', 'Menu')">
+                <div v-for="section in navSections" :key="section.key" class="platform-nav-section">
+                    <p class="platform-nav-section__label">{{ section.label }}</p>
+                    <ul class="platform-nav-list">
+                        <li v-for="item in section.items" :key="item.href">
+                            <Link
+                                :href="item.href"
+                                class="platform-nav-link"
+                                :class="{ 'is-active': isNavActive(item.href) }"
+                                @click="closeMobileNav"
+                            >
+                                <span class="platform-nav-link__icon">
+                                    <PlatformNavIcon :name="item.icon" />
+                                </span>
+                                <span class="platform-nav-link__label">{{ item.label }}</span>
+                            </Link>
+                        </li>
+                    </ul>
+                </div>
             </nav>
         </aside>
         <aside class="platform-sidebar platform-sidebar--desktop border-end bg-white d-none d-lg-flex flex-column flex-shrink-0">
@@ -50,14 +61,24 @@
                     </span>
                 </Link>
             </div>
-            <nav class="flex-grow-1 overflow-auto small p-2">
-                <ul class="nav flex-column gap-1">
-                    <li v-for="item in navItems" :key="item.href" class="nav-item">
-                        <Link :href="item.href" class="nav-link rounded py-2" :class="navActive(item.href)">
-                            {{ item.label }}
-                        </Link>
-                    </li>
-                </ul>
+            <nav class="platform-nav flex-grow-1 overflow-auto p-2" :aria-label="t('common.menu', 'Menu')">
+                <div v-for="section in navSections" :key="section.key" class="platform-nav-section">
+                    <p class="platform-nav-section__label">{{ section.label }}</p>
+                    <ul class="platform-nav-list">
+                        <li v-for="item in section.items" :key="item.href">
+                            <Link
+                                :href="item.href"
+                                class="platform-nav-link"
+                                :class="{ 'is-active': isNavActive(item.href) }"
+                            >
+                                <span class="platform-nav-link__icon">
+                                    <PlatformNavIcon :name="item.icon" />
+                                </span>
+                                <span class="platform-nav-link__label">{{ item.label }}</span>
+                            </Link>
+                        </li>
+                    </ul>
+                </div>
             </nav>
         </aside>
         <div class="platform-content flex-grow-1 d-flex flex-column min-vh-100 min-w-0">
@@ -151,6 +172,7 @@
 <script setup>
 import AppMessageModal from '@/Components/AppMessageModal.vue';
 import FlashToasts from '@/Components/FlashToasts.vue';
+import PlatformNavIcon from '@/Components/Platform/PlatformNavIcon.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useTheme } from '@/composables/useTheme';
 import { Link, router, usePage } from '@inertiajs/vue3';
@@ -257,52 +279,91 @@ function can(perm) {
     return isSuper.value || permissions.value.includes(perm);
 }
 
-const navItems = computed(() => [
-    { href: '/platform/dashboard', label: t('platform.nav_overview') },
-    can('platform.leads') ? { href: '/platform/leads', label: t('platform.nav_leads') } : null,
-    can('platform.demos') ? { href: '/platform/demos', label: t('platform.nav_demos') } : null,
-    can('platform.payments.view') ? { href: '/platform/payments', label: t('platform.nav_payments') } : null,
-    (isSuper.value || can('platform.tenants.create'))
-        ? { href: '/platform/tenants', label: t('platform.nav_pharmacies') }
-        : null,
-    isSuper.value ? { href: '/platform/plans', label: t('platform.nav_plans') } : null,
-    isSuper.value ? { href: '/platform/resellers', label: t('platform.nav_resellers') } : null,
-    isSuper.value ? { href: '/platform/master-catalog', label: t('platform.nav_master_catalog') } : null,
-    isSuper.value ? { href: '/platform/master-catalog/suggestions', label: t('platform.nav_master_suggestions') } : null,
-    isSuper.value ? { href: '/platform/catalog-templates', label: t('platform.nav_catalog') } : null,
-    isSuper.value ? { href: '/platform/product-types', label: t('platform.nav_product_types') } : null,
-    isSuper.value ? { href: '/platform/announcements', label: t('platform.nav_announcements') } : null,
-    can('platform.payments.manage') ? { href: '/platform/billing', label: t('platform.nav_billing') } : null,
-    { href: '/platform/notifications', label: t('platform.nav_notifications') },
-    isSuper.value ? { href: '/platform/admins', label: t('platform.nav_admins') } : null,
-    isSuper.value ? { href: '/platform/audit', label: t('platform.nav_audit') } : null,
-    isSuper.value ? { href: '/platform/health', label: t('platform.nav_health') } : null,
-    isSuper.value ? { href: '/platform/marketing-settings', label: t('platform.nav_marketing_settings') } : null,
-    isSuper.value ? { href: '/platform/settings', label: t('platform.nav_settings') } : null,
-].filter(Boolean));
+const navSections = computed(() => {
+    const sections = [
+        {
+            key: 'overview',
+            label: t('platform.nav_group_overview'),
+            items: [
+                { href: '/platform/dashboard', label: t('platform.nav_overview'), icon: 'overview' },
+            ],
+        },
+        {
+            key: 'pipeline',
+            label: t('platform.nav_group_pipeline'),
+            items: [
+                can('platform.leads') ? { href: '/platform/leads', label: t('platform.nav_leads'), icon: 'leads' } : null,
+                can('platform.demos') ? { href: '/platform/demos', label: t('platform.nav_demos'), icon: 'demos' } : null,
+                can('platform.payments.view') ? { href: '/platform/payments', label: t('platform.nav_payments'), icon: 'payments' } : null,
+            ].filter(Boolean),
+        },
+        {
+            key: 'pharmacies',
+            label: t('platform.nav_group_pharmacies'),
+            items: [
+                (isSuper.value || can('platform.tenants.create'))
+                    ? { href: '/platform/tenants', label: t('platform.nav_pharmacies'), icon: 'pharmacies' }
+                    : null,
+                isSuper.value ? { href: '/platform/plans', label: t('platform.nav_plans'), icon: 'plans' } : null,
+                isSuper.value ? { href: '/platform/resellers', label: t('platform.nav_resellers'), icon: 'resellers' } : null,
+            ].filter(Boolean),
+        },
+        {
+            key: 'catalog',
+            label: t('platform.nav_group_catalog'),
+            items: [
+                isSuper.value ? { href: '/platform/master-catalog', label: t('platform.nav_master_catalog'), icon: 'master' } : null,
+                isSuper.value ? { href: '/platform/master-catalog/suggestions', label: t('platform.nav_master_suggestions'), icon: 'suggestions' } : null,
+                isSuper.value ? { href: '/platform/catalog-templates', label: t('platform.nav_catalog'), icon: 'templates' } : null,
+                isSuper.value ? { href: '/platform/product-types', label: t('platform.nav_product_types'), icon: 'product-types' } : null,
+            ].filter(Boolean),
+        },
+        {
+            key: 'ops',
+            label: t('platform.nav_group_ops'),
+            items: [
+                isSuper.value ? { href: '/platform/announcements', label: t('platform.nav_announcements'), icon: 'announcements' } : null,
+                can('platform.payments.manage') ? { href: '/platform/billing', label: t('platform.nav_billing'), icon: 'billing' } : null,
+                { href: '/platform/notifications', label: t('platform.nav_notifications'), icon: 'notifications' },
+            ].filter(Boolean),
+        },
+        {
+            key: 'system',
+            label: t('platform.nav_group_system'),
+            items: [
+                isSuper.value ? { href: '/platform/admins', label: t('platform.nav_admins'), icon: 'admins' } : null,
+                isSuper.value ? { href: '/platform/audit', label: t('platform.nav_audit'), icon: 'audit' } : null,
+                isSuper.value ? { href: '/platform/health', label: t('platform.nav_health'), icon: 'health' } : null,
+                isSuper.value ? { href: '/platform/marketing-settings', label: t('platform.nav_marketing_settings'), icon: 'marketing' } : null,
+                isSuper.value ? { href: '/platform/settings', label: t('platform.nav_settings'), icon: 'settings' } : null,
+            ].filter(Boolean),
+        },
+    ];
+
+    return sections.filter((section) => section.items.length > 0);
+});
 
 function pathNow() {
     return (page.url || '').split('?')[0];
 }
 
-function navActive(prefix) {
+function isNavActive(prefix) {
     const u = pathNow();
     if (prefix === '/platform/dashboard') {
-        return u === '/platform/dashboard' ? 'active bg-primary text-white' : '';
+        return u === '/platform/dashboard';
     }
 
     if (prefix === '/platform/settings') {
-        return u === '/platform/settings' ? 'active bg-primary text-white' : '';
+        return u === '/platform/settings';
     }
 
     // Keep master-catalog and suggestions nav items independent.
     if (prefix === '/platform/master-catalog') {
-        return u === '/platform/master-catalog' || (u.startsWith('/platform/master-catalog/') && !u.startsWith('/platform/master-catalog/suggestions'))
-            ? 'active bg-primary text-white'
-            : '';
+        return u === '/platform/master-catalog'
+            || (u.startsWith('/platform/master-catalog/') && !u.startsWith('/platform/master-catalog/suggestions'));
     }
 
-    return u === prefix || u.startsWith(prefix + '/') ? 'active bg-primary text-white' : '';
+    return u === prefix || u.startsWith(`${prefix}/`);
 }
 
 function openMobileNav() {
@@ -323,7 +384,76 @@ function closeMobileNav() {
 }
 
 .platform-sidebar--desktop {
-    width: 260px;
+    width: 276px;
+}
+
+.platform-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.platform-nav-section__label {
+    margin: 0 0 0.35rem;
+    padding: 0 0.65rem;
+    color: #6b7c74;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.platform-nav-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.platform-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-height: 2.45rem;
+    padding: 0.45rem 0.7rem;
+    border-radius: 0.65rem;
+    color: #163f34;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.25;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.platform-nav-link:hover {
+    background: rgba(var(--bs-primary-rgb), 0.08);
+    color: var(--bs-primary);
+}
+
+.platform-nav-link.is-active {
+    background: var(--bs-primary) !important;
+    color: #fff !important;
+}
+
+.platform-nav-link__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15rem;
+    height: 1.15rem;
+    flex: 0 0 auto;
+    opacity: 0.92;
+}
+
+.platform-nav-link__icon :deep(svg) {
+    width: 100%;
+    height: 100%;
+}
+
+.platform-nav-link__label {
+    min-width: 0;
 }
 
 .platform-brand-link {
@@ -365,9 +495,6 @@ function closeMobileNav() {
     overflow-x: clip;
 }
 
-.platform-sidebar .nav-link.active {
-    color: #fff !important;
-}
 
 .platform-mobile-backdrop {
     position: fixed;

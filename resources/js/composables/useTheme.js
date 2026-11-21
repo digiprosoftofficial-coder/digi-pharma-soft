@@ -67,6 +67,8 @@ export function applyTheme(theme) {
     root.style.setProperty('--bs-primary-text-emphasis', textEmphasis);
     root.style.setProperty('--bs-primary-bg-subtle', bgSubtle);
     root.style.setProperty('--bs-primary-border-subtle', borderSubtle);
+    // Bootstrap compiles progress-bar bg separately; keep it in sync with theme.
+    root.style.setProperty('--bs-progress-bar-bg', primary);
 
     root.style.setProperty('--bs-link-color', primary);
     root.style.setProperty('--bs-link-color-rgb', primaryRgb);
