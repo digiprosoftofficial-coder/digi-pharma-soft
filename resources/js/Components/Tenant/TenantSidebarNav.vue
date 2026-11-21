@@ -338,10 +338,12 @@ function toggle(id) {
 
 <style scoped>
 .tenant-sidebar-nav {
-    --nav-active-bg: var(--bs-primary);
+    --nav-active-bg: color-mix(in srgb, var(--bs-primary) 72%, #ffffff 28%);
     --nav-active-fg: #fff;
-    --nav-hover-bg: rgba(var(--bs-primary-rgb), 0.08);
-    --nav-child-active-bg: rgba(var(--bs-primary-rgb), 0.12);
+    --nav-hover-bg: rgba(255, 255, 255, 0.1);
+    --nav-child-active-bg: rgba(255, 255, 255, 0.14);
+    --nav-fg: rgba(255, 255, 255, 0.78);
+    --nav-child-fg: rgba(255, 255, 255, 0.62);
 }
 
 .tenant-nav-item {
@@ -356,7 +358,7 @@ function toggle(id) {
     font-size: 0.875rem;
     font-weight: 500;
     text-decoration: none;
-    color: #374151;
+    color: var(--nav-fg);
     background: transparent;
     transition: background-color 0.15s ease, color 0.15s ease;
 }
@@ -366,10 +368,10 @@ function toggle(id) {
     text-align: left;
 }
 
-.tenant-nav-item--inactive:hover,
-.tenant-nav-child--inactive:hover {
+.tenant-nav-item:not(.tenant-nav-item--active):hover,
+.tenant-nav-child:not(.tenant-nav-child--active):hover {
     background: var(--nav-hover-bg);
-    color: var(--bs-primary);
+    color: #fff;
 }
 
 .tenant-nav-item--active {
@@ -414,7 +416,7 @@ function toggle(id) {
     border-radius: 0.4rem;
     font-size: 0.8125rem;
     text-decoration: none;
-    color: #6b7280;
+    color: var(--nav-child-fg);
     transition: background-color 0.15s ease, color 0.15s ease;
 }
 
@@ -426,13 +428,17 @@ function toggle(id) {
 
 .tenant-nav-child--active {
     background: var(--nav-child-active-bg);
-    color: var(--bs-primary);
+    color: #fff;
     font-weight: 600;
 }
 
 .tenant-nav-child--active :deep(.tenant-nav-icon) {
-    color: var(--bs-primary);
+    color: #fff;
     opacity: 1;
+}
+
+.tenant-nav-footer {
+    border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 .tenant-nav-footer .tenant-nav-child {

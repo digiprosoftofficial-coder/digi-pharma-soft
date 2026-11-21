@@ -8,22 +8,22 @@
         ></div>
         <aside
             id="platform-mobile-navigation"
-            class="platform-sidebar platform-mobile-drawer border-end bg-white d-lg-none flex-column"
+            class="platform-sidebar platform-mobile-drawer d-lg-none flex-column"
             :class="{ 'platform-mobile-drawer--open': mobileNavOpen }"
             :aria-hidden="mobileNavOpen ? 'false' : 'true'"
             :aria-label="t('common.menu', 'Menu')"
         >
-            <div class="p-3 border-bottom d-flex align-items-center justify-content-between gap-2">
-                <Link href="/platform/dashboard" class="platform-brand-link text-decoration-none text-dark min-w-0" @click="closeMobileNav">
+            <div class="platform-sidebar-brand p-3 d-flex align-items-center justify-content-between gap-2">
+                <Link href="/platform/dashboard" class="platform-brand-link platform-chrome-brand text-decoration-none min-w-0" @click="closeMobileNav">
                     <img class="platform-brand-logo" :src="brandLogo" :alt="brandName" />
                     <span class="platform-brand-text">
                         <span class="fw-bold d-block">{{ brandName }}</span>
-                        <span class="small text-muted">{{ brandSub }}</span>
+                        <span class="platform-chrome-muted small">{{ brandSub }}</span>
                     </span>
                 </Link>
                 <button
                     type="button"
-                    class="btn btn-sm btn-outline-secondary"
+                    class="btn btn-sm platform-chrome-btn"
                     :aria-label="t('common.close', 'Close')"
                     @click="closeMobileNav"
                 >
@@ -51,13 +51,13 @@
                 </div>
             </nav>
         </aside>
-        <aside class="platform-sidebar platform-sidebar--desktop border-end bg-white d-none d-lg-flex flex-column flex-shrink-0">
-            <div class="p-3 border-bottom">
-                <Link href="/platform/dashboard" class="platform-brand-link text-decoration-none text-dark">
+        <aside class="platform-sidebar platform-sidebar--desktop d-none d-lg-flex flex-column flex-shrink-0">
+            <div class="platform-sidebar-brand p-3">
+                <Link href="/platform/dashboard" class="platform-brand-link platform-chrome-brand text-decoration-none">
                     <img class="platform-brand-logo" :src="brandLogo" :alt="brandName" />
                     <span class="platform-brand-text">
                         <span class="fw-bold d-block">{{ brandName }}</span>
-                        <span class="small text-muted">{{ brandSub }}</span>
+                        <span class="platform-chrome-muted small">{{ brandSub }}</span>
                     </span>
                 </Link>
             </div>
@@ -82,10 +82,10 @@
             </nav>
         </aside>
         <div class="platform-content flex-grow-1 d-flex flex-column min-vh-100 min-w-0">
-            <header class="platform-topbar border-bottom bg-white px-3 py-2 d-flex flex-wrap align-items-center gap-2">
+            <header class="platform-topbar px-3 py-2 d-flex flex-wrap align-items-center gap-2">
                 <button
                     type="button"
-                    class="btn btn-sm btn-outline-secondary d-lg-none platform-menu-btn"
+                    class="btn btn-sm platform-chrome-btn d-lg-none platform-menu-btn"
                     :aria-label="t('common.menu', 'Menu')"
                     :aria-expanded="mobileNavOpen ? 'true' : 'false'"
                     aria-controls="platform-mobile-navigation"
@@ -102,11 +102,11 @@
                         <span class="platform-mobile-brand__page">{{ pageTitle }}</span>
                     </span>
                 </div>
-                <h1 class="h5 mb-0 text-primary me-auto d-none d-lg-block">{{ pageTitle }}</h1>
+                <h1 class="h5 mb-0 platform-topbar-title me-auto d-none d-lg-block">{{ pageTitle }}</h1>
                 <div class="platform-bell dropdown">
                     <button
                         type="button"
-                        class="btn btn-sm btn-outline-secondary platform-bell-btn position-relative"
+                        class="btn btn-sm platform-chrome-btn platform-bell-btn position-relative"
                         :aria-expanded="bellOpen ? 'true' : 'false'"
                         :aria-label="t('platform.nav_notifications')"
                         @click="toggleBell"
@@ -155,8 +155,8 @@
                         </Link>
                     </div>
                 </div>
-                <span class="small text-muted d-none d-md-inline">{{ userName }}</span>
-                <Link href="/logout" method="post" as="button" class="btn btn-sm btn-outline-secondary">
+                <span class="small platform-chrome-muted d-none d-md-inline">{{ userName }}</span>
+                <Link href="/logout" method="post" as="button" class="btn btn-sm platform-chrome-btn">
                     {{ t('common.logout') }}
                 </Link>
             </header>
@@ -377,14 +377,61 @@ function closeMobileNav() {
 
 <style scoped>
 .platform-shell {
+    --platform-chrome-bg: #163f34;
+    --platform-chrome-bg: color-mix(in srgb, var(--bs-primary) 34%, #0a1a16 66%);
+    --platform-chrome-fg: rgba(255, 255, 255, 0.94);
+    --platform-chrome-muted: rgba(255, 255, 255, 0.58);
+    --platform-chrome-border: rgba(255, 255, 255, 0.12);
+    --platform-chrome-surface: rgba(255, 255, 255, 0.1);
     width: 100%;
     max-width: 100%;
     min-width: 0;
     overflow-x: clip;
 }
 
+.platform-sidebar {
+    background: var(--platform-chrome-bg);
+    color: var(--platform-chrome-fg);
+    border-right: 1px solid var(--platform-chrome-border);
+}
+
 .platform-sidebar--desktop {
     width: 276px;
+}
+
+.platform-sidebar-brand {
+    border-bottom: 1px solid var(--platform-chrome-border);
+}
+
+.platform-chrome-brand {
+    color: var(--platform-chrome-fg);
+}
+
+.platform-chrome-muted {
+    color: var(--platform-chrome-muted) !important;
+}
+
+.platform-chrome-btn {
+    color: var(--platform-chrome-fg) !important;
+    background: transparent;
+    border: 1px solid var(--platform-chrome-border);
+}
+
+.platform-chrome-btn:hover,
+.platform-chrome-btn:focus {
+    color: #fff !important;
+    background: var(--platform-chrome-surface);
+    border-color: rgba(255, 255, 255, 0.28);
+}
+
+.platform-topbar {
+    background: var(--platform-chrome-bg);
+    color: var(--platform-chrome-fg);
+    border-bottom: 1px solid var(--platform-chrome-border);
+}
+
+.platform-topbar-title {
+    color: var(--platform-chrome-fg);
 }
 
 .platform-nav {
@@ -396,7 +443,7 @@ function closeMobileNav() {
 .platform-nav-section__label {
     margin: 0 0 0.35rem;
     padding: 0 0.65rem;
-    color: #6b7c74;
+    color: var(--platform-chrome-muted);
     font-size: 0.68rem;
     font-weight: 700;
     letter-spacing: 0.06em;
@@ -419,7 +466,7 @@ function closeMobileNav() {
     min-height: 2.45rem;
     padding: 0.45rem 0.7rem;
     border-radius: 0.65rem;
-    color: #163f34;
+    color: rgba(255, 255, 255, 0.78);
     text-decoration: none;
     font-size: 0.9rem;
     font-weight: 600;
@@ -428,12 +475,12 @@ function closeMobileNav() {
 }
 
 .platform-nav-link:hover {
-    background: rgba(var(--bs-primary-rgb), 0.08);
-    color: var(--bs-primary);
+    background: var(--platform-chrome-surface);
+    color: #fff;
 }
 
 .platform-nav-link.is-active {
-    background: var(--bs-primary) !important;
+    background: color-mix(in srgb, var(--bs-primary) 72%, #ffffff 28%) !important;
     color: #fff !important;
 }
 
@@ -580,8 +627,12 @@ function closeMobileNav() {
     font-weight: 700;
 }
 
+.platform-mobile-brand {
+    color: var(--platform-chrome-fg);
+}
+
 .platform-mobile-brand__page {
-    color: var(--bs-secondary-color);
+    color: var(--platform-chrome-muted);
     font-size: 0.72rem;
 }
 

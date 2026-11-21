@@ -35,23 +35,23 @@
         ></div>
         <aside
             id="tenant-mobile-navigation"
-            class="tenant-sidebar tenant-mobile-drawer border-end bg-white d-lg-none flex-column"
+            class="tenant-sidebar tenant-mobile-drawer d-lg-none flex-column"
             :class="{ 'tenant-mobile-drawer--open': mobileNavOpen }"
             :aria-hidden="mobileNavOpen ? 'false' : 'true'"
             aria-label="Mobile navigation"
         >
-            <div class="tenant-sidebar-brand p-3 border-bottom">
+            <div class="tenant-sidebar-brand p-3">
                 <div class="d-flex align-items-center justify-content-between gap-2">
-                    <Link href="/dashboard" class="text-decoration-none text-dark d-flex align-items-center gap-2 min-w-0" @click="closeMobileNav">
+                    <Link href="/dashboard" class="tenant-chrome-brand text-decoration-none d-flex align-items-center gap-2 min-w-0" @click="closeMobileNav">
                         <span class="tenant-sidebar-brand__icon">
                             <img :src="brandIcon" :alt="brandSiteName" />
                         </span>
                         <span class="min-w-0">
                             <div class="fw-bold lh-sm text-truncate">{{ tenantName }}</div>
-                            <div class="small text-muted">{{ t('tenant_nav.pharmacy_mgmt') }}</div>
+                            <div class="tenant-chrome-muted small">{{ t('tenant_nav.pharmacy_mgmt') }}</div>
                         </span>
                     </Link>
-                    <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0" :aria-label="t('common.close', 'Close')" @click="closeMobileNav">
+                    <button type="button" class="btn btn-sm tenant-chrome-btn flex-shrink-0" :aria-label="t('common.close', 'Close')" @click="closeMobileNav">
                         &times;
                     </button>
                 </div>
@@ -87,23 +87,23 @@
             <TenantSidebarNav @navigate="closeMobileNav" />
         </aside>
         <div class="d-flex flex-grow-1 min-h-0 min-w-0">
-            <aside class="tenant-sidebar tenant-sidebar--desktop border-end bg-white d-none d-lg-flex flex-column flex-shrink-0">
-                <div class="tenant-sidebar-brand p-3 border-bottom">
-                    <Link href="/dashboard" class="text-decoration-none text-dark d-flex align-items-center gap-2 min-w-0">
+            <aside class="tenant-sidebar tenant-sidebar--desktop d-none d-lg-flex flex-column flex-shrink-0">
+                <div class="tenant-sidebar-brand p-3">
+                    <Link href="/dashboard" class="tenant-chrome-brand text-decoration-none d-flex align-items-center gap-2 min-w-0">
                         <span class="tenant-sidebar-brand__icon">
                             <img :src="brandIcon" :alt="brandSiteName" />
                         </span>
                         <span class="min-w-0">
                             <div class="fw-bold lh-sm text-truncate">{{ tenantName }}</div>
-                            <div class="small text-muted">{{ t('tenant_nav.pharmacy_mgmt') }}</div>
+                            <div class="tenant-chrome-muted small">{{ t('tenant_nav.pharmacy_mgmt') }}</div>
                         </span>
                     </Link>
                 </div>
                 <TenantSidebarNav />
             </aside>
             <div class="tenant-content flex-grow-1 d-flex flex-column min-vh-100 min-w-0">
-                <header class="tenant-topbar border-bottom bg-white px-3 py-2 d-flex flex-wrap align-items-center gap-2">
-                    <Link href="/dashboard" class="tenant-mobile-brand d-lg-none text-decoration-none text-dark me-auto">
+                <header class="tenant-topbar px-3 py-2 d-flex flex-wrap align-items-center gap-2">
+                    <Link href="/dashboard" class="tenant-mobile-brand d-lg-none text-decoration-none me-auto">
                         <span class="tenant-mobile-brand__icon">
                             <img :src="brandIcon" :alt="brandSiteName" />
                         </span>
@@ -149,7 +149,7 @@
                     </form>
                     <h1
                         v-else
-                        class="h5 mb-0 text-primary me-auto d-none d-lg-block"
+                        class="h5 mb-0 tenant-topbar-title me-auto d-none d-lg-block"
                     >
                         {{ pageTitle }}
                     </h1>
@@ -161,12 +161,12 @@
                         style="max-width: 390px"
                         @submit.prevent="onSearchEnter()"
                     >
-                        <div class="input-group input-group-sm">
+                        <div class="input-group input-group-sm topbar-search__group">
                             <span class="input-group-text topbar-search__scope">{{ t('common.search_scope_products') }}</span>
                             <input
                                 v-model="searchQ"
                                 type="search"
-                                class="form-control"
+                                class="form-control topbar-search__input"
                                 :placeholder="t('common.search_products_placeholder')"
                                 autocomplete="off"
                                 @input="debouncedProductSearch"
@@ -177,7 +177,7 @@
                                 @keydown.enter.prevent="onSearchEnter()"
                                 @keydown.esc.prevent="closeSearchSuggestions"
                             />
-                            <button class="btn btn-outline-secondary topbar-search__button" type="submit" :title="t('common.search')" :aria-label="t('common.search')">
+                            <button class="btn topbar-search__button" type="submit" :title="t('common.search')" :aria-label="t('common.search')">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <circle cx="11" cy="11" r="7" />
                                     <path d="m20 20-3.5-3.5" />
@@ -222,7 +222,7 @@
                     <button
                         v-if="!smartSearchEnabled"
                         type="button"
-                        class="btn btn-sm btn-outline-secondary tenant-topbar-search-btn d-lg-none"
+                        class="btn btn-sm tenant-chrome-btn tenant-topbar-search-btn d-lg-none"
                         :aria-label="t('common.smart_search_title')"
                         :title="t('common.smart_search_title')"
                         @click="mobileSearchOpen = true"
@@ -236,7 +236,7 @@
                         v-if="pharmacyNotesEnabled && can('notes.view')"
                         href="/notes"
                         class="btn btn-sm tenant-topbar-notes-btn d-lg-none"
-                        :class="notesActive ? 'btn-primary' : 'btn-outline-secondary'"
+                        :class="notesActive ? 'btn-primary' : 'tenant-chrome-btn'"
                         :aria-label="t('tenant_nav.notes')"
                         :title="t('tenant_nav.notes')"
                     >
@@ -246,13 +246,13 @@
                         <Link
                             v-if="can('products.view')"
                             href="/products"
-                            class="btn btn-sm btn-outline-primary tenant-topbar-action d-none d-lg-inline-flex"
+                            class="btn btn-sm tenant-chrome-btn tenant-topbar-action d-none d-lg-inline-flex"
                         >
                             {{ t('tenant_nav.product_list') }}
                         </Link>
                         <Link v-if="can('pos.access')" href="/pos" class="btn btn-sm btn-primary tenant-topbar-action d-none d-lg-inline-flex">{{ t('tenant_nav.new_sale') }}</Link>
-                        <span class="small text-muted d-none d-md-inline">{{ userName }}</span>
-                        <Link href="/logout" method="post" as="button" class="btn btn-sm btn-outline-secondary tenant-topbar-action">{{ t('common.logout') }}</Link>
+                        <span class="small tenant-chrome-muted d-none d-md-inline">{{ userName }}</span>
+                        <Link href="/logout" method="post" as="button" class="btn btn-sm tenant-chrome-btn tenant-topbar-action">{{ t('common.logout') }}</Link>
                     </div>
                 </header>
                 <main class="tenant-main flex-grow-1 p-2 p-md-4 min-w-0">
@@ -375,6 +375,13 @@ const announcementAlertClass = computed(() => {
 
 <style scoped>
 .tenant-shell {
+    --tenant-chrome-bg: #163f34;
+    --tenant-chrome-bg: color-mix(in srgb, var(--bs-primary) 34%, #0a1a16 66%);
+    --tenant-chrome-fg: rgba(255, 255, 255, 0.94);
+    --tenant-chrome-muted: rgba(255, 255, 255, 0.58);
+    --tenant-chrome-border: rgba(255, 255, 255, 0.12);
+    --tenant-chrome-surface: rgba(255, 255, 255, 0.1);
+    --tenant-chrome-surface-strong: rgba(255, 255, 255, 0.16);
     width: 100%;
     max-width: 100%;
     min-width: 0;
@@ -383,6 +390,38 @@ const announcementAlertClass = computed(() => {
 
 .tenant-sidebar {
     width: 272px;
+    background: var(--tenant-chrome-bg);
+    color: var(--tenant-chrome-fg);
+    border-right: 1px solid var(--tenant-chrome-border);
+}
+
+.tenant-sidebar-brand {
+    border-bottom: 1px solid var(--tenant-chrome-border);
+}
+
+.tenant-chrome-brand {
+    color: var(--tenant-chrome-fg);
+}
+
+.tenant-chrome-muted {
+    color: var(--tenant-chrome-muted) !important;
+}
+
+.tenant-chrome-btn {
+    color: var(--tenant-chrome-fg) !important;
+    background: transparent;
+    border: 1px solid var(--tenant-chrome-border);
+}
+
+.tenant-chrome-btn:hover,
+.tenant-chrome-btn:focus {
+    color: #fff !important;
+    background: var(--tenant-chrome-surface);
+    border-color: rgba(255, 255, 255, 0.28);
+}
+
+.tenant-topbar-title {
+    color: var(--tenant-chrome-fg);
 }
 
 .tenant-content {
@@ -434,7 +473,7 @@ const announcementAlertClass = computed(() => {
     width: 2.35rem;
     height: 2.35rem;
     border-radius: 0.55rem;
-    background: rgba(var(--bs-primary-rgb), 0.08);
+    background: var(--tenant-chrome-surface-strong);
     overflow: hidden;
     flex-shrink: 0;
 }
@@ -452,6 +491,7 @@ const announcementAlertClass = computed(() => {
     align-items: center;
     gap: 0.55rem;
     min-width: 0;
+    color: var(--tenant-chrome-fg);
 }
 
 .tenant-mobile-brand__icon {
@@ -462,7 +502,7 @@ const announcementAlertClass = computed(() => {
     width: 2rem;
     height: 2rem;
     border-radius: 0.5rem;
-    background: rgba(var(--bs-primary-rgb), 0.08);
+    background: var(--tenant-chrome-surface-strong);
     overflow: hidden;
 }
 
@@ -496,17 +536,35 @@ const announcementAlertClass = computed(() => {
 
 .tenant-mobile-brand__page {
     max-width: 42vw;
-    color: var(--bs-secondary-color);
+    color: var(--tenant-chrome-muted);
     font-size: 0.72rem;
 }
 
+.topbar-search__group {
+    border: 1px solid var(--tenant-chrome-border);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: var(--tenant-chrome-surface);
+}
+
 .topbar-search__scope {
-    color: var(--bs-primary);
-    background: rgba(var(--bs-primary-rgb), 0.08);
-    border-color: var(--bs-border-color);
+    color: var(--tenant-chrome-fg);
+    background: transparent;
+    border: 0;
     font-size: 0.72rem;
     font-weight: 700;
     white-space: nowrap;
+}
+
+.topbar-search__input {
+    color: var(--tenant-chrome-fg) !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+.topbar-search__input::placeholder {
+    color: var(--tenant-chrome-muted);
 }
 
 .topbar-search__dropdown {
@@ -520,7 +578,7 @@ const announcementAlertClass = computed(() => {
 }
 
 .topbar-search :deep(.form-control:focus) {
-    border-color: var(--bs-border-color);
+    border-color: transparent;
     box-shadow: none;
     outline: 0;
 }
@@ -533,14 +591,16 @@ const announcementAlertClass = computed(() => {
 }
 
 .topbar-search__button {
-    color: var(--bs-secondary-color);
-    border-color: var(--bs-border-color);
+    color: var(--tenant-chrome-fg);
+    background: transparent;
+    border: 0;
+    border-left: 1px solid var(--tenant-chrome-border);
+    border-radius: 0;
 }
 
 .topbar-search__button:hover {
-    color: var(--bs-body-color);
-    background: var(--bs-tertiary-bg);
-    border-color: var(--bs-border-color);
+    color: #fff;
+    background: var(--tenant-chrome-surface-strong);
 }
 
 .topbar-search__item {
@@ -570,6 +630,9 @@ const announcementAlertClass = computed(() => {
     width: 100%;
     max-width: 100%;
     min-width: 0;
+    background: var(--tenant-chrome-bg);
+    color: var(--tenant-chrome-fg);
+    border-bottom: 1px solid var(--tenant-chrome-border);
 }
 
 .tenant-sidebar-branch,
@@ -633,7 +696,7 @@ const announcementAlertClass = computed(() => {
 .tenant-sidebar-branch__label {
     display: block;
     margin-bottom: 0.35rem;
-    color: #94a3b8;
+    color: var(--tenant-chrome-muted);
     font-size: 0.72rem;
     font-weight: 600;
     letter-spacing: 0.01em;
@@ -713,7 +776,7 @@ const announcementAlertClass = computed(() => {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #94a3b8;
+    color: var(--tenant-chrome-muted);
     pointer-events: none;
     transform: translateY(-50%);
 }
@@ -733,26 +796,32 @@ const announcementAlertClass = computed(() => {
     -webkit-appearance: none;
     margin: 0;
     padding: 0.55rem 2rem 0.55rem 2.15rem;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--tenant-chrome-border);
     border-radius: 0.7rem;
-    background-color: #fff;
+    background-color: var(--tenant-chrome-surface);
     background-image: none;
     box-shadow: none;
-    color: #0f172a;
+    color: var(--tenant-chrome-fg);
     font-size: 0.88rem;
     font-weight: 500;
     line-height: 1.2;
     cursor: pointer;
 }
 
+.tenant-sidebar-branch__select option {
+    color: #0f172a;
+    background: #fff;
+}
+
 .tenant-sidebar-branch__select:hover {
-    border-color: #cbd5e1;
+    border-color: rgba(255, 255, 255, 0.28);
+    background-color: var(--tenant-chrome-surface-strong);
 }
 
 .tenant-sidebar-branch__select:focus {
-    border-color: rgba(var(--bs-primary-rgb), 0.55);
+    border-color: rgba(255, 255, 255, 0.4);
     outline: 0;
-    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.12);
+    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.12);
 }
 
 @media (max-width: 991.98px) {

@@ -51,7 +51,7 @@
             </button>
         </div>
         <div class="row g-3 pos-layout-row">
-            <div class="col-lg-5 min-w-0">
+            <div class="col-lg-7 min-w-0">
                 <div class="card card-body pos-search-panel">
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
                         <div>
@@ -243,7 +243,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-7 min-w-0" :class="{ 'pos-cart-col--sticky-pad': cart.length }">
+            <div class="col-lg-5 min-w-0" :class="{ 'pos-cart-col--sticky-pad': cart.length }">
                 <div ref="cartSection" class="card card-body pos-cart-card">
                     <div class="pos-cart-header d-flex justify-content-between align-items-center gap-2 mb-2">
                         <h2 class="h6 mb-0">
@@ -376,7 +376,7 @@
                             </div>
                         </div>
 
-                        <div class="pos-cart-summary border rounded bg-light p-2 mt-2">
+                        <div class="pos-cart-summary border rounded p-2 mt-2">
                             <div class="d-flex justify-content-between gap-2">
                                 <span>{{ t('sales.subtotal') }}</span>
                                 <strong>{{ formatMoney(cartSubtotal) }}</strong>
@@ -1545,8 +1545,20 @@ async function submitSale() {
 
 .pos-product-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.75rem;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.65rem;
+}
+
+@media (max-width: 1399.98px) {
+    .pos-product-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1199.98px) {
+    .pos-product-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
 }
 
 .pos-search-panel {
@@ -1632,6 +1644,15 @@ async function submitSale() {
 .pos-cart-card {
     min-width: 0;
     overflow-x: clip;
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.22);
+    background: rgba(var(--bs-primary-rgb), 0.09);
+    box-shadow: 0 0.4rem 1.1rem rgba(var(--bs-primary-rgb), 0.1);
+}
+
+.pos-cart-header {
+    padding: 0.35rem 0.45rem 0.55rem;
+    margin: -0.25rem -0.25rem 0.35rem;
+    border-bottom: 1px solid rgba(var(--bs-primary-rgb), 0.14);
 }
 
 .pos-cart-cards {
@@ -1642,15 +1663,16 @@ async function submitSale() {
     overflow: hidden;
     min-width: 0;
     margin-bottom: 0.45rem;
-    border: 1px solid #dbe7f0;
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.18);
     border-radius: 0.75rem;
-    background: #fff;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    background: rgba(255, 255, 255, 0.72);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
 .pos-cart-line-card--active {
-    border-color: rgba(var(--bs-primary-rgb), 0.45);
-    box-shadow: 0 0 0 1px rgba(var(--bs-primary-rgb), 0.1);
+    border-color: rgba(var(--bs-primary-rgb), 0.5);
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 0 0 1px rgba(var(--bs-primary-rgb), 0.12);
 }
 
 .pos-cart-line-card--danger {
@@ -1801,6 +1823,8 @@ async function submitSale() {
 .pos-cart-summary {
     font-size: 0.92rem;
     min-width: 0;
+    border-color: rgba(var(--bs-primary-rgb), 0.22) !important;
+    background: rgba(255, 255, 255, 0.7) !important;
 }
 
 .pos-cart-summary > div {
@@ -1819,7 +1843,7 @@ async function submitSale() {
 .pos-product-card {
     display: flex;
     flex-direction: column;
-    min-height: 11rem;
+    min-height: 9.75rem;
     padding: 0;
     overflow: hidden;
     color: var(--bs-body-color);
@@ -1952,7 +1976,8 @@ async function submitSale() {
 
 .pos-cart-header__total {
     color: var(--bs-primary);
-    font-size: 1rem;
+    font-size: 1.05rem;
+    font-weight: 700;
     white-space: nowrap;
 }
 
