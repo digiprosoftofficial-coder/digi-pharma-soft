@@ -223,6 +223,7 @@ return [
     'products_copy_names' => 'Copy names',
     'products_copy_include_strength' => 'Include strength',
     'products_add_to_purchase' => 'Add to purchase',
+    'products_add_to_sale' => 'Add to sale',
     'products_copied_names' => 'Copied :count names — paste in WhatsApp or anywhere.',
     'products_copy_failed' => 'Could not copy. Try again.',
     'all_product_types' => 'All types',

@@ -13,6 +13,7 @@ use App\Support\Sales\InvoiceRounding;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -24,7 +25,7 @@ final class PosController extends Controller
 {
     public function __construct(private readonly SaleService $sales) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $this->authorize('create', \App\Domain\Sales\Models\Sale::class);
 
@@ -39,7 +40,49 @@ final class PosController extends Controller
                 'latest' => $this->latestProducts(),
                 'lastSold' => $this->lastSoldProducts(),
             ],
+            'prefillProducts' => $this->prefillProducts($request->input('product_ids')),
         ]);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function prefillProducts(mixed $rawIds): array
+    {
+        $ids = $this->parseProductIds($rawIds);
+        if ($ids === []) {
+            return [];
+        }
+
+        $products = $this->productCardQuery()
+            ->whereIn('id', $ids)
+            ->get()
+            ->sortBy(fn (Product $product) => array_search((int) $product->getKey(), $ids, true))
+            ->values();
+
+        return $this->resolveProducts($products);
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function parseProductIds(mixed $raw): array
+    {
+        if (is_array($raw)) {
+            $parts = $raw;
+        } elseif (is_string($raw) && $raw !== '') {
+            $parts = preg_split('/[,\s]+/', $raw) ?: [];
+        } else {
+            return [];
+        }
+
+        return collect($parts)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->take(50)
+            ->values()
+            ->all();
     }
 
     public function store(StorePosSaleRequest $request): RedirectResponse

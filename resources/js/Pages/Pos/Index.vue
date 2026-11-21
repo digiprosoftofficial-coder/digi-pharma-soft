@@ -4,6 +4,10 @@
 
         <h1 class="page-heading mb-3 d-none d-lg-block">{{ t('sales.pos_title') }}</h1>
         <div v-if="checkoutError" class="alert alert-danger">{{ checkoutError }}</div>
+        <div v-if="prefillNotice" class="alert alert-info py-2 small d-flex justify-content-between align-items-center gap-2">
+            <span>{{ prefillNotice }}</span>
+            <button type="button" class="btn-close" aria-label="Close" @click="prefillNotice = ''"></button>
+        </div>
         <div v-if="showSaleSuccessAlert" class="alert alert-success pos-sale-alert">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <span>{{ saleSuccessMessage }}</span>
@@ -600,6 +604,7 @@ const props = defineProps({
     lastSaleId: { type: Number, default: null },
     roundingMode: { type: String, default: 'none' },
     quickProducts: { type: Object, default: () => ({ popular: [], latest: [], lastSold: [] }) },
+    prefillProducts: { type: Array, default: () => [] },
 });
 
 const { t } = useLocale();
@@ -631,6 +636,7 @@ const {
 const q = ref('');
 const results = ref([]);
 const cart = ref([]);
+const prefillNotice = ref('');
 const expandedCartKey = ref(null);
 let cartLineSeq = 0;
 const activeQuickProductTab = ref(
@@ -854,6 +860,50 @@ async function runSearch() {
     results.value = await searchProducts(q.value);
 }
 
+function clearPosQueryString() {
+    if (typeof window !== 'undefined' && window.history?.replaceState) {
+        window.history.replaceState({}, '', window.location.pathname);
+    }
+}
+
+function applyPrefillProducts(products) {
+    if (!Array.isArray(products) || !products.length || cart.value.length) {
+        return 0;
+    }
+
+    let added = 0;
+    let skipped = 0;
+
+    for (const item of products) {
+        const batches = batchesWithStock(item);
+        if (!batches.length) {
+            skipped += 1;
+            continue;
+        }
+
+        addLine(item, { quiet: true });
+        added += 1;
+    }
+
+    if (added || skipped) {
+        void cacheProducts(products);
+        clearPosQueryString();
+    }
+
+    if (added && skipped) {
+        prefillNotice.value = t('sales.pos_prefill_partial', {
+            added: String(added),
+            skipped: String(skipped),
+        });
+    } else if (added) {
+        prefillNotice.value = t('sales.pos_prefill_added', { count: String(added) });
+    } else if (skipped) {
+        prefillNotice.value = t('sales.pos_prefill_none_sellable');
+    }
+
+    return added;
+}
+
 async function applyProductPrefillFromQuery() {
     if (cart.value.length) {
         return;
@@ -878,9 +928,8 @@ async function applyProductPrefillFromQuery() {
     await runSearch();
 
     const added = tryAddFromSearch();
-    if (added && window.history?.replaceState) {
-        // Keep current component state/cart; just remove query string.
-        window.history.replaceState({}, '', window.location.pathname);
+    if (added) {
+        clearPosQueryString();
     }
 }
 
@@ -889,9 +938,15 @@ onMounted(() => {
         ...(props.quickProducts?.popular ?? []),
         ...(props.quickProducts?.latest ?? []),
         ...(props.quickProducts?.lastSold ?? []),
+        ...(props.prefillProducts ?? []),
     ];
     if (seed.length) {
         void cacheProducts(seed);
+    }
+
+    if (props.prefillProducts?.length) {
+        applyPrefillProducts(props.prefillProducts);
+        return;
     }
 
     void applyProductPrefillFromQuery();
@@ -1396,13 +1451,16 @@ function removeCartLine(index) {
     }
 }
 
-function addLine(item) {
+function addLine(item, options = {}) {
+    const quiet = Boolean(options.quiet);
     photoSearchError.value = '';
     const batches = batchesWithStock(item);
     const batch = batches[0];
     if (!batch) {
-        alert(t('catalog.pos_no_sellable_batch'));
-        return;
+        if (!quiet) {
+            alert(t('catalog.pos_no_sellable_batch'));
+        }
+        return false;
     }
 
     const existing = cart.value.find(
@@ -1411,8 +1469,10 @@ function addLine(item) {
     if (existing) {
         existing.quantity = Math.max(1, Math.round(Number(existing.quantity) || 1) + 1);
         expandCartLine(existing._key);
-        notifyProductAdded(item);
-        return;
+        if (!quiet) {
+            notifyProductAdded(item);
+        }
+        return true;
     }
 
     const unitOptions = buildSaleUnitOptions(item);
@@ -1441,7 +1501,10 @@ function addLine(item) {
     refreshLinePricing(line);
     cart.value.push(line);
     expandCartLine(line._key);
-    notifyProductAdded(item);
+    if (!quiet) {
+        notifyProductAdded(item);
+    }
+    return true;
 }
 
 async function submitSale() {

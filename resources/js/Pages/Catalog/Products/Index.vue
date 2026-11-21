@@ -220,6 +220,13 @@
                     {{ t('catalog.products_copy_names') }}
                 </button>
                 <Link
+                    v-if="can('pos.access')"
+                    :href="salePrefillHref"
+                    class="btn btn-sm btn-primary"
+                >
+                    {{ t('catalog.products_add_to_sale') }}
+                </Link>
+                <Link
                     v-if="can('purchases.manage')"
                     :href="purchasePrefillHref"
                     class="btn btn-sm btn-outline-primary"
@@ -1018,6 +1025,15 @@ const purchasePrefillHref = computed(() => {
     }
 
     return `/purchases/create?product_ids=${ids.join(',')}`;
+});
+
+const salePrefillHref = computed(() => {
+    const ids = Object.keys(selectedById.value);
+    if (!ids.length) {
+        return '/pos';
+    }
+
+    return `/pos?product_ids=${ids.join(',')}`;
 });
 
 const allPageSelected = computed(() => {

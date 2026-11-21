@@ -223,6 +223,7 @@ return [
     'products_copy_names' => 'নাম কপি',
     'products_copy_include_strength' => 'শক্তিসহ',
     'products_add_to_purchase' => 'ক্রয়ে যোগ করুন',
+    'products_add_to_sale' => 'বিক্রয়ে যোগ করুন',
     'products_copied_names' => ':countটি নাম কপি হয়েছে — WhatsApp বা যেকোনো জায়গায় পেস্ট করুন।',
     'products_copy_failed' => 'কপি হয়নি। আবার চেষ্টা করুন।',
     'all_product_types' => 'সব ধরন',
