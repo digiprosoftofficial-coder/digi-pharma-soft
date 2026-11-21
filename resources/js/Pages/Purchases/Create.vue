@@ -73,9 +73,40 @@
             <div class="card purchase-add-product mb-3">
                 <div class="card-body py-3">
                     <div v-if="newMedicineFlash" class="alert alert-success py-2 small mb-2">{{ newMedicineFlash }}</div>
-                    <div class="purchase-add-product__eyebrow">{{ t('purchases.add_product_eyebrow') }}</div>
-                    <label class="form-label fw-semibold mb-1" for="purchase-product-search">{{ t('purchases.add_product') }}</label>
+                    <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+                        <div class="min-w-0">
+                            <div class="purchase-add-product__eyebrow">{{ t('purchases.add_product_eyebrow') }}</div>
+                            <label class="form-label fw-semibold mb-0" for="purchase-product-search">{{ t('purchases.add_product') }}</label>
+                        </div>
+                        <button
+                            v-if="photoSearchEnabled"
+                            type="button"
+                            class="btn btn-sm btn-outline-primary purchase-photo-btn flex-shrink-0"
+                            :disabled="photoSearchWorking"
+                            :aria-label="photoSearchWorking ? t('sales.pos_photo_search_working') : t('sales.pos_photo_search_start')"
+                            :title="photoSearchWorking ? t('sales.pos_photo_search_working') : t('sales.pos_photo_search_start')"
+                            @click="openPhotoSearchPicker"
+                        >
+                            <svg v-if="!photoSearchWorking" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h8l2 3h3a2 2 0 0 1 2 2z" />
+                                <circle cx="12" cy="13" r="4" />
+                            </svg>
+                            <svg v-else class="purchase-photo-btn__spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                                <path d="M12 3a9 9 0 1 1-9 9" />
+                            </svg>
+                        </button>
+                        <input
+                            v-if="photoSearchEnabled"
+                            ref="photoSearchInput"
+                            type="file"
+                            class="d-none"
+                            accept="image/jpeg,image/png,image/webp,image/*"
+                            capture="environment"
+                            @change="onPhotoSearchSelected"
+                        />
+                    </div>
                     <p class="small text-muted mb-2">{{ t('purchases.add_product_hint') }}</p>
+                    <p v-if="photoSearchEnabled" class="small text-muted mb-2">{{ t('purchases.photo_search_hint') }}</p>
                     <div class="purchase-add-product__search input-group input-group-lg">
                         <span class="input-group-text purchase-add-product__icon" aria-hidden="true">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
@@ -85,6 +116,7 @@
                         </span>
                         <input
                             id="purchase-product-search"
+                            ref="productSearchInput"
                             v-model="searchQuery"
                             type="search"
                             class="form-control purchase-add-product__input"
@@ -92,6 +124,9 @@
                             autocomplete="off"
                             @input="debouncedSearch"
                         />
+                    </div>
+                    <div v-if="photoSearchEnabled && photoSearchError" class="alert alert-warning py-2 mt-2 mb-0 small">
+                        {{ photoSearchError }}
                     </div>
                     <div v-if="searchResults.length" class="mt-2">
                         <div class="small text-muted fw-semibold mb-1">{{ t('purchases.your_catalog') }}</div>
@@ -623,6 +658,7 @@ const { can } = usePermissions();
 const { formatQty } = useQuantity();
 const page = usePage();
 const canManageProducts = computed(() => can('products.manage'));
+const photoSearchEnabled = computed(() => page.props.features?.photo_search ?? false);
 const stripProductTypes = computed(() => page.props.catalogOptions?.stripProductTypes ?? ['tablet', 'capsule']);
 const quickProductTypes = ['tablet', 'capsule', 'syrup', 'injection', 'cream', 'drops', 'bottle', 'other'];
 const quickBaseUnits = ['piece', 'strip', 'box', 'carton'];
@@ -719,6 +755,10 @@ const searchQuery = ref('');
 const searchResults = ref([]);
 const masterResults = ref([]);
 const searching = ref(false);
+const productSearchInput = ref(null);
+const photoSearchInput = ref(null);
+const photoSearchWorking = ref(false);
+const photoSearchError = ref('');
 const activatingMasterId = ref(null);
 const creatingMedicine = ref(false);
 const newMedicineFlash = ref('');
@@ -821,8 +861,188 @@ function toggleNewSupplierForm() {
 }
 
 function debouncedSearch() {
+    photoSearchError.value = '';
     clearTimeout(searchTimer);
     searchTimer = setTimeout(runSearch, 250);
+}
+
+function openPhotoSearchPicker() {
+    if (!photoSearchEnabled.value || photoSearchWorking.value) {
+        return;
+    }
+
+    photoSearchError.value = '';
+    photoSearchInput.value?.click();
+}
+
+async function onPhotoSearchSelected(event) {
+    const input = event?.target;
+    const file = input?.files?.[0] ?? null;
+    if (input) {
+        input.value = '';
+    }
+
+    if (!file || !photoSearchEnabled.value || photoSearchWorking.value) {
+        return;
+    }
+
+    if (!file.type.startsWith('image/') || file.size > 8 * 1024 * 1024) {
+        photoSearchError.value = t('sales.pos_photo_search_invalid_image');
+        return;
+    }
+
+    photoSearchWorking.value = true;
+    photoSearchError.value = '';
+    searching.value = true;
+
+    try {
+        const blob = await compressPhotoForSearch(file);
+        const formData = new FormData();
+        formData.append('image', blob, 'medicine.jpg');
+
+        const { data } = await window.axios.post('/catalog/product-image-search', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            timeout: 45000,
+        });
+
+        const query = String(data?.query || data?.recognition?.query || '').trim();
+        const products = Array.isArray(data?.data) ? data.data : [];
+        searchResults.value = products;
+        searchQuery.value = query;
+
+        if (!query) {
+            masterResults.value = [];
+            photoSearchError.value = t('sales.pos_photo_search_unavailable');
+            return;
+        }
+
+        await loadMasterMatchesForQuery(query, products);
+
+        // Never auto-add from a name guess — user must confirm.
+        // Exception: exact barcode match with a single product is unambiguous.
+        const barcode = String(data?.recognition?.barcode || '').trim();
+        const exactBarcode = barcode
+            ? products.find((p) => String(p.barcode || '') === barcode)
+            : null;
+        const confidence = Number(data?.recognition?.confidence ?? 0);
+
+        if (exactBarcode && products.length === 1 && confidence >= 0.7) {
+            addProductLine(exactBarcode);
+            photoSearchError.value = '';
+            productSearchInput.value?.focus();
+            return;
+        }
+
+        if (!products.length && !masterResults.value.length && canManageProducts.value) {
+            resetNewMedicineForm(query);
+        }
+
+        photoSearchError.value = products.length || masterResults.value.length
+            ? t('sales.pos_photo_search_select_result', { query })
+            : t('sales.pos_photo_search_not_found', { query });
+        productSearchInput.value?.focus();
+    } catch (error) {
+        const status = error?.response?.status;
+        const message = error?.response?.data?.message;
+        if (status === 403) {
+            photoSearchError.value = message || t('sales.pos_photo_search_forbidden');
+        } else if (status === 422) {
+            photoSearchError.value = message || t('sales.pos_photo_search_invalid_image');
+        } else if (status === 503) {
+            photoSearchError.value = message || t('sales.pos_photo_search_not_configured');
+        } else {
+            photoSearchError.value = message || t('sales.pos_photo_search_unavailable');
+        }
+    } finally {
+        photoSearchWorking.value = false;
+        searching.value = false;
+    }
+}
+
+async function loadMasterMatchesForQuery(query, localProducts = []) {
+    if (!canManageProducts.value || !query) {
+        masterResults.value = [];
+        return;
+    }
+
+    try {
+        const { data } = await window.axios.get('/catalog/master/search', { params: { q: query } });
+        const localIds = new Set(
+            (localProducts || [])
+                .map((p) => Number(p.id))
+                .filter((id) => id > 0),
+        );
+        masterResults.value = (data?.data ?? []).filter((item) => {
+            if (item.is_activated) {
+                return false;
+            }
+            const tenantId = Number(item.tenant_product_id || 0);
+            return !(tenantId > 0 && localIds.has(tenantId));
+        });
+    } catch {
+        masterResults.value = [];
+    }
+}
+
+/**
+ * Shrink / recompress the capture so Gemini uploads stay small and reliable on mobile.
+ */
+async function compressPhotoForSearch(file) {
+    const maxEdge = 1280;
+    const quality = 0.82;
+
+    try {
+        const bitmap = typeof createImageBitmap === 'function'
+            ? await createImageBitmap(file)
+            : await loadImageElement(file);
+
+        const width = bitmap.width || 0;
+        const height = bitmap.height || 0;
+        if (!width || !height) {
+            bitmap.close?.();
+            return file;
+        }
+
+        const scale = Math.min(1, maxEdge / Math.max(width, height));
+        const targetW = Math.max(1, Math.round(width * scale));
+        const targetH = Math.max(1, Math.round(height * scale));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            bitmap.close?.();
+            return file;
+        }
+
+        ctx.drawImage(bitmap, 0, 0, targetW, targetH);
+        bitmap.close?.();
+
+        const blob = await new Promise((resolve) => {
+            canvas.toBlob((b) => resolve(b), 'image/jpeg', quality);
+        });
+
+        return blob && blob.size > 0 ? blob : file;
+    } catch {
+        return file;
+    }
+}
+
+function loadImageElement(file) {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve(img);
+        };
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('image load failed'));
+        };
+        img.src = url;
+    });
 }
 
 function defaultBatchNo(dateStr = null) {
@@ -1713,6 +1933,31 @@ function submit() {
     --purchase-search-border: var(--bs-primary);
     background: #fff;
     box-shadow: 0 0 0 4px rgba(var(--bs-primary-rgb), 0.18);
+}
+
+.purchase-photo-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.35rem;
+    height: 2.35rem;
+    padding: 0;
+    border-radius: 0.55rem;
+}
+
+.purchase-photo-btn svg {
+    width: 1.15rem;
+    height: 1.15rem;
+}
+
+.purchase-photo-btn__spin {
+    animation: purchase-photo-spin 0.75s linear infinite;
+}
+
+@keyframes purchase-photo-spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .purchase-master-result {

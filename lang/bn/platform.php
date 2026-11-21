@@ -108,7 +108,7 @@ return [
     'feature_barcode_camera_scan' => 'ক্যামেরা বারকোড স্ক্যান',
     'feature_barcode_camera_scan_help' => 'POS-এ মোবাইল বা ল্যাপটপ ক্যামেরা দিয়ে পণ্যের বারকোড স্ক্যান করতে দিন।',
     'feature_photo_search' => 'ছবি দিয়ে ওষুধ খোঁজা',
-    'feature_photo_search_help' => 'POS-এ ওষুধের প্যাকেটের ছবি তুলে AI দিয়ে মিল থাকা পণ্য খুঁজে পেতে দিন।',
+    'feature_photo_search_help' => 'POS ও ক্রয় পেজে ওষুধের প্যাকেটের ছবি তুলে AI দিয়ে মিল থাকা পণ্য খুঁজে পেতে দিন।',
     'feature_pharmacy_notes' => 'কুইক নোট',
     'feature_pharmacy_notes_help' => 'ফার্মেসি স্টাফকে দ্রুত নোট রাখতে দিন (কেনার তালিকা, ফোন নম্বর, রিমাইন্ডার)।',
     'feature_theme_section' => 'থিম টেমপ্লেট',

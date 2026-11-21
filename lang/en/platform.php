@@ -108,7 +108,7 @@ return [
     'feature_barcode_camera_scan' => 'Camera barcode scanning',
     'feature_barcode_camera_scan_help' => 'Allow POS users to scan product barcodes with a phone or laptop camera.',
     'feature_photo_search' => 'Photo medicine search',
-    'feature_photo_search_help' => 'Allow POS users to photograph a medicine pack and find matching products with AI.',
+    'feature_photo_search_help' => 'Allow POS and purchase users to photograph a medicine pack and find matching products with AI.',
     'feature_pharmacy_notes' => 'Quick notes',
     'feature_pharmacy_notes_help' => 'Allow pharmacy staff to save quick notes (buy lists, phone numbers, reminders).',
     'feature_theme_section' => 'Theme templates',

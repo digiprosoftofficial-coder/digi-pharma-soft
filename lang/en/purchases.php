@@ -47,6 +47,7 @@ return [
     'add_product_eyebrow' => 'Step 1 — find & add',
     'add_product_hint' => 'Search your shop catalog and the central medicine list. Add from master, or create a new medicine if missing.',
     'add_product_placeholder' => 'Start typing product name…',
+    'photo_search_hint' => 'Photograph the pack label to find the medicine. Confirm the product before adding it to the purchase.',
     'no_products_found' => 'No products found in your shop.',
     'your_catalog' => 'In your shop',
     'master_catalog_matches' => 'Central catalog',
