@@ -29,6 +29,7 @@ use App\Http\Controllers\Central\PlatformTenantController;
 use App\Http\Controllers\Central\PlatformTenantImpersonationController;
 use App\Http\Controllers\Central\PlatformTwoFactorSetupController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Marketing\MarketingController;
 use App\Http\Controllers\Marketing\RegisterController;
 use App\Http\Controllers\Tenant\OnboardingController;
@@ -122,6 +123,9 @@ Route::middleware(['guest'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified', 'tenant.subscription'])->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
+
     Route::middleware(['tenant.staff'])->group(function () {
         Route::name('tenant.')->group(function () {
             Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

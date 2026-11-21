@@ -17,6 +17,7 @@ use App\Support\Tenant\TenantImpersonation;
 use App\Support\Tenant\TenantOnboarding;
 use App\Support\Http\UserFacingDialog;
 use App\Support\Theme\ThemeCatalog;
+use App\Support\User\UserAvatarStorage;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Laravel\Fortify\Features;
@@ -89,6 +90,7 @@ class HandleInertiaRequests extends Middleware
                     'id' => $authUser->getKey(),
                     'name' => $authUser->name,
                     'email' => $authUser->email,
+                    'avatar_url' => UserAvatarStorage::url($authUser->avatar_path),
                     'email_verified_at' => $authUser->email_verified_at,
                     'is_platform_super_admin' => (bool) $authUser->is_platform_super_admin,
                     'uses_platform_dashboard' => $authUser->shouldUsePlatformDashboard(),

@@ -155,10 +155,7 @@
                         </Link>
                     </div>
                 </div>
-                <span class="small platform-chrome-muted d-none d-md-inline">{{ userName }}</span>
-                <Link href="/logout" method="post" as="button" class="btn btn-sm platform-chrome-btn">
-                    {{ t('common.logout') }}
-                </Link>
+                <TopbarUserMenu />
             </header>
             <main class="platform-main flex-grow-1 p-3 p-md-4 overflow-auto">
                 <slot />
@@ -173,6 +170,7 @@
 import AppMessageModal from '@/Components/AppMessageModal.vue';
 import FlashToasts from '@/Components/FlashToasts.vue';
 import PlatformNavIcon from '@/Components/Platform/PlatformNavIcon.vue';
+import TopbarUserMenu from '@/Components/TopbarUserMenu.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useTheme } from '@/composables/useTheme';
 import { Link, router, usePage } from '@inertiajs/vue3';
@@ -192,7 +190,6 @@ const brandSub = computed(() => branding.value.product_of || t('platform.brand_s
 const brandLogo = computed(() => branding.value.logo_url || '/brand/softopharma-logo.png');
 const brandIcon = computed(() => branding.value.icon_url || '/brand/softopharma-icon.png');
 
-const userName = computed(() => page.props.auth?.user?.name ?? 'Admin');
 const mobileNavOpen = ref(false);
 const bellOpen = ref(false);
 
@@ -425,6 +422,9 @@ function closeMobileNav() {
 }
 
 .platform-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
     background: var(--platform-chrome-bg);
     color: var(--platform-chrome-fg);
     border-bottom: 1px solid var(--platform-chrome-border);
@@ -584,7 +584,8 @@ function closeMobileNav() {
     position: relative;
 }
 
-.platform-bell-btn {
+.platform-bell-btn,
+.platform-topbar-logout {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -634,14 +635,6 @@ function closeMobileNav() {
 .platform-mobile-brand__page {
     color: var(--platform-chrome-muted);
     font-size: 0.72rem;
-}
-
-@media (max-width: 991.98px) {
-    .platform-topbar {
-        position: sticky;
-        top: 0;
-        z-index: 1030;
-    }
 }
 
 @media (max-width: 575.98px) {

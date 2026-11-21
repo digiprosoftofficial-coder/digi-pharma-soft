@@ -251,8 +251,7 @@
                             {{ t('tenant_nav.product_list') }}
                         </Link>
                         <Link v-if="can('pos.access')" href="/pos" class="btn btn-sm btn-primary tenant-topbar-action d-none d-lg-inline-flex">{{ t('tenant_nav.new_sale') }}</Link>
-                        <span class="small tenant-chrome-muted d-none d-md-inline">{{ userName }}</span>
-                        <Link href="/logout" method="post" as="button" class="btn btn-sm tenant-chrome-btn tenant-topbar-action">{{ t('common.logout') }}</Link>
+                        <TopbarUserMenu />
                     </div>
                 </header>
                 <main class="tenant-main flex-grow-1 p-2 p-md-4 min-w-0">
@@ -276,6 +275,7 @@ import SmartSearchFab from '@/Components/Tenant/SmartSearchFab.vue';
 import TenantBottomNav from '@/Components/Tenant/TenantBottomNav.vue';
 import TenantNavIcon from '@/Components/Tenant/TenantNavIcon.vue';
 import TenantSidebarNav from '@/Components/Tenant/TenantSidebarNav.vue';
+import TopbarUserMenu from '@/Components/TopbarUserMenu.vue';
 import { useLocale } from '@/composables/useLocale';
 import { usePermissions } from '@/composables/usePermissions';
 import { useProductSearch } from '@/composables/useProductSearch';
@@ -297,7 +297,6 @@ const branding = computed(() => page.props.branding || {});
 const brandIcon = computed(() => branding.value.icon_url || '/brand/softopharma-icon.png');
 const brandSiteName = computed(() => branding.value.site_name || 'SoftoPharma');
 const tenantName = computed(() => page.props.tenant?.name ?? 'Pharmacy');
-const userName = computed(() => page.props.auth?.user?.name ?? 'User');
 const impersonation = computed(() => page.props.impersonation);
 const networkAnnouncement = computed(() => page.props.networkAnnouncement);
 const onboarding = computed(() => page.props.onboarding);
@@ -613,7 +612,8 @@ const announcementAlertClass = computed(() => {
 }
 
 .tenant-topbar-search-btn,
-.tenant-topbar-notes-btn {
+.tenant-topbar-notes-btn,
+.tenant-topbar-logout {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -627,6 +627,9 @@ const announcementAlertClass = computed(() => {
 }
 
 .tenant-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
     width: 100%;
     max-width: 100%;
     min-width: 0;
@@ -827,12 +830,6 @@ const announcementAlertClass = computed(() => {
 @media (max-width: 991.98px) {
     .tenant-main {
         padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px)) !important;
-    }
-
-    .tenant-topbar {
-        position: sticky;
-        top: 0;
-        z-index: 1030;
     }
 
     .tenant-topbar .h5 {
